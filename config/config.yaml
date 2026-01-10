@@ -24,10 +24,6 @@ app:
 # name: 显示名称（可自定义，修改后不影响运行）
 # ===============================================================
 platforms:
-  - id: "toutiao"
-    name: "今日头条"
-  - id: "baidu"
-    name: "百度热搜"
   - id: "wallstreetcn-hot"
     name: "华尔街见闻"
   - id: "thepaper"
@@ -42,10 +38,16 @@ platforms:
     name: "贴吧"
   - id: "weibo"
     name: "微博"
-  - id: "douyin"
-    name: "抖音"
   - id: "zhihu"
     name: "知乎"
+  - id: "jin10"
+    name: "金十数据"
+  - id: "github"
+    name: "GitHub"
+  - id: "ithome"
+    name: "IT之家"
+  - id: "fastbull-express"
+    name: "法布财经 快讯"
 
 
 # ===============================================================
@@ -95,6 +97,34 @@ rss:
       url: "https://finance.yahoo.com/news/rssindex"
       enabled: true                  # 禁用
 
+    - id: "cnn_world"
+       name: "CNN世界新闻"
+       url: "http://rss.cnn.com/rss/cnn_world.rss"
+       enabled: true
+       max_age_days: 1
+    
+    - id: "cnn_politics"
+       name: "CNN政治"
+       url: "http://rss.cnn.com/rss/cnn_allpolitics.rss"
+       enabled: true
+       max_age_days: 1
+
+    - id: "bbc_news"
+       name: "BBC新闻"
+       url: "https://feeds.bbci.co.uk/news/rss.xml"
+       enabled: true
+       max_age_days: 1
+
+    - id: "chaonengwang"
+       name: "超能网"
+       url: "https://www.expreview.com/rss.php"
+       enabled: true
+       max_age_days: 1
+
+
+    # https://support.itesmedia.tv/available-rss-feeds-from-cnn 一些cnn的RSS源
+    # https://github.com/colorblank/RssFeedLib?tab=readme-ov-file#readme （这个项目下有大量的RSS源但是中文会出现乱码）
+    
     # 自定义源示例
     # - id: "custom-feed"
     #   name: "自定义源"
