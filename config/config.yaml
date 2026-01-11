@@ -100,13 +100,13 @@ rss:
     -  id: "cnn_world"
        name: "CNN世界新闻"
        url: "http://rss.cnn.com/rss/cnn_world.rss"
-       enabled: true
+       enabled: false
        max_age_days: 1
     
     -  id: "cnn_politics"
        name: "CNN政治"
        url: "http://rss.cnn.com/rss/cnn_allpolitics.rss"
-       enabled: true
+       enabled: false
        max_age_days: 1
 
     -  id: "bbc_news"
@@ -118,6 +118,12 @@ rss:
     -  id: "chaonengwang"
        name: "超能网"
        url: "https://www.expreview.com/rss.php"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "The_Guardian_World"
+       name: "G_WORLD"
+       url: "https://feedmaker.kindle4rss.com/feeds/world.theguardian.xml"
        enabled: true
        max_age_days: 1
 
