@@ -97,25 +97,25 @@ rss:
       url: "https://finance.yahoo.com/news/rssindex"
       enabled: true                  # 禁用
 
-    - id: "cnn_world"
+    -  id: "cnn_world"
        name: "CNN世界新闻"
        url: "http://rss.cnn.com/rss/cnn_world.rss"
        enabled: true
        max_age_days: 1
     
-    - id: "cnn_politics"
+    -  id: "cnn_politics"
        name: "CNN政治"
        url: "http://rss.cnn.com/rss/cnn_allpolitics.rss"
        enabled: true
        max_age_days: 1
 
-    - id: "bbc_news"
+    -  id: "bbc_news"
        name: "BBC新闻"
        url: "https://feeds.bbci.co.uk/news/rss.xml"
        enabled: true
        max_age_days: 1
 
-    - id: "chaonengwang"
+    -  id: "chaonengwang"
        name: "超能网"
        url: "https://www.expreview.com/rss.php"
        enabled: true
