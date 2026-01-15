@@ -24,22 +24,22 @@ app:
 # name: 显示名称（可自定义，修改后不影响运行）
 # ===============================================================
 platforms:
-  - id: "wallstreetcn-hot"
-    name: "华尔街见闻"
-  - id: "thepaper"
-    name: "澎湃新闻"
-  - id: "bilibili-hot-search"
-    name: "bilibili 热搜"
+  #- id: "wallstreetcn-hot"
+   # name: "华尔街见闻"
+  #- id: "thepaper"
+   # name: "澎湃新闻"
+  #- id: "bilibili-hot-search"
+   # name: "bilibili 热搜"
   - id: "cls-hot"
     name: "财联社热门"
-  - id: "ifeng"
-    name: "凤凰网"
+  #- id: "ifeng"
+   # name: "凤凰网"
   - id: "tieba"
     name: "贴吧"
   - id: "weibo"
     name: "微博"
-  - id: "zhihu"
-    name: "知乎"
+  #- id: "zhihu"
+   # name: "知乎"
   - id: "jin10"
     name: "金十数据"
   - id: "github"
@@ -95,8 +95,8 @@ rss:
     - id: "yahoo-finance"
       name: "雅虎财经"
       url: "https://finance.yahoo.com/news/rssindex"
-      enabled: true                  # 禁用
-
+      enabled: flase                 # 禁用
+    
     -  id: "cnn_world"
        name: "CNN世界新闻"
        url: "http://rss.cnn.com/rss/cnn_world.rss"
@@ -106,6 +106,7 @@ rss:
     -  id: "cnn_politics"
        name: "CNN政治"
        url: "http://rss.cnn.com/rss/cnn_allpolitics.rss"
+       #当掉了这个url
        enabled: false
        max_age_days: 1
 
@@ -127,6 +128,23 @@ rss:
        enabled: true
        max_age_days: 1
 
+    -  id: "DIGITIMES_科技"
+       name: "台湾电子时报_科技"
+       url: "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_0.xml"
+       enabled: true
+       max_age_days: 1  
+
+    -  id: "DIGITIMES_研究"
+       name: "台湾电子时报_研究"
+       url: "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_0.xml"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "DIGITIMES_区域"
+       name: "台湾电子时报_区域"
+       url: "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml"
+       enabled: true
+       max_age_days: 1
 
     # https://support.itesmedia.tv/available-rss-feeds-from-cnn 一些cnn的RSS源
     # https://github.com/colorblank/RssFeedLib?tab=readme-ov-file#readme （这个项目下有大量的RSS源但是中文会出现乱码）
