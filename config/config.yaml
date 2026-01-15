@@ -152,8 +152,11 @@ rss:
        enabled: true
        max_age_days: 1
 
+
+    # https://docs.rsshub.app/routes/ 大量网站的rss源（新且多）
     # https://support.itesmedia.tv/available-rss-feeds-from-cnn 一些cnn的RSS源
     # https://github.com/colorblank/RssFeedLib?tab=readme-ov-file#readme （这个项目下有大量的RSS源但是中文会出现乱码）
+    
     
     # 自定义源示例
     # - id: "custom-feed"
