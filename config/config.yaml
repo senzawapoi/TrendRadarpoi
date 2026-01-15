@@ -95,7 +95,7 @@ rss:
     - id: "yahoo-finance"
       name: "雅虎财经"
       url: "https://finance.yahoo.com/news/rssindex"
-      enabled: flase                 # 禁用
+      enabled: false                 # 禁用
     
     -  id: "cnn_world"
        name: "CNN世界新闻"
