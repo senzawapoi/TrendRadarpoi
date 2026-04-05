@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS news_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     platform_id TEXT NOT NULL,
+    title_translated TEXT DEFAULT '',     -- 翻译后的标题
+    is_english INTEGER DEFAULT 0,         -- 是否为英文标题 (0/1)
     rank INTEGER NOT NULL,
     url TEXT DEFAULT '',
     mobile_url TEXT DEFAULT '',
