@@ -27,6 +27,10 @@ class NewsItem:
     first_time: str = ""                # 首次出现时间
     last_time: str = ""                 # 最后出现时间
     count: int = 1                      # 出现次数
+    
+    # 翻译信息
+    title_translated: str = ""          # 翻译后的标题（英文->中文）
+    is_english: bool = False            # 是否为英文标题
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
@@ -42,6 +46,8 @@ class NewsItem:
             "first_time": self.first_time,
             "last_time": self.last_time,
             "count": self.count,
+            "title_translated": self.title_translated,
+            "is_english": self.is_english,
         }
 
     @classmethod
@@ -59,6 +65,8 @@ class NewsItem:
             first_time=data.get("first_time", ""),
             last_time=data.get("last_time", ""),
             count=data.get("count", 1),
+            title_translated=data.get("title_translated", ""),
+            is_english=data.get("is_english", False),
         )
 
 
