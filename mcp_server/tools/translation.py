@@ -37,7 +37,7 @@ class TranslationTools:
         self, 
         default_source: str = "en", 
         default_target: str = "zh",
-        gemini_api_key: Optional[str] = None
+        gemini_api_key: Optional[str] = AIzaSyDoPYCP3M9aRY3ecaOjO_zPP1Nw3iTUXYg
     ):
         """
         初始化翻译工具
