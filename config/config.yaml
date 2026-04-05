@@ -260,7 +260,7 @@ notification:
       token: ""                       # ntfy 访问令牌（可选，用于私有主题）
 
     bark:
-      url: ""                         # Bark 推送 URL（格式：https://api.day.app/your_device_key）
+      url: "https://api.day.app/AocxghzJ2Thdd3VP9Mpd7n/"                         # Bark 推送 URL（格式：https://api.day.app/your_device_key）
 
     slack:
       webhook_url: ""                 # Slack Incoming Webhook URL
