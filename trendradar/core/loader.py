@@ -174,6 +174,19 @@ def _load_rss_config(config_data: Dict) -> Dict:
     }
 
 
+def _load_translation_config(config_data: Dict) -> Dict:
+    """加载翻译配置"""
+    translation = config_data.get("translation", {})
+    
+    # 支持环境变量覆盖
+    gemini_api_key = os.environ.get("TRANSLATION_GEMINI_API_KEY", "") or translation.get("gemini_api_key", "")
+    
+    return {
+        "ENABLED": translation.get("enabled", False),
+        "GEMINI_API_KEY": gemini_api_key,
+    }
+
+
 def _load_storage_config(config_data: Dict) -> Dict:
     """加载存储配置"""
     storage = config_data.get("storage", {})
@@ -378,6 +391,9 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
     # 平台配置
     config["PLATFORMS"] = config_data.get("platforms", [])
+
+    # 翻译配置
+    config["TRANSLATION"] = _load_translation_config(config_data)
 
     # RSS 配置
     config["RSS"] = _load_rss_config(config_data)

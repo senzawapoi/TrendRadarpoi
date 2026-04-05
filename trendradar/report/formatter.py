@@ -49,7 +49,10 @@ def format_title_for_platform(
     )
 
     link_url = title_data["mobile_url"] or title_data["url"]
-    cleaned_title = clean_title(title_data["title"])
+    
+    # 优先使用翻译后的标题（如果有）
+    raw_title = title_data.get("title_translated", "") or title_data["title"]
+    cleaned_title = clean_title(raw_title)
 
     # 获取关键词标签（platform 模式使用）
     keyword = title_data.get("matched_keyword", "") if show_keyword else ""

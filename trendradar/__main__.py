@@ -613,6 +613,21 @@ class NewsAnalyzer:
             results, id_to_name, failed_ids, crawl_time, crawl_date
         )
 
+        # === 新增：翻译英文标题 ===
+        gemini_api_key = self.ctx.config.get("TRANSLATION", {}).get("gemini_api_key", "")
+        if gemini_api_key:
+            try:
+                from trendradar.services.translation_service import TranslationService
+                translator = TranslationService(gemini_api_key=gemini_api_key)
+                translated_count = translator.translate_news_data(news_data, skip_existing=False)
+                if translated_count > 0:
+                    print(f"✓ 成功翻译 {translated_count} 条英文标题")
+            except Exception as e:
+                print(f"⚠️ 翻译服务异常：{e}")
+        else:
+            print("⚠️ 未配置翻译 API key，跳过翻译")
+        # =========================
+
         # 保存到存储后端（SQLite）
         if self.storage_manager.save_news_data(news_data):
             print(f"数据已保存到存储后端: {self.storage_manager.backend_name}")
