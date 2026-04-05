@@ -2,7 +2,7 @@
 新闻翻译工具
 
 提供英文新闻标题和内容的中文翻译功能。
-支持多种翻译 API：MyMemory、Lingva、Google Gemini
+支持多种翻译 API：Google Translate、MyMemory、Google Gemini
 """
 
 import requests
@@ -16,19 +16,19 @@ class TranslationTools:
     # 免费翻译 API 列表（按优先级排序）
     TRANSLATION_APIS = [
         {
+            "name": "Google Translate",
+            "url": "https://translate.googleapis.com/translate_a/single",
+            "method": "GET",
+            "params": lambda q, source, target: {"client": "gtx", "sl": source, "tl": target, "dt": "t", "q": q},
+            "response_path": [0, 0, 0],
+            "max_length": 500
+        },
+        {
             "name": "MyMemory",
             "url": "https://api.mymemory.translated.net/get",
             "method": "GET",
             "params": lambda q, source, target: {"q": q, "langpair": f"{source}|{target}"},
             "response_path": ["responseData", "translatedText"],
-            "max_length": 500
-        },
-        {
-            "name": "Lingva",
-            "url": "https://lingva.ml/api/v1/{source}/{target}/{q}",
-            "method": "GET",
-            "params": None,  # URL 路径参数
-            "response_path": ["translation"],
             "max_length": 500
         }
     ]
@@ -37,7 +37,7 @@ class TranslationTools:
         self, 
         default_source: str = "en", 
         default_target: str = "zh",
-        gemini_api_key: Optional[str] = AIzaSyDoPYCP3M9aRY3ecaOjO_zPP1Nw3iTUXYg
+        gemini_api_key: Optional[str] = "AIzaSyDoPYCP3M9aRY3ecaOjO_zPP1Nw3iTUXYg"
     ):
         """
         初始化翻译工具
@@ -203,10 +203,24 @@ class TranslationTools:
         # 提取翻译结果
         translated = data
         for key in api_config["response_path"]:
-            if isinstance(translated, dict):
-                translated = translated.get(key)
+            if isinstance(translated, (dict, list)):
+                if isinstance(translated, list) and isinstance(key, int):
+                    translated = translated[key] if key < len(translated) else None
+                elif isinstance(translated, dict):
+                    translated = translated.get(key)
+                else:
+                    break
             else:
                 break
+        
+        # Google Translate API 特殊处理：结果是嵌套列表 [[[translated, original, ...]]]
+        if api_config["name"] == "Google Translate" and isinstance(translated, list):
+            # 如果仍然是嵌套列表，继续提取
+            while isinstance(translated, list) and len(translated) > 0:
+                if isinstance(translated[0], str):
+                    translated = translated[0]
+                    break
+                translated = translated[0]
         
         if not translated:
             return None
