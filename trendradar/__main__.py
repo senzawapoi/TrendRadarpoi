@@ -138,6 +138,10 @@ def main():
         translated_count = 0
         total_hot_titles = 0
 
+        # 读取报告模式（daily / current / incremental）
+        report_mode = config.get("REPORT_MODE", "current")
+        print(f"📋 报告模式: {report_mode}")
+
         # ================================================================
         # A. 热榜数据抓取
         # ================================================================
@@ -208,7 +212,7 @@ def main():
                 hot_stats, _ = ctx.count_frequency(
                     results, word_groups, filter_words, id_to_name,
                     title_info=title_info, new_titles=new_titles,
-                    mode="current", global_filters=global_filters, quiet=False,
+                    mode=report_mode, global_filters=global_filters, quiet=False,
                 )
             except (FileNotFoundError, ImportError) as e:
                 print(f"[热榜] 词频统计跳过: {e}")
@@ -397,7 +401,7 @@ def main():
             failed_ids=all_failed,
             new_titles=new_titles,
             id_to_name=all_id_to_name,
-            mode="current",
+            mode=report_mode,
             is_daily_summary=True,
             rss_items=rss_stats,
             rss_new_items=rss_new_stats,
@@ -407,18 +411,32 @@ def main():
 
         # 发送通知
         print("\n📱 发送通知...")
+        # 增量模式：如果没有新增标题且非首次抓取，跳过通知
+        skip_notification = False
+        if report_mode == "incremental":
+            has_hot_new = bool(new_titles and any(new_titles.values()))
+            has_rss_new = bool(rss_new_stats)
+            is_first = storage_manager.is_first_crawl_today()
+            if not is_first and not has_hot_new and not has_rss_new:
+                skip_notification = True
+                print("  ℹ️ 增量模式：无新增内容，跳过通知")
+
         report_data = ctx.prepare_report(
             stats=hot_stats,
             failed_ids=all_failed,
             new_titles=new_titles,
             id_to_name=all_id_to_name,
-            mode="current",
+            mode=report_mode,
         )
         dispatcher = ctx.create_notification_dispatcher()
-        notify_results = dispatcher.dispatch_all(
-            report_data=report_data,
-            report_type="热点新闻分析",
-            mode="current",
+
+        if skip_notification:
+            notify_results = {}
+        else:
+            notify_results = dispatcher.dispatch_all(
+                report_data=report_data,
+                report_type="热点新闻分析",
+                mode=report_mode,
             html_file_path=html_file,
             rss_items=rss_stats,
             rss_new_items=rss_new_stats,
