@@ -172,9 +172,6 @@ class TranslationService:
             if success and translated:
                 setattr(item, translated_field, translated)
                 translated_count += 1
-                print(f"[TranslationService] 翻译：'{item.title[:30]}...' -> '{translated[:30]}...' ({source_lang}->{target_lang})")
-            else:
-                print(f"[TranslationService] 翻译失败：'{item.title[:30]}...' ({source_lang}->{target_lang})")
             
             # 翻译摘要（如果存在）
             if hasattr(item, 'summary') and item.summary:
@@ -182,8 +179,12 @@ class TranslationService:
                 if summary_success and summary_translated:
                     summary_field = "summary_translated" if target_lang == "zh" else "summary_english"
                     setattr(item, summary_field, summary_translated)
+            
+            # 进度显示（每 10 条或最后一条）
+            if total_processed % 10 == 0 or total_processed == len(news_items):
+                print(f"\r  翻译进度: {total_processed}/{len(news_items)}", end="", flush=True)
         
-        print(f"[TranslationService] 翻译完成：共处理 {total_processed} 条，成功翻译 {translated_count} 条")
+        print(f"\n  翻译完成: {translated_count}/{total_processed} 条成功")
         return translated_count
     
     def translate_news_data(self, news_data: NewsData, skip_existing: bool = True) -> int:

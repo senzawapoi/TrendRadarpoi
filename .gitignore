@@ -46,3 +46,28 @@ Thumbs.db
 .mypy_cache/
 .pytest_cache/
 .gradle/
+
+# TrendRadar specific
+output/
+.windsurf/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*.rej
+*.old
+
+# Temporary scripts
+*_temp.py
+temp_main.py
+
+# Windows specific
+*.bat
+*.exe
+
+# Debug scripts (kept local)
+run_bilingual*.py
+demo_translation.py
+test_bilingual_translation.py
+simulate_github_actions.py

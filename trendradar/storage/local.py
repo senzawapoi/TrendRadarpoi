@@ -224,11 +224,23 @@ class LocalStorageBackend(StorageBackend):
                                         title = ?,
                                         rank = ?,
                                         mobile_url = ?,
+                                        title_translated = CASE WHEN ? != '' THEN ? ELSE title_translated END,
+                                        title_english = CASE WHEN ? != '' THEN ? ELSE title_english END,
+                                        summary = CASE WHEN ? != '' THEN ? ELSE summary END,
+                                        summary_translated = CASE WHEN ? != '' THEN ? ELSE summary_translated END,
+                                        summary_english = CASE WHEN ? != '' THEN ? ELSE summary_english END,
+                                        is_english = ?,
                                         last_crawl_time = ?,
                                         crawl_count = crawl_count + 1,
                                         updated_at = ?
                                     WHERE id = ?
                                 """, (item.title, item.rank, item.mobile_url,
+                                      item.title_translated, item.title_translated,
+                                      item.title_english, item.title_english,
+                                      item.summary, item.summary,
+                                      item.summary_translated, item.summary_translated,
+                                      item.summary_english, item.summary_english,
+                                      1 if item.is_english else 0,
                                       data.crawl_time, now_str, existing_id))
                                 updated_count += 1
                             else:
@@ -236,11 +248,18 @@ class LocalStorageBackend(StorageBackend):
                                 cursor.execute("""
                                     INSERT INTO news_items
                                     (title, platform_id, rank, url, mobile_url,
+                                     title_translated, title_english, summary,
+                                     summary_translated, summary_english, is_english,
                                      first_crawl_time, last_crawl_time, crawl_count,
                                      created_at, updated_at)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
                                 """, (item.title, source_id, item.rank, normalized_url,
-                                      item.mobile_url, data.crawl_time, data.crawl_time,
+                                      item.mobile_url,
+                                      item.title_translated, item.title_english,
+                                      item.summary, item.summary_translated,
+                                      item.summary_english,
+                                      1 if item.is_english else 0,
+                                      data.crawl_time, data.crawl_time,
                                       now_str, now_str))
                                 new_id = cursor.lastrowid
                                 # 记录初始排名
@@ -255,11 +274,18 @@ class LocalStorageBackend(StorageBackend):
                             cursor.execute("""
                                 INSERT INTO news_items
                                 (title, platform_id, rank, url, mobile_url,
+                                 title_translated, title_english, summary,
+                                 summary_translated, summary_english, is_english,
                                  first_crawl_time, last_crawl_time, crawl_count,
                                  created_at, updated_at)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
                             """, (item.title, source_id, item.rank, "",
-                                  item.mobile_url, data.crawl_time, data.crawl_time,
+                                  item.mobile_url,
+                                  item.title_translated, item.title_english,
+                                  item.summary, item.summary_translated,
+                                  item.summary_english,
+                                  1 if item.is_english else 0,
+                                  data.crawl_time, data.crawl_time,
                                   now_str, now_str))
                             new_id = cursor.lastrowid
                             # 记录初始排名
