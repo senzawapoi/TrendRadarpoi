@@ -86,21 +86,16 @@ rss:
       name: "Hacker News"
       url: "https://hnrss.org/frontpage"
       # max_age_days: 1               # 示例：只推送1天内的文章
-
-    - id: "ruanyifeng"
-      name: "阮一峰的网络日志"
-      url: "http://www.ruanyifeng.com/blog/atom.xml"
-      # max_age_days: 7               # 示例：推送7天内的文章（更新较慢的博客）
     
     - id: "yahoo-finance"
       name: "雅虎财经"
       url: "https://finance.yahoo.com/news/rssindex"
-      enabled: false                 # 禁用
+      enabled: true
     
     -  id: "cnn_world"
        name: "CNN世界新闻"
        url: "http://rss.cnn.com/rss/cnn_world.rss"
-       enabled: false
+       enabled: true
        max_age_days: 1
     
     -  id: "cnn_politics"
@@ -145,13 +140,54 @@ rss:
        url: "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml"
        enabled: true
        max_age_days: 1
-
-    -  id: "JINSHI_GOLD"
-       name: "金十数据——黄金/贵金属"
-       url: "https://rsshub.app/jin10/category/5"
+    
+    -  id: "Nvdia"
+       name: "NVIDIA Blog"
+       url: "https://nvidianews.nvidia.com/releases.xml"
+       enabled: true
+       max_age_days: 1
+     
+    -  id: "HPCwire"
+       name: "HPCwire AIwire"
+       url: "https://www.hpcwire.com/aiwire/feed/"
        enabled: true
        max_age_days: 1
 
+    -  id: "Ars Technica"
+       name: "ArsTechnica"
+       url: "https://feeds.arstechnica.com/arstechnica/index"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "EE Times"
+       name: "EETimes"
+       url: "https://www.eetimes.com/feed"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "DeepMind Blog"
+       name: "DeepMind Blogs"
+       url: "https://deepmind.com/blog/feed/basic/"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "Hugging Face Blog"
+       name: "HuggingFaceBlog"
+       url: "https://huggingface.co/blog/feed.xml"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "TechCrunch AI"
+       name: "TechCrunchAI"
+       url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+       enabled: true
+       max_age_days: 1
+
+    -  id: "TLDR AI"
+       name: "TTLDRAI"
+       url: "https://tldr.tech/api/rss/ai"
+       enabled: true
+       max_age_days: 1
 
     # https://docs.rsshub.app/routes/ 大量网站的rss源（新且多）
     # https://support.itesmedia.tv/available-rss-feeds-from-cnn 一些cnn的RSS源
@@ -313,8 +349,7 @@ storage:
 # 7. 高级设置（一般无需修改）
 # ===============================================================
 advanced:
-  # 版本检查
-  version_check_url: "https://raw.githubusercontent.com/sansan0/TrendRadar/refs/heads/master/version"
+  # # 版本检查
 
   # 爬虫设置
   crawler:
