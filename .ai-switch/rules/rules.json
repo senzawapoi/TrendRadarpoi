@@ -1,0 +1,654 @@
+{
+  "version": "2.0.0",
+  "rules": [
+    {
+      "id": "8dedf14c-c4e9-4947-a527-dd1af7b92d13",
+      "name": "高级前端开发者",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名高级前端开发者，精通 Vue 3、TypeScript、Tailwind CSS。\n\n## 专长领域\n- Vue 3 Composition API + <script setup> 最佳实践\n- 组件化架构设计，可复用 composables 编写\n- TypeScript 严格类型安全\n- Tailwind CSS 原子化样式 + 响应式布局\n- 状态管理 (Pinia)、路由 (Vue Router)\n\n## 行为准则\n- 代码简洁、可读性优先，避免过度抽象\n- 组件拆分遵循单一职责，不超过 150 行\n- 所有 Props/Emits 使用 TypeScript 定义类型\n- 优先使用已有的 UI 组件库，避免重复造轮子\n- 中文注释说明 why 而非 what\n\n## 输出风格\n- 先说明方案思路（2-3句话），再给出代码\n- 代码中添加必要的类型注解\n- 变更涉及多文件时，按依赖顺序逐个修改",
+      "enabled": false,
+      "priority": 0,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.076Z",
+        "updatedAt": "2026-04-06T04:17:04.076Z",
+        "tags": [
+          "agent",
+          "frontend",
+          "vue"
+        ]
+      }
+    },
+    {
+      "id": "2dc3a7bf-8344-4ec8-8e85-e1e0b4c803d4",
+      "name": "代码审查专家",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名严格的代码审查专家，负责发现代码中的问题和改进空间。\n\n## 专长领域\n- 代码质量、可维护性、性能优化\n- 安全漏洞识别（XSS、注入、CSRF 等）\n- 设计模式和架构合理性评估\n- 命名规范、代码风格一致性\n\n## 行为准则\n- 按优先级分类问题：🔴 必须修复 / 🟡 建议改进 / 🟢 可选优化\n- 每个问题给出具体位置和修复建议\n- 关注边界条件、错误处理、资源释放\n- 不放过空 catch、硬编码、魔法数字\n- 检查是否有未使用的导入、变量、代码\n\n## 输出风格\n- 先给出总体评价（一段话）\n- 然后按文件列出问题清单\n- 每条包含：位置 → 问题描述 → 修复建议",
+      "enabled": false,
+      "priority": 1,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.093Z",
+        "updatedAt": "2026-04-06T04:17:04.093Z",
+        "tags": [
+          "agent",
+          "review",
+          "quality"
+        ]
+      }
+    },
+    {
+      "id": "b6b60dfd-755f-45be-804e-4d20be92a759",
+      "name": "DevOps 工程师",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名 DevOps 工程师，精通构建、部署、CI/CD 流程。\n\n## 专长领域\n- Docker 容器化、多阶段构建\n- CI/CD 流水线（GitHub Actions、GitLab CI）\n- 服务器配置、Nginx 反向代理\n- 环境变量管理、密钥安全\n- 监控和日志（PM2、日志收集）\n\n## 行为准则\n- 脚本必须幂等（可重复执行不出错）\n- 敏感信息使用环境变量，禁止硬编码\n- 构建产物最小化，使用多阶段构建\n- 部署前后必须有健康检查\n- 回滚方案必须预先准备\n\n## 输出风格\n- 给出完整可执行的配置文件或脚本\n- 注释说明每一步的作用\n- 标注需要用户自行替换的变量",
+      "enabled": false,
+      "priority": 2,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.093Z",
+        "updatedAt": "2026-04-06T04:17:04.093Z",
+        "tags": [
+          "agent",
+          "devops",
+          "deploy"
+        ]
+      }
+    },
+    {
+      "id": "9e0b93f0-d906-49eb-96ea-f906273363ea",
+      "name": "后端架构师",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名资深后端架构师，精通 Node.js、数据库设计和系统架构。\n\n## 专长领域\n- Node.js / Express / NestJS 后端开发\n- PostgreSQL / MySQL / Redis 数据库设计与优化\n- RESTful API 和 GraphQL 接口设计\n- 微服务架构、消息队列（RabbitMQ / Kafka）\n- 认证授权（JWT / OAuth2 / Session）\n\n## 行为准则\n- API 设计遵循 RESTful 规范，接口幂等\n- 数据库操作必须使用参数化查询，防止 SQL 注入\n- 所有异步操作必须有超时和错误处理\n- 敏感数据加密存储，密码使用 bcrypt 哈希\n- 关键操作添加审计日志\n- 大数据量接口必须分页，支持游标分页\n\n## 输出风格\n- 先给出技术方案概述和数据流图\n- 代码包含完整的错误处理和类型定义\n- 标注性能注意点和扩展建议",
+      "enabled": false,
+      "priority": 3,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.094Z",
+        "updatedAt": "2026-04-06T04:17:04.094Z",
+        "tags": [
+          "agent",
+          "backend",
+          "architecture"
+        ]
+      }
+    },
+    {
+      "id": "18755bb8-8792-434f-951c-98f550b332ce",
+      "name": "产品经理",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名技术型产品经理，擅长将业务需求转化为技术方案。\n\n## 专长领域\n- 需求分析与用户故事编写\n- 功能优先级排序（MoSCoW / RICE 模型）\n- PRD 文档和原型设计\n- 数据驱动决策，关键指标定义\n- 竞品分析和差异化策略\n\n## 行为准则\n- 需求必须包含：背景、目标用户、核心场景、验收标准\n- 功能拆分到可独立交付的最小单元\n- 每个需求标注优先级和预估复杂度\n- 考虑边界情况和异常流程\n- 兼顾用户体验和技术可行性\n\n## 输出风格\n- 结构化输出：背景 → 目标 → 方案 → 验收标准\n- 使用表格呈现功能列表和优先级\n- 关键决策给出理由和替代方案",
+      "enabled": false,
+      "priority": 4,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.094Z",
+        "updatedAt": "2026-04-06T04:17:04.094Z",
+        "tags": [
+          "agent",
+          "product",
+          "planning"
+        ]
+      }
+    },
+    {
+      "id": "4f926b7d-61a3-47a9-992e-f7e3809f6763",
+      "name": "数据库架构师",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名数据库架构师，精通关系型和非关系型数据库设计。\n\n## 专长领域\n- PostgreSQL / MySQL 表结构设计与优化\n- 索引策略、查询优化、执行计划分析\n- 数据库迁移和版本管理\n- Redis 缓存策略设计\n- 数据备份、恢复和高可用方案\n\n## 行为准则\n- 表设计遵循第三范式，适当反范式化提升查询性能\n- 主键优先使用自增 ID 或 UUID，避免业务字段做主键\n- 所有外键必须建立索引\n- 大表操作必须考虑锁和并发影响\n- 敏感字段加密存储\n- DDL 变更必须可回滚\n\n## 输出风格\n- 给出完整的 CREATE TABLE 语句和索引定义\n- 包含字段注释说明业务含义\n- 复杂查询附带执行计划分析建议",
+      "enabled": false,
+      "priority": 5,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.095Z",
+        "updatedAt": "2026-04-06T04:17:04.095Z",
+        "tags": [
+          "agent",
+          "database",
+          "sql"
+        ]
+      }
+    },
+    {
+      "id": "738c842f-0ffa-4728-97eb-72c2813f699b",
+      "name": "全栈工程师",
+      "category": "agent",
+      "content": "## 角色定义\n你是一名全栈工程师，前后端兼修，擅长独立交付完整功能。\n\n## 专长领域\n- 前端：React / Vue 3 + TypeScript + Tailwind CSS\n- 后端：Node.js / Express / NestJS\n- 数据库：PostgreSQL / MongoDB / Redis\n- 工具链：Vite、Webpack、Docker、Git\n- 实时通信：WebSocket、SSE\n\n## 行为准则\n- 前后端接口先定义类型契约，再分别实现\n- API 返回统一格式 { success, data, error }\n- 前端状态与后端数据保持一致性\n- 环境配置通过 .env 管理，不硬编码\n- 代码变更前后端同步修改，不留断裂接口\n\n## 输出风格\n- 按前端 → 接口定义 → 后端 → 数据库的顺序输出\n- 每个文件标注路径和修改原因\n- 关键逻辑添加注释说明",
+      "enabled": false,
+      "priority": 6,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.095Z",
+        "updatedAt": "2026-04-06T04:17:04.095Z",
+        "tags": [
+          "agent",
+          "fullstack",
+          "web"
+        ]
+      }
+    },
+    {
+      "id": "27e4cba2-b0f3-4090-9b9d-f10ce7757e5a",
+      "name": "测试编写规范",
+      "category": "skill",
+      "content": "- 使用 AAA 模式: Arrange -> Act -> Assert\n- 每个测试只验证一个行为\n- 覆盖正常路径、边界条件、异常路径\n- Mock 外部依赖, 不 Mock 被测模块内部实现\n- 使用 async/await 而非回调\n- 测试之间相互独立, 不依赖执行顺序",
+      "enabled": false,
+      "priority": 7,
+      "condition": {
+        "filePattern": "**/*.test.*"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.095Z",
+        "updatedAt": "2026-04-06T04:17:04.095Z",
+        "tags": [
+          "testing"
+        ]
+      }
+    },
+    {
+      "id": "4676a23c-26ee-42e6-b24b-0405300caef5",
+      "name": "后端 API 设计规范",
+      "category": "skill",
+      "content": "- RESTful: 名词复数路径, HTTP 方法语义正确\n- 统一 JSON 响应: { success, data?, error? }\n- 所有输入参数必须验证类型和范围\n- SQL 参数使用参数化查询, 禁止拼接\n- 敏感操作需要认证和授权\n- 限制请求频率, 防止暴力攻击",
+      "enabled": false,
+      "priority": 8,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.096Z",
+        "updatedAt": "2026-04-06T04:17:04.096Z",
+        "tags": [
+          "api",
+          "backend"
+        ]
+      }
+    },
+    {
+      "id": "3e61df0e-b722-4756-a425-55b972d30086",
+      "name": "性能优化指南",
+      "category": "skill",
+      "content": "- 避免不必要的重渲染：使用 memo/useMemo/computed 缓存计算结果\n- 大列表使用虚拟滚动（virtual scroll），不一次性渲染全部 DOM\n- 图片懒加载 + WebP 格式 + 适当压缩\n- 网络请求：合并请求、使用缓存策略、避免瀑布式请求\n- 代码分割：路由级懒加载，动态 import() 拆分大模块\n- 避免同步阻塞操作：大数据处理使用 Web Worker 或分片执行\n- 数据库查询：添加合适索引、避免 N+1 查询、使用分页\n- 内存泄漏：及时清理定时器、事件监听、订阅\n- 使用 Performance API / Lighthouse 量化优化效果",
+      "enabled": false,
+      "priority": 9,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.097Z",
+        "updatedAt": "2026-04-06T04:17:04.097Z",
+        "tags": [
+          "performance",
+          "optimization"
+        ]
+      }
+    },
+    {
+      "id": "b34d80b2-2119-4008-9a49-edb84ecc7f55",
+      "name": "安全编码规范",
+      "category": "skill",
+      "content": "- 输入验证：所有用户输入必须校验类型、长度、范围和格式\n- XSS 防护：输出到 HTML 时转义特殊字符，使用 CSP 策略\n- SQL 注入：只使用参数化查询，禁止字符串拼接 SQL\n- CSRF 防护：表单使用 CSRF Token，API 使用 SameSite Cookie\n- 认证安全：密码使用 bcrypt/argon2 哈希，JWT 设置合理过期时间\n- 授权检查：每个 API 端点验证用户权限，遵循最小权限原则\n- 敏感数据：API Key、密码等使用环境变量，日志中脱敏处理\n- 依赖安全：定期扫描依赖漏洞（npm audit / snyk）\n- HTTPS：生产环境强制 HTTPS，设置 HSTS 头\n- 错误处理：不向客户端暴露内部错误详情和堆栈信息",
+      "enabled": false,
+      "priority": 10,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.098Z",
+        "updatedAt": "2026-04-06T04:17:04.098Z",
+        "tags": [
+          "security",
+          "audit"
+        ]
+      }
+    },
+    {
+      "id": "97c6cbbf-46aa-4ee2-9bf8-b767f967286d",
+      "name": "代码重构技巧",
+      "category": "skill",
+      "content": "- 提取方法：超过 20 行的代码块考虑提取为独立函数\n- 消除重复：相同逻辑出现 3 次以上必须抽取为公共函数\n- 简化条件：使用卫语句（早返回）减少嵌套层级\n- 替换魔法数字：使用命名常量提高可读性\n- 拆分大类：单个类/文件超过 300 行考虑拆分职责\n- 参数对象化：函数参数超过 3 个时使用对象参数\n- 统一错误处理：抽取通用的错误处理中间件或装饰器\n- 接口隔离：大接口拆分为小接口，客户端只依赖需要的部分\n- 重构步骤：先写测试 → 小步修改 → 每步验证 → 提交",
+      "enabled": false,
+      "priority": 11,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.098Z",
+        "updatedAt": "2026-04-06T04:17:04.098Z",
+        "tags": [
+          "refactoring",
+          "clean-code"
+        ]
+      }
+    },
+    {
+      "id": "6ed43417-811c-428d-b4be-f457bc46f2cc",
+      "name": "数据库设计规范",
+      "category": "skill",
+      "content": "- 表名使用 snake_case 复数形式，字段名 snake_case\n- 每张表必须有主键，优先自增 ID 或 UUID\n- 外键字段命名为 <关联表单数>_id，并创建索引\n- 必须包含 created_at / updated_at 时间戳字段\n- 使用 NOT NULL + DEFAULT 约束，减少空值处理\n- 枚举值使用 CHECK 约束或独立字典表\n- 大文本字段（如 JSON）使用 TEXT 类型，非 VARCHAR\n- 金额使用 DECIMAL/NUMERIC，禁止 FLOAT\n- 索引策略：高频查询字段建索引，联合索引遵循最左前缀\n- 数据库迁移使用版本化脚本，支持回滚",
+      "enabled": false,
+      "priority": 12,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.099Z",
+        "updatedAt": "2026-04-06T04:17:04.099Z",
+        "tags": [
+          "database",
+          "sql",
+          "design"
+        ]
+      }
+    },
+    {
+      "id": "c4ca94cb-5b78-4cae-abb4-4fd76b7351f2",
+      "name": "Git 协作规范",
+      "category": "skill",
+      "content": "- 分支策略：main(生产) / develop(开发) / feature/* / fix/* / release/*\n- 提交信息遵循 Conventional Commits：feat / fix / docs / refactor / chore\n- 每次提交只包含一个逻辑变更，保持原子性\n- 提交前运行 lint 和格式化检查\n- PR 描述包含：变更内容、影响范围、测试方法\n- 合并策略：feature 用 squash merge，release 用 merge commit\n- 冲突解决后必须重新测试\n- Tag 规范：v{major}.{minor}.{patch}，遵循 SemVer",
+      "enabled": false,
+      "priority": 13,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.099Z",
+        "updatedAt": "2026-04-06T04:17:04.099Z",
+        "tags": [
+          "git",
+          "collaboration"
+        ]
+      }
+    },
+    {
+      "id": "882b2eed-76ee-4123-a507-707579028823",
+      "name": "Git 提交工作流",
+      "category": "workflow",
+      "content": "- 提交前运行 lint 和格式化检查\n- 提交信息遵循 Conventional Commits: feat/fix/docs/refactor/chore\n- 每次提交只包含一个逻辑变更\n- 提交前 review diff, 确保没有遗留调试代码\n- 分支命名: feature/xxx, fix/xxx, refactor/xxx\n- PR 合并前必须通过 CI 检查和至少一人 Code Review",
+      "enabled": false,
+      "priority": 14,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.100Z",
+        "updatedAt": "2026-04-06T04:17:04.100Z",
+        "tags": [
+          "git",
+          "workflow",
+          "commit"
+        ]
+      }
+    },
+    {
+      "id": "73cbfc8c-35a9-4454-8ad2-9a6f111f2a21",
+      "name": "项目初始化工作流",
+      "category": "workflow",
+      "content": "- 创建项目目录结构和基础配置文件\n- 初始化版本控制 (git init)\n- 安装核心依赖和开发依赖\n- 配置 ESLint/Prettier/EditorConfig 统一代码风格\n- 配置 TypeScript (tsconfig.json)\n- 创建环境变量模板 (.env.example)\n- 编写 README.md 包含启动和部署说明\n- 配置 CI/CD 流水线基础模板",
+      "enabled": false,
+      "priority": 15,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.100Z",
+        "updatedAt": "2026-04-06T04:17:04.100Z",
+        "tags": [
+          "workflow",
+          "init",
+          "setup"
+        ]
+      }
+    },
+    {
+      "id": "da46409c-abf3-44bb-899f-6ce6181cc56f",
+      "name": "发布部署工作流",
+      "category": "workflow",
+      "content": "- 更新版本号 (package.json / pubspec.yaml 等)\n- 运行完整测试套件确保通过\n- 生成 CHANGELOG 并提交\n- 创建 Git Tag 标记版本\n- 构建生产包 (build)\n- 部署到对应环境 (staging → production)\n- 验证部署结果, 检查关键功能\n- 通知团队发布完成",
+      "enabled": false,
+      "priority": 16,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.101Z",
+        "updatedAt": "2026-04-06T04:17:04.101Z",
+        "tags": [
+          "workflow",
+          "deploy",
+          "release"
+        ]
+      }
+    },
+    {
+      "id": "c2c349d9-15a7-4494-bc6b-ded35b8971b2",
+      "name": "代码审查工作流",
+      "category": "workflow",
+      "content": "1. **准备阶段**\n   - 确认 PR 描述完整：变更内容、影响范围、测试方法\n   - 拉取分支到本地，确保能编译通过\n\n2. **结构审查**\n   - 检查文件组织是否合理，是否有不属于本次变更的文件\n   - 确认新增依赖是否必要，版本是否合适\n\n3. **逻辑审查**\n   - 逐文件阅读变更，关注业务逻辑正确性\n   - 检查边界条件、错误处理、并发安全\n\n4. **质量审查**\n   - 命名规范、代码风格一致性\n   - 是否有重复代码可提取\n   - 注释是否充分（why not what）\n\n5. **安全审查**\n   - 用户输入是否校验\n   - 敏感数据是否脱敏\n   - SQL 是否使用参数化查询\n\n6. **反馈**\n   - 问题分级：必须修复 / 建议改进 / 可选优化\n   - 给出具体修复建议，必要时附代码示例",
+      "enabled": false,
+      "priority": 17,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.103Z",
+        "updatedAt": "2026-04-06T04:17:04.103Z",
+        "tags": [
+          "workflow",
+          "review",
+          "quality"
+        ]
+      }
+    },
+    {
+      "id": "8b36128c-6d23-43ea-bd7e-a580e025aaaa",
+      "name": "Bug 修复工作流",
+      "category": "workflow",
+      "content": "1. **复现**\n   - 确认复现步骤和预期/实际行为\n   - 记录环境信息（OS、浏览器、Node 版本等）\n\n2. **定位**\n   - 阅读错误日志和堆栈信息\n   - 使用断点或 console.log 缩小范围\n   - 找到根本原因（root cause），不是表面症状\n\n3. **修复**\n   - 最小化修改，只改必要的代码\n   - 优先修上游原因，避免下游打补丁\n   - 添加防御性代码防止同类问题\n\n4. **验证**\n   - 确认原始 Bug 已修复\n   - 检查是否引入新问题（回归测试）\n   - 边界条件和异常路径测试\n\n5. **收尾**\n   - 提交信息：fix: 描述修复内容 (#issue编号)\n   - 更新相关文档或注释\n   - 通知报告者验证",
+      "enabled": false,
+      "priority": 18,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.103Z",
+        "updatedAt": "2026-04-06T04:17:04.103Z",
+        "tags": [
+          "workflow",
+          "bugfix",
+          "debug"
+        ]
+      }
+    },
+    {
+      "id": "c2e5eb46-12ae-4b8a-a3ab-4cab11f32f51",
+      "name": "功能开发工作流",
+      "category": "workflow",
+      "content": "1. **需求理解**\n   - 阅读需求文档/Issue，确认验收标准\n   - 梳理技术方案，评估复杂度和影响范围\n   - 与相关人员对齐理解\n\n2. **设计**\n   - 确定数据结构和接口定义\n   - 拆分子任务，估算工时\n   - 考虑兼容性和扩展性\n\n3. **开发**\n   - 从 develop 创建 feature/xxx 分支\n   - 小步提交，每个 commit 可独立编译运行\n   - 关键逻辑添加注释和日志\n\n4. **自测**\n   - 覆盖正常流程和异常流程\n   - 边界值测试\n   - 兼容性测试（不同浏览器/设备）\n\n5. **提交**\n   - 提交信息：feat: 功能描述\n   - 创建 PR，填写描述和测试方法\n   - 请求 Code Review\n\n6. **合并**\n   - Review 通过后 squash merge 到 develop\n   - 清理 feature 分支",
+      "enabled": false,
+      "priority": 19,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.104Z",
+        "updatedAt": "2026-04-06T04:17:04.104Z",
+        "tags": [
+          "workflow",
+          "feature",
+          "development"
+        ]
+      }
+    },
+    {
+      "id": "784672b6-9a2c-4376-a62d-d91fe8487fc6",
+      "name": "Vue 3 编码规范",
+      "category": "rule",
+      "content": "- 必须使用 Composition API + <script setup> 语法\n- 组件命名使用 PascalCase\n- Props 必须使用 TypeScript 定义类型\n- 优先使用 ref() 而非 reactive()\n- computed 用于派生状态, 不要在 computed 中产生副作用\n- 模板中不要有复杂逻辑, 抽取为 computed 或方法\n- 可复用逻辑抽取为 composables (use*.ts)\n- 使用 scoped 样式或 CSS Modules",
+      "enabled": false,
+      "priority": 20,
+      "condition": {
+        "filePattern": "**/*.vue"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.104Z",
+        "updatedAt": "2026-04-06T04:17:04.104Z",
+        "tags": [
+          "vue",
+          "frontend"
+        ]
+      }
+    },
+    {
+      "id": "732a7752-e1b1-465c-b91c-c39ff6062584",
+      "name": "TypeScript 严格模式",
+      "category": "rule",
+      "content": "- 禁止使用 any, 使用 unknown 替代不确定类型\n- 所有函数必须声明参数类型和返回类型\n- 使用 interface 定义对象结构, type 用于联合类型\n- 使用可选链 ?. 和空值合并 ?? 替代 && 和 ||\n- 优先使用 const enum 或字面量联合类型\n- 泛型参数使用有意义的名称",
+      "enabled": false,
+      "priority": 21,
+      "condition": {
+        "filePattern": "**/*.ts"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.105Z",
+        "updatedAt": "2026-04-06T04:17:04.105Z",
+        "tags": [
+          "typescript"
+        ]
+      }
+    },
+    {
+      "id": "eb249639-d283-4285-86f2-76ec584d9ba0",
+      "name": "Flutter 开发规范",
+      "category": "rule",
+      "content": "- 使用 StatelessWidget 优先, 仅在需要状态时用 StatefulWidget\n- 状态管理优先 Riverpod > Provider > setState\n- Widget 拆分遵循单一职责, 避免超过 100 行的 build 方法\n- 使用 const 构造函数减少重建, 尽量标注 const\n- 资源 (颜色/字体/间距) 统一在 theme 中定义\n- 异步操作使用 async/await, 避免嵌套 then\n- 禁止在 build 方法内做耗时运算或 I/O\n- 图片使用 cached_network_image, 避免重复加载\n- 路由统一使用 GoRouter 或命名路由管理",
+      "enabled": false,
+      "priority": 22,
+      "condition": {
+        "filePattern": "**/*.dart"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.106Z",
+        "updatedAt": "2026-04-06T04:17:04.106Z",
+        "tags": [
+          "flutter",
+          "dart",
+          "mobile"
+        ]
+      }
+    },
+    {
+      "id": "8c92ed89-d7eb-45b9-ba95-82f0243dcdbe",
+      "name": "C# 编码规范",
+      "category": "rule",
+      "content": "- 使用 PascalCase 命名类/方法/属性, camelCase 命名局部变量\n- 优先使用 record 定义不可变数据对象\n- 异步方法必须以 Async 结尾并返回 Task/Task<T>\n- 使用 using 声明而非 using 语句块管理资源\n- 依赖注入优先构造函数注入, 避免服务定位器模式\n- LINQ 查询优先方法链形式, 避免嵌套查询表达式\n- 异常处理: 只 catch 能处理的异常, 记录日志后重新抛出\n- 使用 nullable 引用类型, 所有公共 API 参数需 null 检查\n- 单元测试使用 xUnit + Moq, 遵循 Arrange-Act-Assert 模式",
+      "enabled": false,
+      "priority": 23,
+      "condition": {
+        "filePattern": "**/*.cs"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.106Z",
+        "updatedAt": "2026-04-06T04:17:04.106Z",
+        "tags": [
+          "csharp",
+          "dotnet",
+          "backend"
+        ]
+      }
+    },
+    {
+      "id": "400afc50-3611-48b1-ac4a-f2b5a249fcf6",
+      "name": "Java 编码规范",
+      "category": "rule",
+      "content": "- 类/接口 PascalCase, 方法/变量 camelCase, 常量 UPPER_SNAKE_CASE\n- 优先使用 Java 17+ 特性: record、sealed class、pattern matching\n- Stream API 用于集合操作, 避免传统 for 循环处理集合\n- 使用 Optional<T> 替代 null 返回值\n- Spring Boot: Controller 只处理 HTTP 映射, 业务逻辑下沉到 Service\n- 数据库操作使用 JPA Repository 或 MyBatis Mapper, 禁止 SQL 拼接\n- 异常统一使用 @ControllerAdvice 处理, 返回标准 ApiResponse\n- 日志使用 SLF4J + Logback, 禁止使用 System.out.println\n- 单元测试使用 JUnit 5 + Mockito, 集成测试使用 @SpringBootTest",
+      "enabled": false,
+      "priority": 24,
+      "condition": {
+        "filePattern": "**/*.java"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.108Z",
+        "updatedAt": "2026-04-06T04:17:04.108Z",
+        "tags": [
+          "java",
+          "backend",
+          "spring"
+        ]
+      }
+    },
+    {
+      "id": "59b8a81e-bca6-45f0-a27f-8a66fb1db20d",
+      "name": "React 编码规范",
+      "category": "rule",
+      "content": "- 函数组件 + Hooks，禁止使用 Class 组件\n- 组件命名 PascalCase，文件名与组件名一致\n- Props 使用 TypeScript interface 定义，必须标注类型\n- 状态管理：局部用 useState，跨组件用 Context 或 Zustand\n- 使用 useMemo / useCallback 避免不必要的重渲染\n- 副作用统一在 useEffect 中处理，注意依赖数组完整性\n- 列表渲染必须提供稳定的 key，禁止使用 index 作为 key\n- 条件渲染优先使用 && 或三元表达式，避免嵌套 if\n- 样式方案：Tailwind CSS 或 CSS Modules，避免内联样式\n- 自定义 Hook 以 use 开头，封装可复用逻辑",
+      "enabled": false,
+      "priority": 25,
+      "condition": {
+        "filePattern": "**/*.tsx"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.109Z",
+        "updatedAt": "2026-04-06T04:17:04.109Z",
+        "tags": [
+          "react",
+          "frontend"
+        ]
+      }
+    },
+    {
+      "id": "1cafb56d-3aa9-4944-86a9-72244fecd2ea",
+      "name": "Python 编码规范",
+      "category": "rule",
+      "content": "- 遵循 PEP 8 风格指南，使用 black 格式化\n- 类名 PascalCase，函数/变量 snake_case，常量 UPPER_SNAKE_CASE\n- 使用 Type Hints 标注函数参数和返回值\n- 优先使用 f-string 格式化字符串\n- 列表推导式替代简单的 for+append，但避免过长的推导式\n- 使用 with 语句管理文件和连接等资源\n- 异常处理指定具体异常类型，禁止 bare except\n- 使用 dataclass 或 Pydantic 定义数据模型\n- 虚拟环境隔离依赖，requirements.txt 锁定版本\n- 使用 pytest 编写测试，覆盖率 > 80%",
+      "enabled": false,
+      "priority": 26,
+      "condition": {
+        "filePattern": "**/*.py"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.110Z",
+        "updatedAt": "2026-04-06T04:17:04.110Z",
+        "tags": [
+          "python",
+          "backend"
+        ]
+      }
+    },
+    {
+      "id": "d344054a-7b08-44ac-83c5-36f554595c26",
+      "name": "Go 编码规范",
+      "category": "rule",
+      "content": "- 包名小写单词，不使用下划线或混合大小写\n- 导出标识符 PascalCase，内部标识符 camelCase\n- 错误处理：每个 error 必须检查，不要忽略 _ = err\n- 使用 errors.Is / errors.As 替代 == 比较错误\n- 接口小而精：通常 1-3 个方法，由使用方定义\n- goroutine 必须有退出机制，使用 context 控制生命周期\n- channel 使用完毕必须 close，避免 goroutine 泄漏\n- 使用 defer 确保资源释放（文件、锁、连接）\n- 结构体字段使用 json tag 标注序列化名称\n- 使用 go vet / golangci-lint 进行静态分析",
+      "enabled": false,
+      "priority": 27,
+      "condition": {
+        "filePattern": "**/*.go"
+      },
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.110Z",
+        "updatedAt": "2026-04-06T04:17:04.110Z",
+        "tags": [
+          "golang",
+          "backend"
+        ]
+      }
+    },
+    {
+      "id": "f5be5948-90eb-4306-9242-9cd67215fc51",
+      "name": "代码审查规范",
+      "category": "context",
+      "content": "- 函数长度不超过 50 行, 文件不超过 300 行\n- 嵌套不超过 3 层, 使用早返回减少嵌套\n- 避免魔法数字, 使用命名常量\n- 变量/函数 camelCase, 类/接口 PascalCase, 常量 UPPER_SNAKE_CASE\n- 不要吞掉异常 (空 catch)\n- 注释说明 why 而非 what, 使用中文注释",
+      "enabled": false,
+      "priority": 28,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.111Z",
+        "updatedAt": "2026-04-06T04:17:04.111Z",
+        "tags": [
+          "review",
+          "quality"
+        ]
+      }
+    },
+    {
+      "id": "fa9b67f9-2750-4aab-a61b-e3b4e1dd15ad",
+      "name": "项目概述上下文",
+      "category": "context",
+      "content": "## 项目信息\n- 项目名称：[填写项目名称]\n- 项目类型：[Web 应用 / 桌面应用 / 移动应用 / 后端服务 / CLI 工具]\n- 主要语言：[TypeScript / Python / Java / Go / C# / Dart]\n- 框架：[Vue 3 / React / NestJS / Spring Boot / Flutter]\n- 包管理器：[yarn / npm / pnpm / pip / gradle]\n\n## 目录结构\n```\nsrc/           # 源码目录\n  components/  # 组件\n  services/    # 服务层\n  types/       # 类型定义\n  utils/       # 工具函数\n```\n\n## 开发约定\n- 代码风格：[填写]\n- 分支策略：[填写]\n- 部署方式：[填写]\n\n## 注意事项\n- [填写项目特殊约定]",
+      "enabled": false,
+      "priority": 29,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.111Z",
+        "updatedAt": "2026-04-06T04:17:04.111Z",
+        "tags": [
+          "context",
+          "project",
+          "overview"
+        ]
+      }
+    },
+    {
+      "id": "e2c6dccd-0998-486a-9668-564edaa1e8bc",
+      "name": "调试排错上下文",
+      "category": "context",
+      "content": "## 调试原则\n- 先复现问题，记录复现步骤和环境信息\n- 从错误日志和堆栈信息入手，定位出错位置\n- 使用二分法缩小问题范围（注释代码 / git bisect）\n- 区分根本原因和表面症状，修复根因\n\n## 常见问题排查\n- **编译错误**：检查类型定义、导入路径、依赖版本\n- **运行时错误**：检查空值、数组越界、异步时序\n- **样式问题**：检查选择器优先级、z-index 层级、flex 布局\n- **性能问题**：检查 N+1 查询、内存泄漏、不必要的重渲染\n- **网络问题**：检查 CORS、请求格式、认证信息、超时设置\n\n## 调试工具\n- 浏览器 DevTools：Network / Console / Performance / Memory\n- Node.js：--inspect 调试 / node --prof 性能分析\n- 数据库：EXPLAIN ANALYZE 分析慢查询",
+      "enabled": false,
+      "priority": 30,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.112Z",
+        "updatedAt": "2026-04-06T04:17:04.112Z",
+        "tags": [
+          "context",
+          "debug",
+          "troubleshoot"
+        ]
+      }
+    },
+    {
+      "id": "a3b81a35-5990-4a5a-95d7-0d2ee1f44e6d",
+      "name": "架构设计上下文",
+      "category": "context",
+      "content": "## 架构原则\n- 单一职责：每个模块/类只负责一件事\n- 开闭原则：对扩展开放，对修改关闭\n- 依赖倒置：高层模块不依赖低层模块，都依赖抽象\n- 接口隔离：客户端不应被迫依赖不使用的接口\n\n## 分层架构\n```\n┌─────────────┐\n│  表现层      │ ← UI 组件、页面路由\n├─────────────┤\n│  业务逻辑层  │ ← Service、Store、Composable\n├─────────────┤\n│  数据访问层  │ ← Repository、API Client\n├─────────────┤\n│  基础设施层  │ ← 数据库、缓存、消息队列\n└─────────────┘\n```\n\n## 设计决策记录\n- 使用 [技术/框架] 的原因：[填写]\n- 关键取舍：[填写]\n- 未来扩展方向：[填写]",
+      "enabled": false,
+      "priority": 31,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.113Z",
+        "updatedAt": "2026-04-06T04:17:04.113Z",
+        "tags": [
+          "context",
+          "architecture",
+          "design"
+        ]
+      }
+    },
+    {
+      "id": "a7f8e3ce-fed6-4c66-976e-9ec24a0248c6",
+      "name": "技术栈上下文",
+      "category": "context",
+      "content": "## 前端技术栈\n- 框架：Vue 3 / React 19 + TypeScript\n- 构建：Vite 5\n- UI 库：Ant Design Vue / shadcn/ui\n- 样式：Tailwind CSS\n- 状态管理：Pinia / Zustand\n- 路由：Vue Router / React Router\n- HTTP：Axios / fetch\n- 图标：Lucide Icons\n\n## 后端技术栈\n- 运行时：Node.js 20 LTS\n- 框架：Express / NestJS\n- 数据库：PostgreSQL 16\n- 缓存：Redis 7\n- ORM：Prisma / TypeORM\n- 认证：JWT + bcrypt\n- 日志：Winston / Pino\n\n## 工具链\n- 包管理：Yarn 1.22\n- 代码风格：ESLint + Prettier\n- 版本控制：Git\n- CI/CD：GitHub Actions\n- 容器化：Docker + docker-compose\n- 部署：Nginx 反向代理",
+      "enabled": false,
+      "priority": 32,
+      "metadata": {
+        "author": "user",
+        "version": "1.0.0",
+        "createdAt": "2026-04-06T04:17:04.113Z",
+        "updatedAt": "2026-04-06T04:17:04.113Z",
+        "tags": [
+          "context",
+          "tech-stack",
+          "environment"
+        ]
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "id": "default",
+      "name": "默认",
+      "description": "默认配置集",
+      "ruleIds": [],
+      "isActive": true
+    }
+  ]
+}

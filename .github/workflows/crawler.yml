@@ -111,6 +111,14 @@ jobs:
       #     sleep ${DELAY}s
       #     echo "▶️  Delay finished. Starting crawler..."
 
+      - name: Restore output cache
+        uses: actions/cache@v4
+        with:
+          path: output
+          key: trendradar-${{ github.run_id }}
+          restore-keys: |
+            trendradar-
+
       - name: Set up Python
         if: success()
         uses: actions/setup-python@v5

@@ -314,20 +314,6 @@ def main():
                         # 回写翻译到 rss_items_list，使 HTML/推送显示双语
                         _apply_translations_to_rss_items(rss_items_list, rss_news_items)
 
-                        # 保存翻译后的 RSS 新闻数据 → output/news/
-                        rss_news_data = NewsData(
-                            date=rss_data.date,
-                            crawl_time=rss_data.crawl_time,
-                            items={},
-                            id_to_name=rss_data.id_to_name,
-                            failed_ids=rss_data.failed_ids,
-                        )
-                        for item in rss_news_items:
-                            if item.source_id not in rss_news_data.items:
-                                rss_news_data.items[item.source_id] = []
-                            rss_news_data.items[item.source_id].append(item)
-                        storage_manager.save_news_data(rss_news_data)
-
                     # 检测新增 RSS 条目
                     rss_new_items_list = None
                     new_items_dict = storage_manager.detect_new_rss_items(rss_data)
