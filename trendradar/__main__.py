@@ -373,6 +373,30 @@ def main():
         # ================================================================
         # C. 生成 HTML 报告 + 发送通知
         # ================================================================
+        # incremental 模式优化：按源分组 + RSS 只显示新增
+        if report_mode == "incremental" and not storage_manager.is_first_crawl_today():
+            # 热榜按平台分组（复用已有函数）
+            if hot_stats:
+                from trendradar.core.analyzer import convert_keyword_stats_to_platform_stats
+                hot_stats = convert_keyword_stats_to_platform_stats(
+                    hot_stats, ctx.weight_config, ctx.rank_threshold
+                )
+
+            # RSS 只显示新增，按订阅源分组
+            if rss_new_stats:
+                source_map = {}
+                for stat in rss_new_stats:
+                    for t in stat.get("titles", []):
+                        src = t.get("source_name", "未知")
+                        source_map.setdefault(src, []).append(t)
+                rss_stats = [
+                    {"word": src, "count": len(titles), "position": i, "titles": titles, "percentage": 0}
+                    for i, (src, titles) in enumerate(source_map.items())
+                ]
+            else:
+                rss_stats = None
+            rss_new_stats = None  # 去掉"RSS 本次新增"区块
+
         total_all = total_hot_titles + len(rss_items_list)
         all_failed = failed_ids + (rss_data.failed_ids if rss_data else [])
         all_id_to_name = {**id_to_name}
