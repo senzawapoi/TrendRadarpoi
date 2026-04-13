@@ -328,6 +328,12 @@ def main():
                         )
                         rss_new_items_list = _convert_rss_items_to_list(new_rss, ctx)
                         if rss_new_items_list:
+                            # 从已翻译的 rss_items_list 回写翻译到新增列表
+                            translated_map = {item.get("url", ""): item.get("title", "") for item in rss_items_list if item.get("url")}
+                            for new_item in rss_new_items_list:
+                                url = new_item.get("url", "")
+                                if url and url in translated_map:
+                                    new_item["title"] = translated_map[url]
                             print(f"[RSS] 检测到 {len(rss_new_items_list)} 条新增")
 
                     # RSS 关键词统计
