@@ -127,9 +127,67 @@ class TranslationService:
             print(f"[TranslationService] 翻译失败：{error_msg}")
             return False, ""
     
+    def batch_translate_titles(self, titles: List[str], source_lang: str = "en", target_lang: str = "zh", batch_size: int = 15) -> List[str]:
+        """
+        批量翻译标题（多个标题合并为一次 API 调用）
+        
+        Args:
+            titles: 待翻译标题列表
+            source_lang: 源语言
+            target_lang: 目标语言
+            batch_size: 每批大小
+            
+        Returns:
+            翻译结果列表（与输入等长，失败项为空字符串）
+        """
+        if not titles:
+            return []
+        
+        results = [""] * len(titles)
+        
+        for start in range(0, len(titles), batch_size):
+            batch = titles[start:start + batch_size]
+            numbered = "\n".join(f"{i+1}. {t}" for i, t in enumerate(batch))
+            
+            prompt = f"Translate each numbered line below to Chinese. Return ONLY the translations, one per line, with the same numbering. Do not add any explanation:\n\n{numbered}"
+            
+            try:
+                tools = self.translation_tools
+                translated_text = None
+                if tools.gemini_client:
+                    resp = tools.gemini_client.models.generate_content(
+                        model='gemini-2.0-flash', contents=prompt
+                    )
+                    translated_text = resp.text.strip()
+                elif tools.gemini_model:
+                    resp = tools.gemini_model.generate_content(prompt)
+                    translated_text = resp.text.strip()
+                
+                if translated_text:
+                    import re as _re
+                    lines = translated_text.strip().split("\n")
+                    for line in lines:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        m = _re.match(r'^(\d+)[.\)\uff0e]\s*(.+)', line)
+                        if m:
+                            idx = int(m.group(1)) - 1
+                            if 0 <= idx < len(batch):
+                                results[start + idx] = m.group(2).strip()
+            except Exception as e:
+                print(f"[TranslationService] 批量翻译失败: {e}")
+                # fallback: translate individually
+                for i, title in enumerate(batch):
+                    success, translated = self.translate_title(title, target_lang)
+                    if success and translated:
+                        results[start + i] = translated
+        
+        return results
+
     def translate_news_items(self, news_items: List[NewsItem], skip_existing: bool = True) -> int:
         """
-        批量翻译新闻条目（支持双语翻译）
+        批量翻译新闻条目（仅翻译英文→中文，跳过中文标题）
         
         Args:
             news_items: 新闻条目列表
@@ -142,49 +200,42 @@ class TranslationService:
             print("[TranslationService] 翻译工具未初始化，跳过翻译")
             return 0
         
-        translated_count = 0
-        total_processed = 0
+        # 分类：收集需要翻译的英文标题
+        en_indices = []  # (index_in_news_items,)
+        en_titles = []
+        skipped_zh = 0
         
-        for item in news_items:
-            # 检测是否为英文标题
+        for i, item in enumerate(news_items):
             is_english = self.is_english_title(item.title)
             item.is_english = is_english
             
-            # 确定源语言和目标语言
-            if is_english:
-                source_lang, target_lang = "en", "zh"
-                translated_field, english_field = "title_translated", "title_english"
-            else:
-                source_lang, target_lang = "zh", "en"
-                translated_field, english_field = "title_english", "title_translated"
+            if not is_english:
+                skipped_zh += 1
+                continue
             
-            # 检查是否需要翻译
-            if skip_existing:
-                existing_translation = getattr(item, translated_field, "")
-                if existing_translation:
-                    continue
+            if skip_existing and getattr(item, "title_translated", ""):
+                continue
             
-            total_processed += 1
-            
-            # 翻译标题
-            success, translated = self.translate_title(item.title, target_lang)
-            
-            if success and translated:
-                setattr(item, translated_field, translated)
-                translated_count += 1
-            
-            # 翻译摘要（如果存在）
-            if hasattr(item, 'summary') and item.summary:
-                summary_success, summary_translated = self.translate_text(item.summary, source_lang, target_lang)
-                if summary_success and summary_translated:
-                    summary_field = "summary_translated" if target_lang == "zh" else "summary_english"
-                    setattr(item, summary_field, summary_translated)
-            
-            # 进度显示（每 10 条或最后一条）
-            if total_processed % 10 == 0 or total_processed == len(news_items):
-                print(f"\r  翻译进度: {total_processed}/{len(news_items)}", end="", flush=True)
+            en_indices.append(i)
+            en_titles.append(item.title)
         
-        print(f"\n  翻译完成: {translated_count}/{total_processed} 条成功")
+        if skipped_zh > 0:
+            print(f"  跳过 {skipped_zh} 条中文标题（无需翻译）")
+        
+        if not en_titles:
+            print(f"  无需翻译的英文标题")
+            return 0
+        
+        print(f"  批量翻译 {len(en_titles)} 条英文标题...")
+        translations = self.batch_translate_titles(en_titles)
+        
+        translated_count = 0
+        for idx, trans in zip(en_indices, translations):
+            if trans:
+                news_items[idx].title_translated = trans
+                translated_count += 1
+        
+        print(f"  翻译完成: {translated_count}/{len(en_titles)} 条成功")
         return translated_count
     
     def translate_news_data(self, news_data: NewsData, skip_existing: bool = True) -> int:

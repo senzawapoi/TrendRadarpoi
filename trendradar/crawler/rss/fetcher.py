@@ -7,6 +7,7 @@ RSS 抓取器
 
 import time
 import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple, Callable
@@ -193,9 +194,12 @@ class RSSFetcher:
             print(f"[RSS] {feed.name}: {error}")
             return [], error
 
-    def fetch_all(self) -> RSSData:
+    def fetch_all(self, max_workers: int = 5) -> RSSData:
         """
-        抓取所有 RSS 源
+        并发抓取所有 RSS 源
+
+        Args:
+            max_workers: 最大并发线程数
 
         Returns:
             RSSData 对象
@@ -209,23 +213,24 @@ class RSSFetcher:
         crawl_time = now.strftime("%H:%M")
         crawl_date = now.strftime("%Y-%m-%d")
 
-        print(f"[RSS] 开始抓取 {len(self.feeds)} 个 RSS 源...")
+        print(f"[RSS] 开始并发抓取 {len(self.feeds)} 个 RSS 源 (max_workers={max_workers})...")
 
-        for i, feed in enumerate(self.feeds):
-            # 请求间隔（带随机波动）
-            if i > 0:
-                interval = self.request_interval / 1000
-                jitter = random.uniform(-0.2, 0.2) * interval
-                time.sleep(interval + jitter)
-
-            items, error = self.fetch_feed(feed)
-
+        for feed in self.feeds:
             id_to_name[feed.id] = feed.name
 
-            if error:
-                failed_ids.append(feed.id)
-            else:
-                all_items[feed.id] = items
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_feed = {executor.submit(self.fetch_feed, feed): feed for feed in self.feeds}
+            for future in as_completed(future_to_feed):
+                feed = future_to_feed[future]
+                try:
+                    items, error = future.result()
+                    if error:
+                        failed_ids.append(feed.id)
+                    else:
+                        all_items[feed.id] = items
+                except Exception as e:
+                    print(f"[RSS] {feed.name}: 线程异常: {e}")
+                    failed_ids.append(feed.id)
 
         total_items = sum(len(items) for items in all_items.values())
         print(f"[RSS] 抓取完成: {len(all_items)} 个源成功, {len(failed_ids)} 个失败, 共 {total_items} 条")
