@@ -145,12 +145,15 @@ class TranslationService:
         
         results = [""] * len(titles)
         
+        import re as _re
+        
         for start in range(0, len(titles), batch_size):
             batch = titles[start:start + batch_size]
             numbered = "\n".join(f"{i+1}. {t}" for i, t in enumerate(batch))
             
-            prompt = f"Translate each numbered line below to Chinese. Return ONLY the translations, one per line, with the same numbering. Do not add any explanation:\n\n{numbered}"
+            prompt = f"Translate each numbered line below to Chinese. Return ONLY the translations, one per line, keep the same numbering format (e.g. '1. ...'). Do not add any explanation:\n\n{numbered}"
             
+            parsed_count = 0
             try:
                 tools = self.translation_tools
                 translated_text = None
@@ -164,22 +167,42 @@ class TranslationService:
                     translated_text = resp.text.strip()
                 
                 if translated_text:
-                    import re as _re
-                    lines = translated_text.strip().split("\n")
+                    lines = [l.strip() for l in translated_text.strip().split("\n") if l.strip()]
+                    
+                    # 尝试按编号解析（支持 1. 1) 1、 1: 1- 1） 1．等格式）
                     for line in lines:
-                        line = line.strip()
-                        if not line:
-                            continue
-                        m = _re.match(r'^(\d+)[.\)\uff0e]\s*(.+)', line)
+                        m = _re.match(r'^(\d+)\s*[.\)\uff0e\u3001:\-\uff09]\s*(.+)', line)
                         if m:
                             idx = int(m.group(1)) - 1
                             if 0 <= idx < len(batch):
                                 results[start + idx] = m.group(2).strip()
+                                parsed_count += 1
+                    
+                    # 如果编号解析失败，按行顺序匹配
+                    if parsed_count < len(batch) // 2:
+                        non_empty = [l for l in lines if l]
+                        # 去掉可能的编号前缀
+                        cleaned = []
+                        for l in non_empty:
+                            c = _re.sub(r'^\d+\s*[.\)\uff0e\u3001:\-\uff09]\s*', '', l).strip()
+                            cleaned.append(c if c else l)
+                        if len(cleaned) == len(batch):
+                            for i, trans in enumerate(cleaned):
+                                results[start + i] = trans
+                            parsed_count = len(batch)
+                            print(f"  [batch] 编号解析失败，按行顺序匹配 {len(batch)} 条")
+                    
+                    print(f"  [batch] {start+1}-{start+len(batch)}: 解析 {parsed_count}/{len(batch)} 条")
+                
             except Exception as e:
-                print(f"[TranslationService] 批量翻译失败: {e}")
-                # fallback: translate individually
-                for i, title in enumerate(batch):
-                    success, translated = self.translate_title(title, target_lang)
+                print(f"[TranslationService] 批量翻译异常: {e}")
+            
+            # 回退：对解析失败的条目逐条翻译
+            failed_in_batch = [i for i in range(len(batch)) if not results[start + i]]
+            if failed_in_batch:
+                print(f"  [batch] 回退逐条翻译 {len(failed_in_batch)} 条...")
+                for i in failed_in_batch:
+                    success, translated = self.translate_title(batch[i], target_lang)
                     if success and translated:
                         results[start + i] = translated
         
