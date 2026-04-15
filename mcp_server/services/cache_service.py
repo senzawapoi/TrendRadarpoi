@@ -5,8 +5,8 @@
 """
 
 import time
-from typing import Any, Optional
 from threading import Lock
+from typing import Any
 
 
 class CacheService:
@@ -18,7 +18,7 @@ class CacheService:
         self._timestamps = {}
         self._lock = Lock()
 
-    def get(self, key: str, ttl: int = 900) -> Optional[Any]:
+    def get(self, key: str, ttl: int = 900) -> Any | None:
         """
         获取缓存数据
 

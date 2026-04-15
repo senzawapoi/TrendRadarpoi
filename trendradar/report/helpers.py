@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 报告辅助函数模块
 
@@ -6,7 +5,6 @@
 """
 
 import re
-from typing import List
 
 
 def clean_title(title: str) -> str:
@@ -59,7 +57,7 @@ def html_escape(text: str) -> str:
     )
 
 
-def format_rank_display(ranks: List[int], rank_threshold: int, format_type: str) -> str:
+def format_rank_display(ranks: list[int], rank_threshold: int, format_type: str) -> str:
     """格式化排名显示
 
     根据不同平台类型生成对应格式的排名字符串。
@@ -95,10 +93,7 @@ def format_rank_display(ranks: List[int], rank_threshold: int, format_type: str)
     elif format_type == "feishu":
         highlight_start = "<font color='red'>**"
         highlight_end = "**</font>"
-    elif format_type == "dingtalk":
-        highlight_start = "**"
-        highlight_end = "**"
-    elif format_type == "wework":
+    elif format_type == "dingtalk" or format_type == "wework":
         highlight_start = "**"
         highlight_end = "**"
     elif format_type == "telegram":

@@ -6,7 +6,6 @@
 
 import re
 from datetime import datetime, timedelta
-from typing import Tuple, Dict, Optional
 
 from .errors import InvalidParameterError
 
@@ -185,7 +184,7 @@ class DateParser:
             except ValueError as e:
                 raise InvalidParameterError(
                     f"无效的日期: {date_query}",
-                    suggestion=f"日期值错误: {str(e)}"
+                    suggestion=f"日期值错误: {e!s}"
                 )
 
         # 7. 尝试解析中文日期：MM月DD日 或 YYYY年MM月DD日
@@ -210,7 +209,7 @@ class DateParser:
             except ValueError as e:
                 raise InvalidParameterError(
                     f"无效的日期: {date_query}",
-                    suggestion=f"日期值错误: {str(e)}"
+                    suggestion=f"日期值错误: {e!s}"
                 )
 
         # 8. 尝试解析斜杠格式：YYYY/MM/DD 或 MM/DD
@@ -233,7 +232,7 @@ class DateParser:
             except ValueError as e:
                 raise InvalidParameterError(
                     f"无效的日期: {date_query}",
-                    suggestion=f"日期值错误: {str(e)}"
+                    suggestion=f"日期值错误: {e!s}"
                 )
 
         # 如果所有格式都不匹配
@@ -328,7 +327,7 @@ class DateParser:
             )
 
     @staticmethod
-    def resolve_date_range_expression(expression: str) -> Dict:
+    def resolve_date_range_expression(expression: str) -> dict:
         """
         将自然语言日期表达式解析为标准日期范围
 
@@ -426,7 +425,7 @@ class DateParser:
     def _calculate_date_range(
         normalized: str,
         today: datetime
-    ) -> Tuple[datetime, datetime, str]:
+    ) -> tuple[datetime, datetime, str]:
         """
         根据标准化的日期类型计算实际日期范围
 
@@ -490,7 +489,7 @@ class DateParser:
         return today, today, "今天（默认）"
 
     @staticmethod
-    def get_supported_expressions() -> Dict[str, list]:
+    def get_supported_expressions() -> dict[str, list]:
         """
         获取支持的日期表达式列表
 

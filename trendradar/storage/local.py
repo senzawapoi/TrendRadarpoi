@@ -1,23 +1,22 @@
-# coding=utf-8
 """
 本地存储后端 - SQLite + TXT/HTML
 
 使用 SQLite 作为主存储，支持可选的 TXT 快照和 HTML 报告
 """
 
-import sqlite3
-import shutil
-import pytz
 import re
+import shutil
+import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
 
-from trendradar.storage.base import StorageBackend, NewsItem, NewsData, RSSItem, RSSData
+import pytz
+
+from trendradar.storage.base import NewsData, NewsItem, RSSData, RSSItem, StorageBackend
 from trendradar.utils.time import (
-    get_configured_time,
     format_date_folder,
     format_time_filename,
+    get_configured_time,
 )
 from trendradar.utils.url import normalize_url
 
@@ -52,7 +51,7 @@ class LocalStorageBackend(StorageBackend):
         self.enable_txt = enable_txt
         self.enable_html = enable_html
         self.timezone = timezone
-        self._db_connections: Dict[str, sqlite3.Connection] = {}
+        self._db_connections: dict[str, sqlite3.Connection] = {}
 
     @property
     def backend_name(self) -> str:
@@ -66,7 +65,7 @@ class LocalStorageBackend(StorageBackend):
         """获取配置时区的当前时间"""
         return get_configured_time(self.timezone)
 
-    def _format_date_folder(self, date: Optional[str] = None) -> str:
+    def _format_date_folder(self, date: str | None = None) -> str:
         """格式化日期文件夹名 (ISO 格式: YYYY-MM-DD)"""
         return format_date_folder(date, self.timezone)
 
@@ -74,7 +73,7 @@ class LocalStorageBackend(StorageBackend):
         """格式化时间文件名 (格式: HH-MM)"""
         return format_time_filename(self.timezone)
 
-    def _get_db_path(self, date: Optional[str] = None, db_type: str = "news") -> Path:
+    def _get_db_path(self, date: str | None = None, db_type: str = "news") -> Path:
         """
         获取 SQLite 数据库路径
 
@@ -94,7 +93,7 @@ class LocalStorageBackend(StorageBackend):
         db_dir.mkdir(parents=True, exist_ok=True)
         return db_dir / f"{date_str}.db"
 
-    def _get_connection(self, date: Optional[str] = None, db_type: str = "news") -> sqlite3.Connection:
+    def _get_connection(self, date: str | None = None, db_type: str = "news") -> sqlite3.Connection:
         """
         获取数据库连接（带缓存）
 
@@ -140,7 +139,7 @@ class LocalStorageBackend(StorageBackend):
         schema_path = self._get_schema_path(db_type)
 
         if schema_path.exists():
-            with open(schema_path, "r", encoding="utf-8") as f:
+            with open(schema_path, encoding="utf-8") as f:
                 schema_sql = f.read()
             conn.executescript(schema_sql)
         else:
@@ -354,7 +353,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 保存失败: {e}")
             return False
 
-    def get_today_all_data(self, date: Optional[str] = None) -> Optional[NewsData]:
+    def get_today_all_data(self, date: str | None = None) -> NewsData | None:
         """
         获取指定日期的所有新闻数据（合并后）
 
@@ -390,7 +389,7 @@ class LocalStorageBackend(StorageBackend):
             news_ids = [row[0] for row in rows]
 
             # 批量查询排名历史
-            rank_history_map: Dict[int, List[int]] = {}
+            rank_history_map: dict[int, list[int]] = {}
             if news_ids:
                 placeholders = ",".join("?" * len(news_ids))
                 cursor.execute(f"""
@@ -406,8 +405,8 @@ class LocalStorageBackend(StorageBackend):
                         rank_history_map[news_id].append(rank)
 
             # 按 platform_id 分组
-            items: Dict[str, List[NewsItem]] = {}
-            id_to_name: Dict[str, str] = {}
+            items: dict[str, list[NewsItem]] = {}
+            id_to_name: dict[str, str] = {}
             crawl_date = self._format_date_folder(date)
 
             for row in rows:
@@ -471,7 +470,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 读取数据失败: {e}")
             return None
 
-    def get_latest_crawl_data(self, date: Optional[str] = None) -> Optional[NewsData]:
+    def get_latest_crawl_data(self, date: str | None = None) -> NewsData | None:
         """
         获取最新一次抓取的数据
 
@@ -520,7 +519,7 @@ class LocalStorageBackend(StorageBackend):
             news_ids = [row[0] for row in rows]
 
             # 批量查询排名历史
-            rank_history_map: Dict[int, List[int]] = {}
+            rank_history_map: dict[int, list[int]] = {}
             if news_ids:
                 placeholders = ",".join("?" * len(news_ids))
                 cursor.execute(f"""
@@ -535,8 +534,8 @@ class LocalStorageBackend(StorageBackend):
                     if rank not in rank_history_map[news_id]:
                         rank_history_map[news_id].append(rank)
 
-            items: Dict[str, List[NewsItem]] = {}
-            id_to_name: Dict[str, str] = {}
+            items: dict[str, list[NewsItem]] = {}
+            id_to_name: dict[str, str] = {}
             crawl_date = self._format_date_folder(date)
 
             for row in rows:
@@ -587,7 +586,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 获取最新数据失败: {e}")
             return None
 
-    def detect_new_titles(self, current_data: NewsData) -> Dict[str, Dict]:
+    def detect_new_titles(self, current_data: NewsData) -> dict[str, dict]:
         """
         检测新增的标题
 
@@ -616,7 +615,7 @@ class LocalStorageBackend(StorageBackend):
 
             # 收集历史标题（first_time < current_time 的标题）
             # 这样可以正确处理同一标题因 URL 变化而产生多条记录的情况
-            historical_titles: Dict[str, set] = {}
+            historical_titles: dict[str, set] = {}
             for source_id, news_list in historical_data.items.items():
                 historical_titles[source_id] = set()
                 for item in news_list:
@@ -646,7 +645,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 检测新标题失败: {e}")
             return {}
 
-    def save_txt_snapshot(self, data: NewsData) -> Optional[str]:
+    def save_txt_snapshot(self, data: NewsData) -> str | None:
         """
         保存 TXT 快照
 
@@ -704,7 +703,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 保存 TXT 快照失败: {e}")
             return None
 
-    def save_html_report(self, html_content: str, filename: str, is_summary: bool = False) -> Optional[str]:
+    def save_html_report(self, html_content: str, filename: str, is_summary: bool = False) -> str | None:
         """
         保存 HTML 报告
 
@@ -738,7 +737,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 保存 HTML 报告失败: {e}")
             return None
 
-    def is_first_crawl_today(self, date: Optional[str] = None) -> bool:
+    def is_first_crawl_today(self, date: str | None = None) -> bool:
         """
         检查是否是当天第一次抓取
 
@@ -770,7 +769,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 检查首次抓取失败: {e}")
             return True
 
-    def get_crawl_times(self, date: Optional[str] = None) -> List[str]:
+    def get_crawl_times(self, date: str | None = None) -> list[str]:
         """
         获取指定日期的所有抓取时间列表
 
@@ -833,7 +832,7 @@ class LocalStorageBackend(StorageBackend):
         deleted_count = 0
         cutoff_date = self._get_configured_time() - timedelta(days=retention_days)
 
-        def parse_date_from_name(name: str) -> Optional[datetime]:
+        def parse_date_from_name(name: str) -> datetime | None:
             """从文件名或目录名解析日期"""
             # 移除 .db 后缀
             name = name.replace('.db', '')
@@ -918,7 +917,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 清理过期数据失败: {e}")
             return deleted_count
 
-    def has_pushed_today(self, date: Optional[str] = None) -> bool:
+    def has_pushed_today(self, date: str | None = None) -> bool:
         """
         检查指定日期是否已推送过
 
@@ -947,7 +946,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 检查推送记录失败: {e}")
             return False
 
-    def record_push(self, report_type: str, date: Optional[str] = None) -> bool:
+    def record_push(self, report_type: str, date: str | None = None) -> bool:
         """
         记录推送
 
@@ -1124,7 +1123,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 保存 RSS 数据失败: {e}")
             return False
 
-    def get_rss_data(self, date: Optional[str] = None) -> Optional[RSSData]:
+    def get_rss_data(self, date: str | None = None) -> RSSData | None:
         """
         获取指定日期的所有 RSS 数据
 
@@ -1152,8 +1151,8 @@ class LocalStorageBackend(StorageBackend):
             if not rows:
                 return None
 
-            items: Dict[str, List[RSSItem]] = {}
-            id_to_name: Dict[str, str] = {}
+            items: dict[str, list[RSSItem]] = {}
+            id_to_name: dict[str, str] = {}
             crawl_date = self._format_date_folder(date)
 
             for row in rows:
@@ -1209,7 +1208,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 读取 RSS 数据失败: {e}")
             return None
 
-    def detect_new_rss_items(self, current_data: RSSData) -> Dict[str, List[RSSItem]]:
+    def detect_new_rss_items(self, current_data: RSSData) -> dict[str, list[RSSItem]]:
         """
         检测新增的 RSS 条目（增量模式）
 
@@ -1234,7 +1233,7 @@ class LocalStorageBackend(StorageBackend):
             current_time = current_data.crawl_time
 
             # 收集历史 URL（first_time < current_time 的条目）
-            historical_urls: Dict[str, set] = {}
+            historical_urls: dict[str, set] = {}
             for feed_id, rss_list in historical_data.items.items():
                 historical_urls[feed_id] = set()
                 for item in rss_list:
@@ -1250,7 +1249,7 @@ class LocalStorageBackend(StorageBackend):
                 return {}
 
             # 检测新增
-            new_items: Dict[str, List[RSSItem]] = {}
+            new_items: dict[str, list[RSSItem]] = {}
             for feed_id, rss_list in current_data.items.items():
                 hist_set = historical_urls.get(feed_id, set())
                 for item in rss_list:
@@ -1266,7 +1265,7 @@ class LocalStorageBackend(StorageBackend):
             print(f"[本地存储] 检测新 RSS 条目失败: {e}")
             return {}
 
-    def get_latest_rss_data(self, date: Optional[str] = None) -> Optional[RSSData]:
+    def get_latest_rss_data(self, date: str | None = None) -> RSSData | None:
         """
         获取最新一次抓取的 RSS 数据（当前榜单模式）
 
@@ -1312,8 +1311,8 @@ class LocalStorageBackend(StorageBackend):
             if not rows:
                 return None
 
-            items: Dict[str, List[RSSItem]] = {}
-            id_to_name: Dict[str, str] = {}
+            items: dict[str, list[RSSItem]] = {}
+            id_to_name: dict[str, str] = {}
             crawl_date = self._format_date_folder(date)
 
             for row in rows:

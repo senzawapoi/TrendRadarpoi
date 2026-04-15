@@ -4,11 +4,10 @@
 实现配置查询和管理功能。
 """
 
-from typing import Dict, Optional
 
 from ..services.data_service import DataService
-from ..utils.validators import validate_config_section
 from ..utils.errors import MCPError
+from ..utils.validators import validate_config_section
 
 
 class ConfigManagementTools:
@@ -23,7 +22,7 @@ class ConfigManagementTools:
         """
         self.data_service = DataService(project_root)
 
-    def get_current_config(self, section: Optional[str] = None) -> Dict:
+    def get_current_config(self, section: str | None = None) -> dict:
         """
         获取当前系统配置
 

@@ -5,11 +5,10 @@
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from ..services.data_service import DataService
+from ..utils.errors import CrawlTaskError, MCPError
 from ..utils.validators import validate_platforms
-from ..utils.errors import MCPError, CrawlTaskError
 
 
 class SystemManagementTools:
@@ -30,7 +29,7 @@ class SystemManagementTools:
             current_file = Path(__file__)
             self.project_root = current_file.parent.parent.parent
 
-    def get_system_status(self) -> Dict:
+    def get_system_status(self) -> dict:
         """
         获取系统运行状态和健康检查信息
 
@@ -65,7 +64,7 @@ class SystemManagementTools:
                 }
             }
 
-    def trigger_crawl(self, platforms: Optional[List[str]] = None, save_to_local: bool = False, include_url: bool = False) -> Dict:
+    def trigger_crawl(self, platforms: list[str] | None = None, save_to_local: bool = False, include_url: bool = False) -> dict:
         """
         手动触发一次临时爬取任务（可选持久化）
 
@@ -88,11 +87,18 @@ class SystemManagementTools:
         """
         try:
             import time
+
             import yaml
+
             from trendradar.crawler.fetcher import DataFetcher
-            from trendradar.storage.local import LocalStorageBackend
             from trendradar.storage.base import convert_crawl_results_to_news_data
-            from trendradar.utils.time import get_configured_time, format_date_folder, format_time_filename
+            from trendradar.storage.local import LocalStorageBackend
+            from trendradar.utils.time import (
+                format_date_folder,
+                format_time_filename,
+                get_configured_time,
+            )
+
             from ..services.cache_service import get_cache
 
             # 参数验证
@@ -107,7 +113,7 @@ class SystemManagementTools:
                 )
 
             # 读取配置
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
 
             # 获取平台配置
@@ -145,7 +151,7 @@ class SystemManagementTools:
             proxy_url = None
             if crawler_config.get("use_proxy"):
                 proxy_url = crawler_config.get("default_proxy")
-            
+
             fetcher = DataFetcher(proxy_url=proxy_url)
             request_interval = crawler_config.get("request_interval", 100)
 
@@ -188,7 +194,7 @@ class SystemManagementTools:
                 # 1. 保存到 SQLite (核心持久化)
                 if storage.save_news_data(news_data):
                     save_success = True
-                
+
                 # 2. 如果请求保存到本地，生成 TXT/HTML 快照
                 if save_to_local:
                     # 保存 TXT
@@ -278,7 +284,7 @@ class SystemManagementTools:
                 }
             }
 
-    def _generate_simple_html(self, results: Dict, id_to_name: Dict, failed_ids: List, now) -> str:
+    def _generate_simple_html(self, results: dict, id_to_name: dict, failed_ids: list, now) -> str:
         """生成简化的 HTML 报告"""
         html = """<!DOCTYPE html>
 <html>
@@ -313,7 +319,7 @@ class SystemManagementTools:
         # 遍历每个平台
         for platform_id, titles_data in results.items():
             platform_name = id_to_name.get(platform_id, platform_id)
-            html += f'        <div class="platform">\n'
+            html += '        <div class="platform">\n'
             html += f'            <div class="platform-name">{platform_name}</div>\n'
 
             # 排序标题
@@ -329,7 +335,7 @@ class SystemManagementTools:
 
             # 显示新闻
             for rank, title, url, mobile_url in sorted_items:
-                html += f'            <div class="news-item">\n'
+                html += '            <div class="news-item">\n'
                 html += f'                <span class="rank">{rank}.</span>\n'
                 html += f'                <span class="title">{self._html_escape(title)}</span>\n'
                 if url:

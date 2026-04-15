@@ -4,13 +4,12 @@
 定义MCP Server使用的所有自定义异常类型。
 """
 
-from typing import Optional
 
 
 class MCPError(Exception):
     """MCP工具错误基类"""
 
-    def __init__(self, message: str, code: str = "MCP_ERROR", suggestion: Optional[str] = None):
+    def __init__(self, message: str, code: str = "MCP_ERROR", suggestion: str | None = None):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -30,7 +29,7 @@ class MCPError(Exception):
 class DataNotFoundError(MCPError):
     """数据不存在错误"""
 
-    def __init__(self, message: str, suggestion: Optional[str] = None):
+    def __init__(self, message: str, suggestion: str | None = None):
         super().__init__(
             message=message,
             code="DATA_NOT_FOUND",
@@ -41,7 +40,7 @@ class DataNotFoundError(MCPError):
 class InvalidParameterError(MCPError):
     """参数无效错误"""
 
-    def __init__(self, message: str, suggestion: Optional[str] = None):
+    def __init__(self, message: str, suggestion: str | None = None):
         super().__init__(
             message=message,
             code="INVALID_PARAMETER",
@@ -52,7 +51,7 @@ class InvalidParameterError(MCPError):
 class ConfigurationError(MCPError):
     """配置错误"""
 
-    def __init__(self, message: str, suggestion: Optional[str] = None):
+    def __init__(self, message: str, suggestion: str | None = None):
         super().__init__(
             message=message,
             code="CONFIGURATION_ERROR",
@@ -74,7 +73,7 @@ class PlatformNotSupportedError(MCPError):
 class CrawlTaskError(MCPError):
     """爬取任务错误"""
 
-    def __init__(self, message: str, suggestion: Optional[str] = None):
+    def __init__(self, message: str, suggestion: str | None = None):
         super().__init__(
             message=message,
             code="CRAWL_TASK_ERROR",

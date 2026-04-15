@@ -5,14 +5,13 @@
 支持多种翻译 API：Google Translate、MyMemory、Google Gemini
 """
 
+
 import requests
-from typing import List, Dict, Optional, Union
-from ..utils.errors import MCPError
 
 
 class TranslationTools:
     """新闻翻译工具类"""
-    
+
     # 免费翻译 API 列表（按优先级排序）
     TRANSLATION_APIS = [
         {
@@ -32,12 +31,12 @@ class TranslationTools:
             "max_length": 500
         }
     ]
-    
+
     def __init__(
-        self, 
-        default_source: str = "en", 
+        self,
+        default_source: str = "en",
         default_target: str = "zh",
-        gemini_api_key: Optional[str] = "AIzaSyDoPYCP3M9aRY3ecaOjO_zPP1Nw3iTUXYg"
+        gemini_api_key: str | None = "AIzaSyDoPYCP3M9aRY3ecaOjO_zPP1Nw3iTUXYg"
     ):
         """
         初始化翻译工具
@@ -54,7 +53,7 @@ class TranslationTools:
         self.session.headers.update({
             "User-Agent": "TrendRadar/1.0 Translation Service"
         })
-        
+
         # 初始化 Gemini 客户端（如果提供了 API 密钥）
         self.gemini_model = None
         self.gemini_client = None
@@ -75,14 +74,14 @@ class TranslationTools:
                 print("[Translation] 警告：google-genai 未安装，Gemini 功能不可用")
             except Exception as e:
                 print(f"[Translation] 警告：Gemini API 初始化失败：{e}")
-    
+
     def translate_text(
         self,
         text: str,
-        source: Optional[str] = None,
-        target: Optional[str] = None,
+        source: str | None = None,
+        target: str | None = None,
         use_cache: bool = True
-    ) -> Dict:
+    ) -> dict:
         """
         翻译单段文本
         
@@ -111,10 +110,10 @@ class TranslationTools:
                     "message": "待翻译文本不能为空"
                 }
             }
-        
+
         source = source or self.default_source
         target = target or self.default_target
-        
+
         # 检查是否需要翻译（避免相同语言）
         if source == target:
             return {
@@ -125,7 +124,7 @@ class TranslationTools:
                 "target_lang": target,
                 "note": "源语言和目标语言相同，未进行翻译"
             }
-        
+
         # 优先尝试 Gemini API（如果已配置）
         if self.gemini_client or self.gemini_model:
             try:
@@ -134,7 +133,7 @@ class TranslationTools:
                     return result
             except Exception as e:
                 print(f"[Translation] Gemini 失败：{e}")
-        
+
         # 尝试多个免费翻译 API
         for api_config in self.TRANSLATION_APIS:
             try:
@@ -144,7 +143,7 @@ class TranslationTools:
             except Exception as e:
                 print(f"[Translation] {api_config['name']} 失败：{e}")
                 continue
-        
+
         return {
             "success": False,
             "error": {
@@ -152,14 +151,14 @@ class TranslationTools:
                 "message": "所有翻译 API 均失败，请稍后重试"
             }
         }
-    
+
     def _call_translation_api(
         self,
-        api_config: Dict,
+        api_config: dict,
         text: str,
         source: str,
         target: str
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """
         调用单个翻译 API
         
@@ -176,10 +175,10 @@ class TranslationTools:
         max_length = api_config.get("max_length", 500)
         if len(text) > max_length:
             text = text[:max_length] + "..."
-        
+
         url = api_config["url"]
         method = api_config["method"]
-        
+
         # 处理 URL 路径参数（如 Lingva）
         if api_config["params"] is None:
             from urllib.parse import quote
@@ -196,10 +195,10 @@ class TranslationTools:
                 response = self.session.get(url, params=params, timeout=10)
             else:
                 response = self.session.post(url, data=params, timeout=10)
-        
+
         response.raise_for_status()
         data = response.json()
-        
+
         # 提取翻译结果
         translated = data
         for key in api_config["response_path"]:
@@ -212,7 +211,7 @@ class TranslationTools:
                     break
             else:
                 break
-        
+
         # Google Translate API 特殊处理：结果是嵌套列表 [[[translated, original, ...]]]
         if api_config["name"] == "Google Translate" and isinstance(translated, list):
             # 如果仍然是嵌套列表，继续提取
@@ -221,10 +220,10 @@ class TranslationTools:
                     translated = translated[0]
                     break
                 translated = translated[0]
-        
+
         if not translated:
             return None
-        
+
         return {
             "success": True,
             "original_text": text,
@@ -233,13 +232,13 @@ class TranslationTools:
             "target_lang": target,
             "api_used": api_config["name"]
         }
-    
+
     def _translate_with_gemini(
         self,
         text: str,
         source: str,
         target: str
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """
         使用 Google Gemini API 进行翻译
         
@@ -253,7 +252,7 @@ class TranslationTools:
         """
         if not self.gemini_client and not self.gemini_model:
             return None
-        
+
         # 构建翻译提示
         language_map = {
             "en": "英语",
@@ -267,14 +266,14 @@ class TranslationTools:
             "ru": "俄语",
             "it": "意大利语"
         }
-        
+
         source_lang = language_map.get(source, source)
         target_lang = language_map.get(target, target)
-        
+
         prompt = f"""请将以下{source_lang}文本翻译成{target_lang}。只返回翻译结果，不要添加任何解释或其他内容：
 
 {text}"""
-        
+
         try:
             # 使用新 SDK
             if self.gemini_client:
@@ -289,10 +288,10 @@ class TranslationTools:
                 translated = response.text.strip()
             else:
                 return None
-            
+
             if not translated:
                 return None
-            
+
             return {
                 "success": True,
                 "original_text": text,
@@ -304,16 +303,16 @@ class TranslationTools:
         except Exception as e:
             print(f"[Translation] Gemini API 错误：{e}")
             return None
-    
+
     def translate_news_list(
         self,
-        news_list: List[Dict],
-        fields: Optional[List[str]] = None,
-        source: Optional[str] = None,
-        target: Optional[str] = None,
+        news_list: list[dict],
+        fields: list[str] | None = None,
+        source: str | None = None,
+        target: str | None = None,
         skip_if_chinese: bool = True,
         bilingual: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         批量翻译新闻列表（支持双语翻译）
         
@@ -335,31 +334,31 @@ class TranslationTools:
                 "total": 0,
                 "translated_count": 0
             }
-        
+
         fields = fields or ["title", "summary"]
         source = source or self.default_source
         target = target or self.default_target
-        
+
         translated_news = []
         translated_count = 0
-        
+
         for news in news_list:
             translated_item = news.copy()
             item_translated = False
-            
+
             for field in fields:
                 if field not in news or not news[field]:
                     continue
-                
+
                 text = news[field]
-                
+
                 # 检测语言
                 detected_lang = self.detect_language(text)
-                
+
                 # 跳过逻辑（仅当目标为中文且检测到中文时）
                 if skip_if_chinese and target == "zh" and detected_lang == "zh":
                     continue
-                
+
                 # 双语翻译模式
                 if bilingual:
                     # 翻译到中文
@@ -368,7 +367,7 @@ class TranslationTools:
                         if result_zh.get("success"):
                             translated_item[f"{field}_translated"] = result_zh["translated_text"]
                             item_translated = True
-                    
+
                     # 翻译到英文
                     if detected_lang != "en":
                         result_en = self.translate_text(text, detected_lang, "en")
@@ -379,17 +378,17 @@ class TranslationTools:
                     # 单语翻译模式
                     if detected_lang == target:
                         continue
-                    
+
                     result = self.translate_text(text, detected_lang, target)
                     if result.get("success"):
                         translated_item[f"{field}_translated"] = result["translated_text"]
                         item_translated = True
-            
+
             if item_translated:
                 translated_count += 1
-            
+
             translated_news.append(translated_item)
-        
+
         return {
             "success": True,
             "translated_news": translated_news,
@@ -399,17 +398,17 @@ class TranslationTools:
             "target_lang": target,
             "bilingual_mode": bilingual
         }
-    
+
     def _contains_chinese(self, text: str) -> bool:
         """检测文本是否包含中文字符"""
         if not text:
             return False
-        
+
         for char in text:
             if '\u4e00' <= char <= '\u9fff':
                 return True
         return False
-    
+
     def detect_language(self, text: str) -> str:
         """
         简单检测文本语言
@@ -422,17 +421,17 @@ class TranslationTools:
         """
         if not text:
             return "unknown"
-        
+
         chinese_chars = 0
         total_chars = min(len(text), 100)  # 只检查前 100 个字符
-        
+
         for char in text[:total_chars]:
             if '\u4e00' <= char <= '\u9fff':
                 chinese_chars += 1
-        
+
         # 如果中文字符占比超过 20%，认为是中文
         if chinese_chars / total_chars > 0.2:
             return "zh"
-        
+
         # 简单判断为英文（实际应用中可使用更精确的检测）
         return "en"

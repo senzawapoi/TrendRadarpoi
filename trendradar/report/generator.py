@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 报告生成模块
 
@@ -7,20 +6,20 @@
 - generate_html_report: 生成 HTML 报告
 """
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Dict, List, Optional, Callable
 
 
 def prepare_report_data(
-    stats: List[Dict],
-    failed_ids: Optional[List] = None,
-    new_titles: Optional[Dict] = None,
-    id_to_name: Optional[Dict] = None,
+    stats: list[dict],
+    failed_ids: list | None = None,
+    new_titles: dict | None = None,
+    id_to_name: dict | None = None,
     mode: str = "daily",
     rank_threshold: int = 3,
-    matches_word_groups_func: Optional[Callable] = None,
-    load_frequency_words_func: Optional[Callable] = None,
-) -> Dict:
+    matches_word_groups_func: Callable | None = None,
+    load_frequency_words_func: Callable | None = None,
+) -> dict:
     """
     准备报告数据
 
@@ -138,21 +137,21 @@ def prepare_report_data(
 
 
 def generate_html_report(
-    stats: List[Dict],
+    stats: list[dict],
     total_titles: int,
-    failed_ids: Optional[List] = None,
-    new_titles: Optional[Dict] = None,
-    id_to_name: Optional[Dict] = None,
+    failed_ids: list | None = None,
+    new_titles: dict | None = None,
+    id_to_name: dict | None = None,
     mode: str = "daily",
     is_daily_summary: bool = False,
-    update_info: Optional[Dict] = None,
+    update_info: dict | None = None,
     rank_threshold: int = 3,
     output_dir: str = "output",
     date_folder: str = "",
     time_filename: str = "",
-    render_html_func: Optional[Callable] = None,
-    matches_word_groups_func: Optional[Callable] = None,
-    load_frequency_words_func: Optional[Callable] = None,
+    render_html_func: Callable | None = None,
+    matches_word_groups_func: Callable | None = None,
+    load_frequency_words_func: Callable | None = None,
     enable_index_copy: bool = True,
 ) -> str:
     """

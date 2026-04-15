@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 存储同步工具
 
@@ -7,9 +6,8 @@
 
 import os
 import re
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from pathlib import Path
 
 import yaml
 
@@ -40,7 +38,7 @@ class StorageSyncTools:
         if self._config is None:
             config_path = self.project_root / "config" / "config.yaml"
             if config_path.exists():
-                with open(config_path, "r", encoding="utf-8") as f:
+                with open(config_path, encoding="utf-8") as f:
                     self._config = yaml.safe_load(f)
             else:
                 self._config = {}
@@ -114,7 +112,7 @@ class StorageSyncTools:
         data_dir = local_config.get("data_dir", "output")
         return self.project_root / data_dir
 
-    def _parse_date_folder_name(self, folder_name: str) -> Optional[datetime]:
+    def _parse_date_folder_name(self, folder_name: str) -> datetime | None:
         """
         解析日期文件夹名称（兼容中文和 ISO 格式）
 
@@ -148,7 +146,7 @@ class StorageSyncTools:
 
         return None
 
-    def _get_local_dates(self) -> List[str]:
+    def _get_local_dates(self) -> list[str]:
         """获取本地可用的日期列表"""
         local_dir = self._get_local_data_dir()
         dates = []
@@ -173,7 +171,7 @@ class StorageSyncTools:
                     total_size += item.stat().st_size
         return total_size
 
-    def sync_from_remote(self, days: int = 7) -> Dict:
+    def sync_from_remote(self, days: int = 7) -> dict:
         """
         从远程存储拉取数据到本地
 
@@ -286,7 +284,7 @@ class StorageSyncTools:
                 }
             }
 
-    def get_storage_status(self) -> Dict:
+    def get_storage_status(self) -> dict:
         """
         获取存储配置和状态
 
@@ -370,7 +368,7 @@ class StorageSyncTools:
                 }
             }
 
-    def list_available_dates(self, source: str = "both") -> Dict:
+    def list_available_dates(self, source: str = "both") -> dict:
         """
         列出可用的日期范围
 

@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 存储管理器 - 统一管理存储后端
 
@@ -8,8 +7,7 @@
 import os
 from typing import Optional
 
-from trendradar.storage.base import StorageBackend, NewsData, RSSData
-
+from trendradar.storage.base import NewsData, RSSData, StorageBackend
 
 # 存储管理器单例
 _storage_manager: Optional["StorageManager"] = None
@@ -32,7 +30,7 @@ class StorageManager:
         data_dir: str = "output",
         enable_txt: bool = True,
         enable_html: bool = True,
-        remote_config: Optional[dict] = None,
+        remote_config: dict | None = None,
         local_retention_days: int = 0,
         remote_retention_days: int = 0,
         pull_enabled: bool = False,
@@ -65,8 +63,8 @@ class StorageManager:
         self.pull_days = pull_days
         self.timezone = timezone
 
-        self._backend: Optional[StorageBackend] = None
-        self._remote_backend: Optional[StorageBackend] = None
+        self._backend: StorageBackend | None = None
+        self._remote_backend: StorageBackend | None = None
 
     @staticmethod
     def is_github_actions() -> bool:
@@ -82,7 +80,7 @@ class StorageManager:
 
         # 方法2: 检查 cgroup（Linux）
         try:
-            with open("/proc/1/cgroup", "r") as f:
+            with open("/proc/1/cgroup") as f:
                 return "docker" in f.read()
         except (FileNotFoundError, PermissionError):
             pass
@@ -115,7 +113,7 @@ class StorageManager:
         # 调试日志
         has_config = bool(bucket_name and access_key and secret_key and endpoint)
         if not has_config:
-            print(f"[存储管理器] 远程存储配置检查失败:")
+            print("[存储管理器] 远程存储配置检查失败:")
             print(f"  - bucket_name: {'已配置' if bucket_name else '未配置'}")
             print(f"  - access_key_id: {'已配置' if access_key else '未配置'}")
             print(f"  - secret_access_key: {'已配置' if secret_key else '未配置'}")
@@ -123,7 +121,7 @@ class StorageManager:
 
         return has_config
 
-    def _create_remote_backend(self) -> Optional[StorageBackend]:
+    def _create_remote_backend(self) -> StorageBackend | None:
         """创建远程存储后端"""
         try:
             from trendradar.storage.remote import RemoteStorageBackend
@@ -154,7 +152,7 @@ class StorageManager:
             if resolved_type == "remote":
                 self._backend = self._create_remote_backend()
                 if self._backend:
-                    print(f"[存储管理器] 使用远程存储后端")
+                    print("[存储管理器] 使用远程存储后端")
                 else:
                     print("[存储管理器] 回退到本地存储")
                     resolved_type = "local"
@@ -205,11 +203,11 @@ class StorageManager:
         """保存 RSS 数据"""
         return self.get_backend().save_rss_data(data)
 
-    def get_rss_data(self, date: Optional[str] = None) -> Optional[RSSData]:
+    def get_rss_data(self, date: str | None = None) -> RSSData | None:
         """获取指定日期的所有 RSS 数据（当日汇总模式）"""
         return self.get_backend().get_rss_data(date)
 
-    def get_latest_rss_data(self, date: Optional[str] = None) -> Optional[RSSData]:
+    def get_latest_rss_data(self, date: str | None = None) -> RSSData | None:
         """获取最新一次抓取的 RSS 数据（当前榜单模式）"""
         return self.get_backend().get_latest_rss_data(date)
 
@@ -217,11 +215,11 @@ class StorageManager:
         """检测新增的 RSS 条目（增量模式）"""
         return self.get_backend().detect_new_rss_items(current_data)
 
-    def get_today_all_data(self, date: Optional[str] = None) -> Optional[NewsData]:
+    def get_today_all_data(self, date: str | None = None) -> NewsData | None:
         """获取当天所有数据"""
         return self.get_backend().get_today_all_data(date)
 
-    def get_latest_crawl_data(self, date: Optional[str] = None) -> Optional[NewsData]:
+    def get_latest_crawl_data(self, date: str | None = None) -> NewsData | None:
         """获取最新抓取数据"""
         return self.get_backend().get_latest_crawl_data(date)
 
@@ -229,15 +227,15 @@ class StorageManager:
         """检测新增标题"""
         return self.get_backend().detect_new_titles(current_data)
 
-    def save_txt_snapshot(self, data: NewsData) -> Optional[str]:
+    def save_txt_snapshot(self, data: NewsData) -> str | None:
         """保存 TXT 快照"""
         return self.get_backend().save_txt_snapshot(data)
 
-    def save_html_report(self, html_content: str, filename: str, is_summary: bool = False) -> Optional[str]:
+    def save_html_report(self, html_content: str, filename: str, is_summary: bool = False) -> str | None:
         """保存 HTML 报告"""
         return self.get_backend().save_html_report(html_content, filename, is_summary)
 
-    def is_first_crawl_today(self, date: Optional[str] = None) -> bool:
+    def is_first_crawl_today(self, date: str | None = None) -> bool:
         """检查是否是当天第一次抓取"""
         return self.get_backend().is_first_crawl_today(date)
 
@@ -282,7 +280,7 @@ class StorageManager:
 
     # === 推送记录相关方法 ===
 
-    def has_pushed_today(self, date: Optional[str] = None) -> bool:
+    def has_pushed_today(self, date: str | None = None) -> bool:
         """
         检查指定日期是否已推送过
 
@@ -294,7 +292,7 @@ class StorageManager:
         """
         return self.get_backend().has_pushed_today(date)
 
-    def record_push(self, report_type: str, date: Optional[str] = None) -> bool:
+    def record_push(self, report_type: str, date: str | None = None) -> bool:
         """
         记录推送
 
@@ -313,7 +311,7 @@ def get_storage_manager(
     data_dir: str = "output",
     enable_txt: bool = True,
     enable_html: bool = True,
-    remote_config: Optional[dict] = None,
+    remote_config: dict | None = None,
     local_retention_days: int = 0,
     remote_retention_days: int = 0,
     pull_enabled: bool = False,

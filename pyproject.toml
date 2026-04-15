@@ -11,6 +11,9 @@ dependencies = [
     "websockets>=13.0,<14.0",
     "feedparser>=6.0.0,<7.0.0",
     "boto3>=1.35.0,<2.0.0",
+    "structlog>=24.0.0,<25.0.0",
+    "tenacity>=8.0.0,<9.0.0",
+    "aiohttp>=3.9.0,<4.0.0",
 ]
 
 [project.scripts]
@@ -18,7 +21,40 @@ trendradar = "trendradar.__main__:main"
 trendradar-mcp = "mcp_server.server:run_server"
 
 [dependency-groups]
-dev = []
+dev = ["mypy>=1.0.0,<2.0.0"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = ["__pycache__", ".git", "build", "dist", "*.egg-info"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RUF",   # Ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "SIM102", # use a single if statement instead of nested if statements
+    "SIM103", # return negated condition (false positive for CJK detection chains)
+    "RUF002", # docstring contains ambiguous CJK characters (intentional for Chinese docs)
+    "RUF003", # comment contains ambiguous CJK characters (intentional for Chinese docs)
+    "RUF001", # string contains ambiguous CJK characters (intentional for Chinese UI)
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
 
 [build-system]
 requires = ["hatchling"]

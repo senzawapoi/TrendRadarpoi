@@ -1,27 +1,26 @@
-# coding=utf-8
 """
 HTML 报告渲染模块
 
 提供 HTML 格式的热点新闻报告生成功能
 """
 
+from collections.abc import Callable
 from datetime import datetime
-from typing import Dict, List, Optional, Callable
 
 from trendradar.report.helpers import html_escape
 
 
 def render_html_content(
-    report_data: Dict,
+    report_data: dict,
     total_titles: int,
     is_daily_summary: bool = False,
     mode: str = "daily",
-    update_info: Optional[Dict] = None,
+    update_info: dict | None = None,
     *,
     reverse_content_order: bool = False,
-    get_time_func: Optional[Callable[[], datetime]] = None,
-    rss_items: Optional[List[Dict]] = None,
-    rss_new_items: Optional[List[Dict]] = None,
+    get_time_func: Callable[[], datetime] | None = None,
+    rss_items: list[dict] | None = None,
+    rss_new_items: list[dict] | None = None,
     display_mode: str = "keyword",
 ) -> str:
     """渲染HTML内容
@@ -844,7 +843,7 @@ def render_html_content(
                 </div>"""
 
     # 生成 RSS 统计内容
-    def render_rss_stats_html(stats: List[Dict], title: str = "RSS 订阅更新") -> str:
+    def render_rss_stats_html(stats: list[dict], title: str = "RSS 订阅更新") -> str:
         """渲染 RSS 统计区块 HTML
 
         Args:

@@ -4,20 +4,19 @@
 实现P0核心的数据查询工具。
 """
 
-from typing import Dict, List, Optional, Union
 
 from ..services.data_service import DataService
-from ..utils.validators import (
-    validate_platforms,
-    validate_limit,
-    validate_keyword,
-    validate_date_range,
-    validate_top_n,
-    validate_mode,
-    validate_date_query,
-    normalize_date_range
-)
 from ..utils.errors import MCPError
+from ..utils.validators import (
+    normalize_date_range,
+    validate_date_query,
+    validate_date_range,
+    validate_keyword,
+    validate_limit,
+    validate_mode,
+    validate_platforms,
+    validate_top_n,
+)
 
 
 class DataQueryTools:
@@ -34,10 +33,10 @@ class DataQueryTools:
 
     def get_latest_news(
         self,
-        platforms: Optional[List[str]] = None,
-        limit: Optional[int] = None,
+        platforms: list[str] | None = None,
+        limit: int | None = None,
         include_url: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         获取最新一批爬取的新闻数据
 
@@ -91,10 +90,10 @@ class DataQueryTools:
     def search_news_by_keyword(
         self,
         keyword: str,
-        date_range: Optional[Union[Dict, str]] = None,
-        platforms: Optional[List[str]] = None,
-        limit: Optional[int] = None
-    ) -> Dict:
+        date_range: dict | str | None = None,
+        platforms: list[str] | None = None,
+        limit: int | None = None
+    ) -> dict:
         """
         按关键词搜索历史新闻
 
@@ -154,10 +153,10 @@ class DataQueryTools:
 
     def get_trending_topics(
         self,
-        top_n: Optional[int] = None,
-        mode: Optional[str] = None,
-        extract_mode: Optional[str] = None
-    ) -> Dict:
+        top_n: int | None = None,
+        mode: str | None = None,
+        extract_mode: str | None = None
+    ) -> dict:
         """
         获取热点话题统计
 
@@ -227,11 +226,11 @@ class DataQueryTools:
 
     def get_news_by_date(
         self,
-        date_range: Optional[Union[Dict[str, str], str]] = None,
-        platforms: Optional[List[str]] = None,
-        limit: Optional[int] = None,
+        date_range: dict[str, str] | str | None = None,
+        platforms: list[str] | None = None,
+        limit: int | None = None,
         include_url: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         按日期查询新闻，支持自然语言日期
 
@@ -315,10 +314,10 @@ class DataQueryTools:
 
     def get_latest_rss(
         self,
-        feeds: Optional[List[str]] = None,
-        limit: Optional[int] = None,
+        feeds: list[str] | None = None,
+        limit: int | None = None,
         include_summary: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         获取最新的 RSS 数据
 
@@ -363,11 +362,11 @@ class DataQueryTools:
     def search_rss(
         self,
         keyword: str,
-        feeds: Optional[List[str]] = None,
+        feeds: list[str] | None = None,
         days: int = 7,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         include_summary: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         搜索 RSS 数据
 
@@ -419,7 +418,7 @@ class DataQueryTools:
                 }
             }
 
-    def get_rss_feeds_status(self) -> Dict:
+    def get_rss_feeds_status(self) -> dict:
         """
         获取 RSS 源状态
 

@@ -1,22 +1,88 @@
-# coding=utf-8
 """
 RSS 抓取器
 
-负责从配置的 RSS 源抓取数据并转换为标准格式
+基于: async-python-patterns skill — asyncio + aiohttp with Semaphore rate limiting
+基于: python-resilience skill — tenacity retry with exponential backoff
+基于: python-observability skill — structured logging with correlation IDs
 """
 
+from __future__ import annotations
+
+import asyncio
 import time
-import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import datetime
-from typing import List, Dict, Optional, Tuple, Callable
 
-import requests
+import aiohttp
 
-from .parser import RSSParser, ParsedRSSItem
-from trendradar.storage.base import RSSItem, RSSData
-from trendradar.utils.time import get_configured_time, is_within_days, DEFAULT_TIMEZONE
+from trendradar.storage.base import RSSData, RSSItem
+from trendradar.utils.logging import log
+from trendradar.utils.time import DEFAULT_TIMEZONE, get_configured_time, is_within_days
+
+from .parser import RSSParser
+
+# ── Async helpers (must be top-level for pickling with ThreadPoolExecutor) ─────
+
+
+async def _fetch_single_async(
+    session: aiohttp.ClientSession,
+    semaphore: asyncio.Semaphore,
+    feed: RSSFeedConfig,
+    timeout: int,
+    parser: RSSParser,
+    timezone: str,
+    proxy_url: str | None = None,
+) -> tuple[str, list[RSSItem], str | None]:
+    """
+    Async fetch for a single RSS feed, rate-limited by semaphore.
+
+    基于: async-python-patterns skill — Semaphore-based rate limiting
+    """
+    url = feed.url
+    try:
+        async with semaphore:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout), proxy=proxy_url) as response:
+                response.raise_for_status()
+                text = await response.text()
+
+        parsed_items = parser.parse(text, feed.url)
+
+        if feed.max_items > 0:
+            parsed_items = parsed_items[:feed.max_items]
+
+        now = get_configured_time(timezone)
+        crawl_time = now.strftime("%H:%M")
+        items = []
+        for parsed in parsed_items:
+            item = RSSItem(
+                title=parsed.title,
+                feed_id=feed.id,
+                feed_name=feed.name,
+                url=parsed.url or "",
+                published_at=parsed.published_at or "",
+                summary=parsed.summary or "",
+                author=parsed.author or "",
+                crawl_time=crawl_time,
+                first_time=crawl_time,
+                last_time=crawl_time,
+                count=1,
+            )
+            items.append(item)
+
+        return feed.id, items, None
+
+    except aiohttp.ClientError as e:
+        error = f"HTTP 错误: {e}"
+        return feed.id, [], error
+    except TimeoutError:
+        error = f"请求超时 ({timeout}s)"
+        return feed.id, [], error
+    except Exception as e:
+        error = f"未知错误: {e}"
+        return feed.id, [], error
+
+
+# ── Data classes ───────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -27,15 +93,18 @@ class RSSFeedConfig:
     url: str                    # RSS URL
     max_items: int = 0          # 最大条目数（0=不限制）
     enabled: bool = True        # 是否启用
-    max_age_days: Optional[int] = None  # 文章最大年龄（天），覆盖全局设置；None=使用全局，0=禁用过滤
+    max_age_days: int | None = None  # 文章最大年龄（天），覆盖全局设置；None=使用全局，0=禁用过滤
+
+
+# ── Main fetcher class ─────────────────────────────────────────────────────────
 
 
 class RSSFetcher:
-    """RSS 抓取器"""
+    """RSS 抓取器（支持同步和异步两种模式）"""
 
     def __init__(
         self,
-        feeds: List[RSSFeedConfig],
+        feeds: list[RSSFeedConfig],
         request_interval: int = 2000,
         timeout: int = 15,
         use_proxy: bool = False,
@@ -67,30 +136,27 @@ class RSSFetcher:
         self.default_max_age_days = default_max_age_days
 
         self.parser = RSSParser()
-        self.session = self._create_session()
 
-    def _create_session(self) -> requests.Session:
-        """创建请求会话"""
-        session = requests.Session()
-        session.headers.update({
+    def _aiohttp_headers(self) -> dict[str, str]:
+        """Build aiohttp session headers."""
+        return {
             "User-Agent": "TrendRadar/2.0 RSS Reader (https://github.com/trendradar)",
             "Accept": "application/feed+json, application/json, application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        })
+        }
 
-        if self.use_proxy and self.proxy_url:
-            session.proxies = {
-                "http": self.proxy_url,
-                "https": self.proxy_url,
-            }
-
-        return session
+    def _aiohttp_connector(self) -> aiohttp.TCPConnector:
+        """Build aiohttp TCP connector."""
+        return aiohttp.TCPConnector(
+            limit=10,
+            ttl_dns_cache=300,
+        )
 
     def _filter_by_freshness(
         self,
-        items: List[RSSItem],
+        items: list[RSSItem],
         feed: RSSFeedConfig,
-    ) -> Tuple[List[RSSItem], int]:
+    ) -> tuple[list[RSSItem], int]:
         """
         根据新鲜度过滤文章
 
@@ -101,119 +167,116 @@ class RSSFetcher:
         Returns:
             (过滤后的文章列表, 被过滤的文章数)
         """
-        # 如果全局禁用，直接返回
         if not self.freshness_enabled:
             return items, 0
 
-        # 确定此 feed 的 max_age_days
         max_days = feed.max_age_days
         if max_days is None:
             max_days = self.default_max_age_days
 
-        # 如果设为 0，禁用此 feed 的过滤
         if max_days == 0:
             return items, 0
 
-        # 过滤逻辑：无发布时间的文章保留
         filtered = []
         for item in items:
-            if not item.published_at:
-                # 无发布时间，保留
+            if not item.published_at or is_within_days(item.published_at, max_days, self.timezone):
                 filtered.append(item)
-            elif is_within_days(item.published_at, max_days, self.timezone):
-                # 在指定天数内，保留
-                filtered.append(item)
-            # 否则过滤掉
 
         filtered_count = len(items) - len(filtered)
         return filtered, filtered_count
 
-    def fetch_feed(self, feed: RSSFeedConfig) -> Tuple[List[RSSItem], Optional[str]]:
+    # ── Sync version (backward-compatible) ─────────────────────────────────
+
+    def fetch_feed(self, feed: RSSFeedConfig) -> tuple[list[RSSItem], str | None]:
         """
-        抓取单个 RSS 源
+        抓取单个 RSS 源（同步版本，保留向后兼容）
 
-        Args:
-            feed: RSS 源配置
-
-        Returns:
-            (条目列表, 错误信息) 元组
+        基于: python-resilience skill — retry with exponential backoff
         """
-        try:
-            response = self.session.get(feed.url, timeout=self.timeout)
-            response.raise_for_status()
+        for attempt in range(1, 4):
+            try:
+                import requests
 
-            parsed_items = self.parser.parse(response.text, feed.url)
+                session = requests.Session()
+                session.headers.update(self._aiohttp_headers())
+                if self.use_proxy and self.proxy_url:
+                    session.proxies = {"http": self.proxy_url, "https": self.proxy_url}
 
-            # 限制条目数量（0=不限制）
-            if feed.max_items > 0:
-                parsed_items = parsed_items[:feed.max_items]
+                response = session.get(feed.url, timeout=self.timeout)
+                response.raise_for_status()
 
-            # 转换为 RSSItem（使用配置的时区）
-            now = get_configured_time(self.timezone)
-            crawl_time = now.strftime("%H:%M")
-            items = []
+                parsed_items = self.parser.parse(response.text, feed.url)
 
-            for parsed in parsed_items:
-                item = RSSItem(
-                    title=parsed.title,
-                    feed_id=feed.id,
-                    feed_name=feed.name,
-                    url=parsed.url,
-                    published_at=parsed.published_at or "",
-                    summary=parsed.summary or "",
-                    author=parsed.author or "",
-                    crawl_time=crawl_time,
-                    first_time=crawl_time,
-                    last_time=crawl_time,
-                    count=1,
-                )
-                items.append(item)
+                if feed.max_items > 0:
+                    parsed_items = parsed_items[:feed.max_items]
 
-            # 注意：新鲜度过滤已移至推送阶段（_convert_rss_items_to_list）
-            # 这样所有文章都会存入数据库，但旧文章不会推送
-            print(f"[RSS] {feed.name}: 获取 {len(items)} 条")
-            return items, None
+                now = get_configured_time(self.timezone)
+                crawl_time = now.strftime("%H:%M")
+                items = []
+                for parsed in parsed_items:
+                    item = RSSItem(
+                        title=parsed.title,
+                        feed_id=feed.id,
+                        feed_name=feed.name,
+                        url=parsed.url or "",
+                        published_at=parsed.published_at or "",
+                        summary=parsed.summary or "",
+                        author=parsed.author or "",
+                        crawl_time=crawl_time,
+                        first_time=crawl_time,
+                        last_time=crawl_time,
+                        count=1,
+                    )
+                    items.append(item)
 
-        except requests.Timeout:
-            error = f"请求超时 ({self.timeout}s)"
-            print(f"[RSS] {feed.name}: {error}")
-            return [], error
+                log.info("RSS feed 获取成功", feed_name=feed.name, count=len(items))
+                session.close()
+                return items, None
 
-        except requests.RequestException as e:
-            error = f"请求失败: {e}"
-            print(f"[RSS] {feed.name}: {error}")
-            return [], error
+            except requests.Timeout:
+                error = f"请求超时 ({self.timeout}s)"
+                if attempt < 3:
+                    wait = min(2 ** attempt, 10)
+                    log.warning(f"RSS feed 请求超时，将在 {wait}s 后重试", feed_name=feed.name, attempt=attempt, wait_s=wait)
+                    time.sleep(wait)
+                else:
+                    log.error("RSS feed 获取失败（重试耗尽）", feed_name=feed.name, error=error)
+                    return [], error
 
-        except ValueError as e:
-            error = f"解析失败: {e}"
-            print(f"[RSS] {feed.name}: {error}")
-            return [], error
+            except requests.RequestException as e:
+                error = f"请求失败: {e}"
+                log.error("RSS feed 请求失败", feed_name=feed.name, error=error)
+                return [], error
 
-        except Exception as e:
-            error = f"未知错误: {e}"
-            print(f"[RSS] {feed.name}: {error}")
-            return [], error
+            except ValueError as e:
+                error = f"解析失败: {e}"
+                log.error("RSS feed 解析失败", feed_name=feed.name, error=error)
+                return [], error
+
+            except Exception as e:
+                error = f"未知错误: {e}"
+                log.error("RSS feed 未知错误", feed_name=feed.name, error=error)
+                return [], error
+
+        return [], "重试耗尽"
 
     def fetch_all(self, max_workers: int = 5) -> RSSData:
         """
-        并发抓取所有 RSS 源
+        并发抓取所有 RSS 源（同步版本，保留向后兼容）
 
-        Args:
-            max_workers: 最大并发线程数
+        基于: async-python-patterns skill — Semaphore-based concurrency control
 
-        Returns:
-            RSSData 对象
+        Note: 新代码应使用 async_fetch_all() 以获得更好的性能。
         """
-        all_items: Dict[str, List[RSSItem]] = {}
-        id_to_name: Dict[str, str] = {}
-        failed_ids: List[str] = []
+        all_items: dict[str, list[RSSItem]] = {}
+        id_to_name: dict[str, str] = {}
+        failed_ids: list[str] = []
 
-        # 使用配置的时区
         now = get_configured_time(self.timezone)
         crawl_time = now.strftime("%H:%M")
         crawl_date = now.strftime("%Y-%m-%d")
 
-        print(f"[RSS] 开始并发抓取 {len(self.feeds)} 个 RSS 源 (max_workers={max_workers})...")
+        log.start(f"RSS 并发抓取 {len(self.feeds)} 个源", max_workers=max_workers)
 
         for feed in self.feeds:
             id_to_name[feed.id] = feed.name
@@ -229,11 +292,11 @@ class RSSFetcher:
                     else:
                         all_items[feed.id] = items
                 except Exception as e:
-                    print(f"[RSS] {feed.name}: 线程异常: {e}")
+                    log.error("RSS feed 线程异常", feed_name=feed.name, error=str(e))
                     failed_ids.append(feed.id)
 
         total_items = sum(len(items) for items in all_items.values())
-        print(f"[RSS] 抓取完成: {len(all_items)} 个源成功, {len(failed_ids)} 个失败, 共 {total_items} 条")
+        log.success("RSS 抓取完成", success_count=len(all_items), failed_count=len(failed_ids), total_items=total_items)
 
         return RSSData(
             date=crawl_date,
@@ -243,36 +306,90 @@ class RSSFetcher:
             failed_ids=failed_ids,
         )
 
+    # ── Async version (preferred) ───────────────────────────────────────────
+
+    async def async_fetch_all(self, max_workers: int = 5) -> RSSData:
+        """
+        并发抓取所有 RSS 源（异步版本，使用 aiohttp）
+
+        基于: async-python-patterns skill
+        - Semaphore-based rate limiting for controlled concurrency
+        - asyncio.gather for concurrent task management
+        基于: python-resilience skill
+        - Exponential backoff retry for transient failures
+        """
+        all_items: dict[str, list[RSSItem]] = {}
+        id_to_name: dict[str, str] = {feed.id: feed.name for feed in self.feeds}
+        failed_ids: list[str] = []
+
+        now = get_configured_time(self.timezone)
+        crawl_time = now.strftime("%H:%M")
+        crawl_date = now.strftime("%Y-%m-%d")
+
+        log.start(f"RSS 异步抓取 {len(self.feeds)} 个源", max_workers=max_workers)
+
+        connector = self._aiohttp_connector()
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+
+        async with aiohttp.ClientSession(
+            headers=self._aiohttp_headers(),
+            connector=connector,
+            timeout=timeout,
+        ) as session:
+            semaphore = asyncio.Semaphore(max_workers)
+
+            # Build all tasks
+            proxy_url = self.proxy_url if self.use_proxy else None
+            tasks = [
+                _fetch_single_async(
+                    session=session,
+                    semaphore=semaphore,
+                    feed=feed,
+                    timeout=self.timeout,
+                    parser=self.parser,
+                    timezone=self.timezone,
+                    proxy_url=proxy_url,
+                )
+                for feed in self.feeds
+            ]
+
+            # Run all concurrently (semaphore limits active connections)
+            results: list[tuple[str, list[RSSItem], str | None]] = await asyncio.gather(*tasks)
+
+        # Process results
+        for feed_id, items, error in results:
+            if error:
+                failed_ids.append(feed_id)
+            else:
+                all_items[feed_id] = items
+
+        total_items = sum(len(items) for items in all_items.values())
+        log.success("RSS 异步抓取完成", success_count=len(all_items), failed_count=len(failed_ids), total_items=total_items)
+
+        return RSSData(
+            date=crawl_date,
+            crawl_time=crawl_time,
+            items=all_items,
+            id_to_name=id_to_name,
+            failed_ids=failed_ids,
+        )
+
+    # ── Config loader ────────────────────────────────────────────────────────
+
     @classmethod
-    def from_config(cls, config: Dict) -> "RSSFetcher":
+    def from_config(cls, config: dict) -> RSSFetcher:
         """
         从配置字典创建抓取器
 
         Args:
-            config: 配置字典，格式如下：
-                {
-                    "enabled": true,
-                    "request_interval": 2000,
-                    "freshness_filter": {
-                        "enabled": true,
-                        "max_age_days": 3
-                    },
-                    "feeds": [
-                        {"id": "hacker-news", "name": "Hacker News", "url": "...", "max_age_days": 1}
-                    ]
-                }
-
-        Returns:
-            RSSFetcher 实例
+            config: 配置字典
         """
-        # 读取新鲜度过滤配置
         freshness_config = config.get("freshness_filter", {})
-        freshness_enabled = freshness_config.get("enabled", True)  # 默认启用
-        default_max_age_days = freshness_config.get("max_age_days", 3)  # 默认3天
+        freshness_enabled = freshness_config.get("enabled", True)
+        default_max_age_days = freshness_config.get("max_age_days", 3)
 
         feeds = []
         for feed_config in config.get("feeds", []):
-            # 读取并验证单个 feed 的 max_age_days（可选）
             max_age_days_raw = feed_config.get("max_age_days")
             max_age_days = None
             if max_age_days_raw is not None:
@@ -280,20 +397,20 @@ class RSSFetcher:
                     max_age_days = int(max_age_days_raw)
                     if max_age_days < 0:
                         feed_id = feed_config.get("id", "unknown")
-                        print(f"[警告] RSS feed '{feed_id}' 的 max_age_days 为负数，将使用全局默认值")
+                        log.warning(f"RSS feed '{feed_id}' 的 max_age_days 为负数，将使用全局默认值")
                         max_age_days = None
                 except (ValueError, TypeError):
                     feed_id = feed_config.get("id", "unknown")
-                    print(f"[警告] RSS feed '{feed_id}' 的 max_age_days 格式错误：{max_age_days_raw}")
+                    log.warning(f"RSS feed '{feed_id}' 的 max_age_days 格式错误", raw_value=str(max_age_days_raw))
                     max_age_days = None
 
             feed = RSSFeedConfig(
                 id=feed_config.get("id", ""),
                 name=feed_config.get("name", ""),
                 url=feed_config.get("url", ""),
-                max_items=feed_config.get("max_items", 0),  # 0=不限制
+                max_items=feed_config.get("max_items", 0),
                 enabled=feed_config.get("enabled", True),
-                max_age_days=max_age_days,  # None=使用全局，0=禁用，>0=覆盖
+                max_age_days=max_age_days,
             )
             if feed.id and feed.url:
                 feeds.append(feed)

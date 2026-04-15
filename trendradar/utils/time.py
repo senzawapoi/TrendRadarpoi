@@ -1,10 +1,8 @@
-# coding=utf-8
 """
 时间工具模块 - 统一时间处理函数
 """
 
 from datetime import datetime
-from typing import Optional
 
 import pytz
 
@@ -31,7 +29,7 @@ def get_configured_time(timezone: str = DEFAULT_TIMEZONE) -> datetime:
 
 
 def format_date_folder(
-    date: Optional[str] = None, timezone: str = DEFAULT_TIMEZONE
+    date: str | None = None, timezone: str = DEFAULT_TIMEZONE
 ) -> str:
     """
     格式化日期文件夹名 (ISO 格式: YYYY-MM-DD)

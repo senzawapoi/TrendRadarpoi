@@ -1,17 +1,15 @@
-# coding=utf-8
 """
 平台标题格式化模块
 
 提供多平台标题格式化功能
 """
 
-from typing import Dict
 
-from trendradar.report.helpers import clean_title, html_escape, format_rank_display
+from trendradar.report.helpers import clean_title, format_rank_display, html_escape
 
 
 def format_title_for_platform(
-    platform: str, title_data: Dict, show_source: bool = True, show_keyword: bool = False
+    platform: str, title_data: dict, show_source: bool = True, show_keyword: bool = False
 ) -> str:
     """统一的标题格式化方法
 
@@ -64,11 +62,11 @@ def format_title_for_platform(
 
         # 构建双语标题显示
         title_content = formatted_title
-        
+
         # 添加中文翻译（如果存在）
         if title_data.get("title_translated"):
             title_content += f"\n🇨🇳 {title_data['title_translated']}"
-        
+
         # 添加英文翻译（如果存在）
         if title_data.get("title_english"):
             title_content += f"\n🇺🇸 {title_data['title_english']}"
@@ -124,11 +122,11 @@ def format_title_for_platform(
 
         # 构建双语标题显示
         title_content = formatted_title
-        
+
         # 添加中文翻译（如果存在）
         if title_data.get("title_translated"):
             title_content += f"\n🇨🇳 {title_data['title_translated']}"
-        
+
         # 添加英文翻译（如果存在）
         if title_data.get("title_english"):
             title_content += f"\n🇺🇸 {title_data['title_english']}"

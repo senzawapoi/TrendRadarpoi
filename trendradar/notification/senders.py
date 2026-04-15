@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 消息发送器模块
 
@@ -12,24 +11,92 @@
 - Bark
 - Slack
 
-每个发送函数都支持分批发送，并通过参数化配置实现与 CONFIG 的解耦。
+基于: python-resilience skill — tenacity retry with exponential backoff
+基于: python-observability skill — structured logging
 """
 
 import smtplib
 import time
+from collections.abc import Callable
+from contextlib import contextmanager
 from datetime import datetime
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate, make_msgid
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 import requests
 
+from trendradar.core.exceptions import NotificationError
+from trendradar.utils.logging import log
+
 from .batch import add_batch_headers, get_max_batch_header_size
 from .formatters import convert_markdown_to_mrkdwn, strip_markdown
+
+# ── HTTP helpers with retry ────────────────────────────────────────────────────
+# 基于: python-resilience skill — exponential backoff retry
+
+
+@contextmanager
+def _http_session(proxies: dict[str, str] | None = None):
+    """
+    Context manager for HTTP session with automatic cleanup.
+
+    基于: python-resource-management skill — context managers for resource lifecycle
+    """
+    session = requests.Session()
+    if proxies:
+        session.proxies = proxies
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def _http_post_with_retry(
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    json: dict | None = None,
+    data: bytes | None = None,
+    proxies: dict[str, str] | None = None,
+    timeout: int = 30,
+    max_retries: int = 3,
+    channel: str = "HTTP",
+) -> requests.Response:
+    """
+    HTTP POST with exponential backoff retry.
+
+    基于: python-resilience skill — Exponential backoff retry for transient failures
+    """
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            with _http_session(proxies) as session:
+                response = session.post(
+                    url,
+                    headers=headers,
+                    json=json,
+                    data=data,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                return response
+
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout,
+                requests.exceptions.HTTPError) as e:
+            last_error = e
+            if attempt < max_retries:
+                wait = min(2 ** attempt, 10)
+                log.warning(f"{channel} 请求失败，将在 {wait}s 后重试", attempt=attempt, max_retries=max_retries, wait_s=wait, error=str(e))
+                time.sleep(wait)
+            else:
+                log.error(f"{channel} 请求失败（重试耗尽）", error=str(e))
+
+    raise NotificationError(f"{channel} 请求失败（重试 {max_retries} 次后）: {last_error}")
 
 
 # === SMTP 邮件配置 ===
@@ -62,10 +129,10 @@ SMTP_CONFIGS = {
 
 def send_to_feishu(
     webhook_url: str,
-    report_data: Dict,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
@@ -73,8 +140,8 @@ def send_to_feishu(
     batch_interval: float = 1.0,
     split_content_func: Callable = None,
     get_time_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到飞书（支持分批发送，支持热榜+RSS合并）
@@ -120,14 +187,12 @@ def send_to_feishu(
     # 统一添加批次头部（已预留空间，不会超限）
     batches = add_batch_headers(batches, "feishu", batch_size)
 
-    print(f"{log_prefix}消息分为 {len(batches)} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {len(batches)} 批次发送", channel=log_prefix, report_type=report_type, batch_count=len(batches))
 
     # 逐批发送
     for i, batch_content in enumerate(batches, 1):
         content_size = len(batch_content.encode("utf-8"))
-        print(
-            f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {i}/{len(batches)} 批次", channel=log_prefix, batch=i, total_batches=len(batches), size_bytes=content_size, report_type=report_type)
 
         total_titles = sum(
             len(stat["titles"]) for stat in report_data["stats"] if stat["count"] > 0
@@ -152,43 +217,42 @@ def send_to_feishu(
                 result = response.json()
                 # 检查飞书的响应状态
                 if result.get("StatusCode") == 0 or result.get("code") == 0:
-                    print(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功 [{report_type}]")
+                    log.success(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type)
                     # 批次间间隔
                     if i < len(batches):
                         time.sleep(batch_interval)
                 else:
                     error_msg = result.get("msg") or result.get("StatusMessage", "未知错误")
-                    print(
-                        f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，错误：{error_msg}"
-                    )
+                    log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=error_msg)
                     return False
             else:
-                print(
-                    f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
-                )
+                log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, status_code=response.status_code)
                 return False
+        except requests.exceptions.RequestException as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
+            return False
         except Exception as e:
-            print(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
             return False
 
-    print(f"{log_prefix}所有 {len(batches)} 批次发送完成 [{report_type}]")
+    log.success(f"{log_prefix}所有 {len(batches)} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=len(batches))
     return True
 
 
 def send_to_dingtalk(
     webhook_url: str,
-    report_data: Dict,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
     batch_size: int = 20000,
     batch_interval: float = 1.0,
     split_content_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到钉钉（支持分批发送，支持热榜+RSS合并）
@@ -233,14 +297,12 @@ def send_to_dingtalk(
     # 统一添加批次头部（已预留空间，不会超限）
     batches = add_batch_headers(batches, "dingtalk", batch_size)
 
-    print(f"{log_prefix}消息分为 {len(batches)} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {len(batches)} 批次发送", channel=log_prefix, report_type=report_type, batch_count=len(batches))
 
     # 逐批发送
     for i, batch_content in enumerate(batches, 1):
         content_size = len(batch_content.encode("utf-8"))
-        print(
-            f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {i}/{len(batches)} 批次", channel=log_prefix, batch=i, total_batches=len(batches), size_bytes=content_size, report_type=report_type)
 
         payload = {
             "msgtype": "markdown",
@@ -257,34 +319,33 @@ def send_to_dingtalk(
             if response.status_code == 200:
                 result = response.json()
                 if result.get("errcode") == 0:
-                    print(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功 [{report_type}]")
+                    log.success(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type)
                     # 批次间间隔
                     if i < len(batches):
                         time.sleep(batch_interval)
                 else:
-                    print(
-                        f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，错误：{result.get('errmsg')}"
-                    )
+                    log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=result.get("errmsg"))
                     return False
             else:
-                print(
-                    f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
-                )
+                log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, status_code=response.status_code)
                 return False
+        except requests.exceptions.RequestException as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
+            return False
         except Exception as e:
-            print(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
             return False
 
-    print(f"{log_prefix}所有 {len(batches)} 批次发送完成 [{report_type}]")
+    log.success(f"{log_prefix}所有 {len(batches)} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=len(batches))
     return True
 
 
 def send_to_wework(
     webhook_url: str,
-    report_data: Dict,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
@@ -292,8 +353,8 @@ def send_to_wework(
     batch_interval: float = 1.0,
     msg_type: str = "markdown",
     split_content_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到企业微信（支持分批发送，支持 markdown 和 text 两种格式，支持热榜+RSS合并）
@@ -328,9 +389,9 @@ def send_to_wework(
     is_text_mode = msg_type.lower() == "text"
 
     if is_text_mode:
-        print(f"{log_prefix}使用 text 格式（个人微信模式）[{report_type}]")
+        log.info(f"{log_prefix}使用 text 格式（个人微信模式）", channel=log_prefix, report_type=report_type, msg_type="text")
     else:
-        print(f"{log_prefix}使用 markdown 格式（群机器人模式）[{report_type}]")
+        log.info(f"{log_prefix}使用 markdown 格式（群机器人模式）", channel=log_prefix, report_type=report_type, msg_type="markdown")
 
     # text 模式使用 wework_text，markdown 模式使用 wework
     header_format_type = "wework_text" if is_text_mode else "wework"
@@ -346,7 +407,7 @@ def send_to_wework(
     # 统一添加批次头部（已预留空间，不会超限）
     batches = add_batch_headers(batches, header_format_type, batch_size)
 
-    print(f"{log_prefix}消息分为 {len(batches)} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {len(batches)} 批次发送", channel=log_prefix, report_type=report_type, batch_count=len(batches))
 
     # 逐批发送
     for i, batch_content in enumerate(batches, 1):
@@ -361,9 +422,7 @@ def send_to_wework(
             payload = {"msgtype": "markdown", "markdown": {"content": batch_content}}
             content_size = len(batch_content.encode("utf-8"))
 
-        print(
-            f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {i}/{len(batches)} 批次", channel=log_prefix, batch=i, total_batches=len(batches), size_bytes=content_size, report_type=report_type)
 
         try:
             response = requests.post(
@@ -372,43 +431,41 @@ def send_to_wework(
             if response.status_code == 200:
                 result = response.json()
                 if result.get("errcode") == 0:
-                    print(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功 [{report_type}]")
+                    log.success(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type)
                     # 批次间间隔
                     if i < len(batches):
                         time.sleep(batch_interval)
                 else:
-                    print(
-                        f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，错误：{result.get('errmsg')}"
-                    )
+                    log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=result.get("errmsg"))
                     return False
             else:
-                print(
-                    f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
-                )
+                log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, status_code=response.status_code)
                 return False
-        except Exception as e:
-            print(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错 [{report_type}]：{e}")
+        except requests.exceptions.RequestException as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
             return False
+        except Exception as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
 
-    print(f"{log_prefix}所有 {len(batches)} 批次发送完成 [{report_type}]")
+    log.success(f"{log_prefix}所有 {len(batches)} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=len(batches))
     return True
 
 
 def send_to_telegram(
     bot_token: str,
     chat_id: str,
-    report_data: Dict,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
     batch_size: int = 4000,
     batch_interval: float = 1.0,
     split_content_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到 Telegram（支持分批发送，支持热榜+RSS合并）
@@ -452,14 +509,12 @@ def send_to_telegram(
     # 统一添加批次头部（已预留空间，不会超限）
     batches = add_batch_headers(batches, "telegram", batch_size)
 
-    print(f"{log_prefix}消息分为 {len(batches)} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {len(batches)} 批次发送", channel=log_prefix, report_type=report_type, batch_count=len(batches))
 
     # 逐批发送
     for i, batch_content in enumerate(batches, 1):
         content_size = len(batch_content.encode("utf-8"))
-        print(
-            f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {i}/{len(batches)} 批次", channel=log_prefix, batch=i, total_batches=len(batches), size_bytes=content_size, report_type=report_type)
 
         payload = {
             "chat_id": chat_id,
@@ -475,25 +530,23 @@ def send_to_telegram(
             if response.status_code == 200:
                 result = response.json()
                 if result.get("ok"):
-                    print(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功 [{report_type}]")
+                    log.success(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type)
                     # 批次间间隔
                     if i < len(batches):
                         time.sleep(batch_interval)
                 else:
-                    print(
-                        f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，错误：{result.get('description')}"
-                    )
+                    log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=result.get("description"))
                     return False
             else:
-                print(
-                    f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
-                )
+                log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, status_code=response.status_code)
                 return False
-        except Exception as e:
-            print(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错 [{report_type}]：{e}")
+        except requests.exceptions.RequestException as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
             return False
+        except Exception as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
 
-    print(f"{log_prefix}所有 {len(batches)} 批次发送完成 [{report_type}]")
+    log.success(f"{log_prefix}所有 {len(batches)} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=len(batches))
     return True
 
 
@@ -503,8 +556,8 @@ def send_to_email(
     to_email: str,
     report_type: str,
     html_file_path: str,
-    custom_smtp_server: Optional[str] = None,
-    custom_smtp_port: Optional[int] = None,
+    custom_smtp_server: str | None = None,
+    custom_smtp_port: int | None = None,
     *,
     get_time_func: Callable = None,
 ) -> bool:
@@ -526,11 +579,11 @@ def send_to_email(
     """
     try:
         if not html_file_path or not Path(html_file_path).exists():
-            print(f"错误：HTML文件不存在或未提供: {html_file_path}")
+            log.error("邮件发送失败：HTML文件不存在或未提供", html_file=html_file_path)
             return False
 
-        print(f"使用HTML文件: {html_file_path}")
-        with open(html_file_path, "r", encoding="utf-8") as f:
+        log.debug("使用HTML文件", html_file=html_file_path)
+        with open(html_file_path, encoding="utf-8") as f:
             html_content = f.read()
 
         domain = from_email.split("@")[-1].lower()
@@ -554,7 +607,7 @@ def send_to_email(
             smtp_port = config["port"]
             use_tls = config["encryption"] == "TLS"
         else:
-            print(f"未识别的邮箱服务商: {domain}，使用通用 SMTP 配置")
+            log.warning("未识别的邮箱服务商，使用通用 SMTP 配置", domain=domain)
             smtp_server = f"smtp.{domain}"
             smtp_port = 587
             use_tls = True
@@ -597,9 +650,7 @@ TrendRadar 热点分析报告
         html_part = MIMEText(html_content, "html", "utf-8")
         msg.attach(html_part)
 
-        print(f"正在发送邮件到 {to_email}...")
-        print(f"SMTP 服务器: {smtp_server}:{smtp_port}")
-        print(f"发件人: {from_email}")
+        log.info("正在发送邮件", smtp_server=smtp_server, smtp_port=smtp_port, from_email=from_email, to_email=to_email)
 
         try:
             if use_tls:
@@ -622,32 +673,30 @@ TrendRadar 热点分析报告
             server.send_message(msg)
             server.quit()
 
-            print(f"邮件发送成功 [{report_type}] -> {to_email}")
+            log.success("邮件发送成功", report_type=report_type, to_email=to_email)
             return True
 
         except smtplib.SMTPServerDisconnected:
-            print("邮件发送失败：服务器意外断开连接，请检查网络或稍后重试")
+            log.error("邮件发送失败：服务器意外断开连接，请检查网络或稍后重试")
             return False
 
     except smtplib.SMTPAuthenticationError as e:
-        print("邮件发送失败：认证错误，请检查邮箱和密码/授权码")
-        print(f"详细错误: {str(e)}")
+        log.error("邮件发送失败：认证错误，请检查邮箱和密码/授权码", error=str(e))
         return False
     except smtplib.SMTPRecipientsRefused as e:
-        print(f"邮件发送失败：收件人地址被拒绝 {e}")
+        log.error("邮件发送失败：收件人地址被拒绝", error=str(e))
         return False
     except smtplib.SMTPSenderRefused as e:
-        print(f"邮件发送失败：发件人地址被拒绝 {e}")
+        log.error("邮件发送失败：发件人地址被拒绝", error=str(e))
         return False
     except smtplib.SMTPDataError as e:
-        print(f"邮件发送失败：邮件数据错误 {e}")
+        log.error("邮件发送失败：邮件数据错误", error=str(e))
         return False
     except smtplib.SMTPConnectError as e:
-        print(f"邮件发送失败：无法连接到 SMTP 服务器 {smtp_server}:{smtp_port}")
-        print(f"详细错误: {str(e)}")
+        log.error("邮件发送失败：无法连接到 SMTP 服务器", smtp_server=smtp_server, smtp_port=smtp_port, error=str(e))
         return False
     except Exception as e:
-        print(f"邮件发送失败 [{report_type}]：{e}")
+        log.error("邮件发送失败", report_type=report_type, error=str(e))
         import traceback
         traceback.print_exc()
         return False
@@ -656,18 +705,18 @@ TrendRadar 热点分析报告
 def send_to_ntfy(
     server_url: str,
     topic: str,
-    token: Optional[str],
-    report_data: Dict,
+    token: str | None,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
     batch_size: int = 3800,
     split_content_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到 ntfy（支持分批发送，严格遵守4KB限制，支持热榜+RSS合并）
@@ -736,13 +785,13 @@ def send_to_ntfy(
     batches = add_batch_headers(batches, "ntfy", batch_size)
 
     total_batches = len(batches)
-    print(f"{log_prefix}消息分为 {total_batches} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {total_batches} 批次发送", channel=log_prefix, report_type=report_type, batch_count=total_batches)
 
     # 反转批次顺序，使得在ntfy客户端显示时顺序正确
     # ntfy显示最新消息在上面，所以我们从最后一批开始推送
     reversed_batches = list(reversed(batches))
 
-    print(f"{log_prefix}将按反向顺序推送（最后批次先推送），确保客户端显示顺序正确")
+    log.debug(f"{log_prefix}将按反向顺序推送，确保客户端显示顺序正确", channel=log_prefix, batch_count=total_batches)
 
     # 逐批发送（反向顺序）
     success_count = 0
@@ -751,13 +800,11 @@ def send_to_ntfy(
         actual_batch_num = total_batches - idx + 1
 
         content_size = len(batch_content.encode("utf-8"))
-        print(
-            f"发送{log_prefix}第 {actual_batch_num}/{total_batches} 批次（推送顺序: {idx}/{total_batches}），大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {actual_batch_num}/{total_batches} 批次", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, push_order=idx, size_bytes=content_size, report_type=report_type)
 
         # 检查消息大小，确保不超过4KB
         if content_size > 4096:
-            print(f"警告：{log_prefix}第 {actual_batch_num} 批次消息过大（{content_size} 字节），可能被拒绝")
+            log.warning(f"{log_prefix}第 {actual_batch_num} 批次消息过大，可能被拒绝", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, size_bytes=content_size)
 
         # 更新 headers 的批次标识
         current_headers = headers.copy()
@@ -774,16 +821,14 @@ def send_to_ntfy(
             )
 
             if response.status_code == 200:
-                print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送成功 [{report_type}]")
+                log.success(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送成功", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
                 success_count += 1
                 if idx < total_batches:
                     # 公共服务器建议 2-3 秒，自托管可以更短
                     interval = 2 if "ntfy.sh" in server_url else 1
                     time.sleep(interval)
             elif response.status_code == 429:
-                print(
-                    f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次速率限制 [{report_type}]，等待后重试"
-                )
+                log.warning(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次速率限制，等待后重试", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
                 time.sleep(10)  # 等待10秒后重试
                 # 重试一次
                 retry_response = requests.post(
@@ -794,60 +839,51 @@ def send_to_ntfy(
                     timeout=30,
                 )
                 if retry_response.status_code == 200:
-                    print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次重试成功 [{report_type}]")
+                    log.success(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次重试成功", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
                     success_count += 1
                 else:
-                    print(
-                        f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次重试失败，状态码：{retry_response.status_code}"
-                    )
+                    log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次重试失败", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, status_code=retry_response.status_code)
             elif response.status_code == 413:
-                print(
-                    f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次消息过大被拒绝 [{report_type}]，消息大小：{content_size} 字节"
-                )
+                log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次消息过大被拒绝", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, size_bytes=content_size)
             else:
-                print(
-                    f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
-                )
-                try:
-                    print(f"错误详情：{response.text}")
-                except:
-                    pass
+                log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送失败", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, status_code=response.status_code)
+                log.debug("ntfy错误详情", response_text=response.text)
 
         except requests.exceptions.ConnectTimeout:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接超时 [{report_type}]")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接超时", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
         except requests.exceptions.ReadTimeout:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次读取超时 [{report_type}]")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次读取超时", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
         except requests.exceptions.ConnectionError as e:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接错误 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接错误", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, error=str(e))
         except Exception as e:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送异常 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送异常", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, error=str(e))
 
     # 判断整体发送是否成功
     if success_count == total_batches:
-        print(f"{log_prefix}所有 {total_batches} 批次发送完成 [{report_type}]")
+        log.success(f"{log_prefix}所有 {total_batches} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=total_batches)
         return True
     elif success_count > 0:
-        print(f"{log_prefix}部分发送成功：{success_count}/{total_batches} 批次 [{report_type}]")
+        log.warning(f"{log_prefix}部分发送成功", channel=log_prefix, report_type=report_type, success_count=success_count, total_batches=total_batches)
         return True  # 部分成功也视为成功
     else:
-        print(f"{log_prefix}发送完全失败 [{report_type}]")
+        log.error(f"{log_prefix}发送完全失败", channel=log_prefix, report_type=report_type)
         return False
 
 
 def send_to_bark(
     bark_url: str,
-    report_data: Dict,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
     batch_size: int = 3600,
     batch_interval: float = 1.0,
     split_content_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到 Bark（支持分批发送，使用 markdown 格式，支持热榜+RSS合并）
@@ -882,7 +918,7 @@ def send_to_bark(
     device_key = parsed_url.path.strip('/').split('/')[0] if parsed_url.path else None
 
     if not device_key:
-        print(f"{log_prefix} URL 格式错误，无法提取 device_key: {bark_url}")
+        log.error(f"{log_prefix} URL 格式错误，无法提取 device_key", channel=log_prefix, bark_url=bark_url)
         return False
 
     # 构建正确的 API 端点
@@ -900,13 +936,13 @@ def send_to_bark(
     batches = add_batch_headers(batches, "bark", batch_size)
 
     total_batches = len(batches)
-    print(f"{log_prefix}消息分为 {total_batches} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {total_batches} 批次发送", channel=log_prefix, report_type=report_type, batch_count=total_batches)
 
     # 反转批次顺序，使得在Bark客户端显示时顺序正确
     # Bark显示最新消息在上面，所以我们从最后一批开始推送
     reversed_batches = list(reversed(batches))
 
-    print(f"{log_prefix}将按反向顺序推送（最后批次先推送），确保客户端显示顺序正确")
+    log.debug(f"{log_prefix}将按反向顺序推送，确保客户端显示顺序正确", channel=log_prefix, batch_count=total_batches)
 
     # 逐批发送（反向顺序）
     success_count = 0
@@ -915,15 +951,11 @@ def send_to_bark(
         actual_batch_num = total_batches - idx + 1
 
         content_size = len(batch_content.encode("utf-8"))
-        print(
-            f"发送{log_prefix}第 {actual_batch_num}/{total_batches} 批次（推送顺序: {idx}/{total_batches}），大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {actual_batch_num}/{total_batches} 批次", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, push_order=idx, size_bytes=content_size, report_type=report_type)
 
         # 检查消息大小（Bark使用APNs，限制4KB）
         if content_size > 4096:
-            print(
-                f"警告：{log_prefix}第 {actual_batch_num}/{total_batches} 批次消息过大（{content_size} 字节），可能被拒绝"
-            )
+            log.warning(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次消息过大，可能被拒绝", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, size_bytes=content_size)
 
         # 构建JSON payload
         payload = {
@@ -946,59 +978,52 @@ def send_to_bark(
             if response.status_code == 200:
                 result = response.json()
                 if result.get("code") == 200:
-                    print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送成功 [{report_type}]")
+                    log.success(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送成功", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
                     success_count += 1
                     # 批次间间隔
                     if idx < total_batches:
                         time.sleep(batch_interval)
                 else:
-                    print(
-                        f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送失败 [{report_type}]，错误：{result.get('message', '未知错误')}"
-                    )
+                    log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送失败", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, error=result.get("message", "未知错误"))
             else:
-                print(
-                    f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
-                )
-                try:
-                    print(f"错误详情：{response.text}")
-                except:
-                    pass
+                log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送失败", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, status_code=response.status_code)
+                log.debug("Bark错误详情", response_text=response.text)
 
         except requests.exceptions.ConnectTimeout:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接超时 [{report_type}]")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接超时", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
         except requests.exceptions.ReadTimeout:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次读取超时 [{report_type}]")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次读取超时", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type)
         except requests.exceptions.ConnectionError as e:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接错误 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次连接错误", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, error=str(e))
         except Exception as e:
-            print(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送异常 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {actual_batch_num}/{total_batches} 批次发送异常", channel=log_prefix, batch=actual_batch_num, total_batches=total_batches, report_type=report_type, error=str(e))
 
     # 判断整体发送是否成功
     if success_count == total_batches:
-        print(f"{log_prefix}所有 {total_batches} 批次发送完成 [{report_type}]")
+        log.success(f"{log_prefix}所有 {total_batches} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=total_batches)
         return True
     elif success_count > 0:
-        print(f"{log_prefix}部分发送成功：{success_count}/{total_batches} 批次 [{report_type}]")
+        log.warning(f"{log_prefix}部分发送成功", channel=log_prefix, report_type=report_type, success_count=success_count, total_batches=total_batches)
         return True  # 部分成功也视为成功
     else:
-        print(f"{log_prefix}发送完全失败 [{report_type}]")
+        log.error(f"{log_prefix}发送完全失败", channel=log_prefix, report_type=report_type)
         return False
 
 
 def send_to_slack(
     webhook_url: str,
-    report_data: Dict,
+    report_data: dict,
     report_type: str,
-    update_info: Optional[Dict] = None,
-    proxy_url: Optional[str] = None,
+    update_info: dict | None = None,
+    proxy_url: str | None = None,
     mode: str = "daily",
     account_label: str = "",
     *,
     batch_size: int = 4000,
     batch_interval: float = 1.0,
     split_content_func: Callable = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
 ) -> bool:
     """
     发送到 Slack（支持分批发送，使用 mrkdwn 格式，支持热榜+RSS合并）
@@ -1039,7 +1064,7 @@ def send_to_slack(
     # 统一添加批次头部（已预留空间，不会超限）
     batches = add_batch_headers(batches, "slack", batch_size)
 
-    print(f"{log_prefix}消息分为 {len(batches)} 批次发送 [{report_type}]")
+    log.info(f"{log_prefix}消息分为 {len(batches)} 批次发送", channel=log_prefix, report_type=report_type, batch_count=len(batches))
 
     # 逐批发送
     for i, batch_content in enumerate(batches, 1):
@@ -1047,9 +1072,7 @@ def send_to_slack(
         mrkdwn_content = convert_markdown_to_mrkdwn(batch_content)
 
         content_size = len(mrkdwn_content.encode("utf-8"))
-        print(
-            f"发送{log_prefix}第 {i}/{len(batches)} 批次，大小：{content_size} 字节 [{report_type}]"
-        )
+        log.info(f"发送{log_prefix}第 {i}/{len(batches)} 批次", channel=log_prefix, batch=i, total_batches=len(batches), size_bytes=content_size, report_type=report_type)
 
         # 构建 Slack payload（使用简单的 text 字段，支持 mrkdwn）
         payload = {"text": mrkdwn_content}
@@ -1061,19 +1084,20 @@ def send_to_slack(
 
             # Slack Incoming Webhooks 成功时返回 "ok" 文本
             if response.status_code == 200 and response.text == "ok":
-                print(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功 [{report_type}]")
+                log.success(f"{log_prefix}第 {i}/{len(batches)} 批次发送成功", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type)
                 # 批次间间隔
                 if i < len(batches):
                     time.sleep(batch_interval)
             else:
                 error_msg = response.text if response.text else f"状态码：{response.status_code}"
-                print(
-                    f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，错误：{error_msg}"
-                )
+                log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送失败", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=error_msg)
                 return False
+        except requests.exceptions.RequestException as e:
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
+            return False
         except Exception as e:
-            print(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错 [{report_type}]：{e}")
+            log.error(f"{log_prefix}第 {i}/{len(batches)} 批次发送出错", channel=log_prefix, batch=i, total_batches=len(batches), report_type=report_type, error=str(e))
             return False
 
-    print(f"{log_prefix}所有 {len(batches)} 批次发送完成 [{report_type}]")
+    log.success(f"{log_prefix}所有 {len(batches)} 批次发送完成", channel=log_prefix, report_type=report_type, batch_count=len(batches))
     return True

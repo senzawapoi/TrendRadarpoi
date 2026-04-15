@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 频率词配置加载模块
 
@@ -15,10 +14,9 @@
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Union
 
 
-def _parse_word(word: str) -> Dict:
+def _parse_word(word: str) -> dict:
     """
     解析单个词，识别是否为正则表达式，支持显示名称
 
@@ -65,7 +63,7 @@ def _parse_word(word: str) -> Dict:
     return {"word": word, "is_regex": False, "pattern": None, "display_name": display_name}
 
 
-def _word_matches(word_config: Union[str, Dict], title_lower: str) -> bool:
+def _word_matches(word_config: str | dict, title_lower: str) -> bool:
     """
     检查词是否在标题中匹配
 
@@ -89,8 +87,8 @@ def _word_matches(word_config: Union[str, Dict], title_lower: str) -> bool:
 
 
 def load_frequency_words(
-    frequency_file: Optional[str] = None,
-) -> Tuple[List[Dict], List[str], List[str]]:
+    frequency_file: str | None = None,
+) -> tuple[list[dict], list[str], list[str]]:
     """
     加载频率词配置
 
@@ -123,7 +121,7 @@ def load_frequency_words(
     if not frequency_path.exists():
         raise FileNotFoundError(f"频率词文件 {frequency_file} 不存在")
 
-    with open(frequency_path, "r", encoding="utf-8") as f:
+    with open(frequency_path, encoding="utf-8") as f:
         content = f.read()
 
     word_groups = [group.strip() for group in content.split("\n\n") if group.strip()]
@@ -218,9 +216,9 @@ def load_frequency_words(
 
 def matches_word_groups(
     title: str,
-    word_groups: List[Dict],
-    filter_words: List,
-    global_filters: Optional[List[str]] = None
+    word_groups: list[dict],
+    filter_words: list,
+    global_filters: list[str] | None = None
 ) -> bool:
     """
     检查标题是否匹配词组规则

@@ -1,24 +1,23 @@
-# coding=utf-8
 """
 通知内容渲染模块
 
 提供多平台通知内容渲染功能，生成格式化的推送消息
 """
 
+from collections.abc import Callable
 from datetime import datetime
-from typing import Dict, Optional, Callable
 
 from trendradar.report.formatter import format_title_for_platform
 
 
 def render_feishu_content(
-    report_data: Dict,
-    update_info: Optional[Dict] = None,
+    report_data: dict,
+    update_info: dict | None = None,
     mode: str = "daily",
     separator: str = "---",
     reverse_content_order: bool = False,
-    get_time_func: Optional[Callable[[], datetime]] = None,
-    rss_items: Optional[list] = None,
+    get_time_func: Callable[[], datetime] | None = None,
+    rss_items: list | None = None,
 ) -> str:
     """渲染飞书通知内容（支持热榜+RSS合并）
 
@@ -144,12 +143,12 @@ def render_feishu_content(
 
 
 def render_dingtalk_content(
-    report_data: Dict,
-    update_info: Optional[Dict] = None,
+    report_data: dict,
+    update_info: dict | None = None,
     mode: str = "daily",
     reverse_content_order: bool = False,
-    get_time_func: Optional[Callable[[], datetime]] = None,
-    rss_items: Optional[list] = None,
+    get_time_func: Callable[[], datetime] | None = None,
+    rss_items: list | None = None,
 ) -> str:
     """渲染钉钉通知内容（支持热榜+RSS合并）
 
@@ -280,9 +279,9 @@ def render_dingtalk_content(
 
 def render_rss_feishu_content(
     rss_items: list,
-    feeds_info: Optional[Dict] = None,
+    feeds_info: dict | None = None,
     separator: str = "---",
-    get_time_func: Optional[Callable[[], datetime]] = None,
+    get_time_func: Callable[[], datetime] | None = None,
 ) -> str:
     """渲染 RSS 飞书通知内容
 
@@ -307,7 +306,7 @@ def render_rss_feishu_content(
         return f"📭 暂无新的 RSS 订阅内容\n\n<font color='grey'>更新时间：{now.strftime('%Y-%m-%d %H:%M:%S')}</font>"
 
     # 按 feed_id 分组
-    feeds_map: Dict[str, list] = {}
+    feeds_map: dict[str, list] = {}
     for item in rss_items:
         feed_id = item.get("feed_id", "unknown")
         if feed_id not in feeds_map:
@@ -353,8 +352,8 @@ def render_rss_feishu_content(
 
 def render_rss_dingtalk_content(
     rss_items: list,
-    feeds_info: Optional[Dict] = None,
-    get_time_func: Optional[Callable[[], datetime]] = None,
+    feeds_info: dict | None = None,
+    get_time_func: Callable[[], datetime] | None = None,
 ) -> str:
     """渲染 RSS 钉钉通知内容
 
@@ -372,7 +371,7 @@ def render_rss_dingtalk_content(
         return f"📭 暂无新的 RSS 订阅内容\n\n> 更新时间：{now.strftime('%Y-%m-%d %H:%M:%S')}"
 
     # 按 feed_id 分组
-    feeds_map: Dict[str, list] = {}
+    feeds_map: dict[str, list] = {}
     for item in rss_items:
         feed_id = item.get("feed_id", "unknown")
         if feed_id not in feeds_map:
@@ -420,8 +419,8 @@ def render_rss_dingtalk_content(
 
 def render_rss_markdown_content(
     rss_items: list,
-    feeds_info: Optional[Dict] = None,
-    get_time_func: Optional[Callable[[], datetime]] = None,
+    feeds_info: dict | None = None,
+    get_time_func: Callable[[], datetime] | None = None,
 ) -> str:
     """渲染 RSS 通用 Markdown 格式内容（企业微信、Bark、ntfy、Slack）
 
@@ -439,7 +438,7 @@ def render_rss_markdown_content(
         return f"📭 暂无新的 RSS 订阅内容\n\n更新时间：{now.strftime('%Y-%m-%d %H:%M:%S')}"
 
     # 按 feed_id 分组
-    feeds_map: Dict[str, list] = {}
+    feeds_map: dict[str, list] = {}
     for item in rss_items:
         feed_id = item.get("feed_id", "unknown")
         if feed_id not in feeds_map:
@@ -485,7 +484,7 @@ def _render_rss_section_feishu(rss_items: list, separator: str = "---") -> str:
         return ""
 
     # 按 feed_id 分组
-    feeds_map: Dict[str, list] = {}
+    feeds_map: dict[str, list] = {}
     for item in rss_items:
         feed_id = item.get("feed_id", "unknown")
         if feed_id not in feeds_map:
@@ -528,7 +527,7 @@ def _render_rss_section_markdown(rss_items: list) -> str:
         return ""
 
     # 按 feed_id 分组
-    feeds_map: Dict[str, list] = {}
+    feeds_map: dict[str, list] = {}
     for item in rss_items:
         feed_id = item.get("feed_id", "unknown")
         if feed_id not in feeds_map:

@@ -1,17 +1,16 @@
-# coding=utf-8
 """
 RSS 解析器
 
 支持 RSS 2.0、Atom 和 JSON Feed 1.1 格式的解析
 """
 
-import re
 import html
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Dict, Any
 from email.utils import parsedate_to_datetime
+from typing import Any
 
 try:
     import feedparser
@@ -26,10 +25,10 @@ class ParsedRSSItem:
     """解析后的 RSS 条目"""
     title: str
     url: str
-    published_at: Optional[str] = None
-    summary: Optional[str] = None
-    author: Optional[str] = None
-    guid: Optional[str] = None
+    published_at: str | None = None
+    summary: str | None = None
+    author: str | None = None
+    guid: str | None = None
 
 
 class RSSParser:
@@ -47,7 +46,7 @@ class RSSParser:
 
         self.max_summary_length = max_summary_length
 
-    def parse(self, content: str, feed_url: str = "") -> List[ParsedRSSItem]:
+    def parse(self, content: str, feed_url: str = "") -> list[ParsedRSSItem]:
         """
         解析 RSS/Atom/JSON Feed 内容
 
@@ -93,7 +92,7 @@ class RSSParser:
         except (json.JSONDecodeError, TypeError):
             return False
 
-    def _parse_json_feed(self, content: str, feed_url: str = "") -> List[ParsedRSSItem]:
+    def _parse_json_feed(self, content: str, feed_url: str = "") -> list[ParsedRSSItem]:
         """
         解析 JSON Feed 1.1 格式
 
@@ -123,7 +122,7 @@ class RSSParser:
 
         return items
 
-    def _parse_json_feed_item(self, item_data: Dict[str, Any]) -> Optional[ParsedRSSItem]:
+    def _parse_json_feed_item(self, item_data: dict[str, Any]) -> ParsedRSSItem | None:
         """解析单个 JSON Feed 条目"""
         # 标题：优先 title，否则使用 content_text 的前 100 字符
         title = item_data.get("title", "")
@@ -177,7 +176,7 @@ class RSSParser:
             guid=guid,
         )
 
-    def _parse_iso_date(self, date_str: str) -> Optional[str]:
+    def _parse_iso_date(self, date_str: str) -> str | None:
         """解析 ISO 8601 日期格式"""
         if not date_str:
             return None
@@ -193,7 +192,7 @@ class RSSParser:
 
         return None
 
-    def parse_url(self, url: str, timeout: int = 10) -> List[ParsedRSSItem]:
+    def parse_url(self, url: str, timeout: int = 10) -> list[ParsedRSSItem]:
         """
         从 URL 解析 RSS
 
@@ -213,7 +212,7 @@ class RSSParser:
 
         return self.parse(response.text, url)
 
-    def _parse_entry(self, entry: Any) -> Optional[ParsedRSSItem]:
+    def _parse_entry(self, entry: Any) -> ParsedRSSItem | None:
         """解析单个条目"""
         title = self._clean_text(entry.get("title", ""))
         if not title:
@@ -260,7 +259,7 @@ class RSSParser:
 
         return text.strip()
 
-    def _parse_date(self, entry: Any) -> Optional[str]:
+    def _parse_date(self, entry: Any) -> str | None:
         """解析发布日期"""
         # feedparser 会自动解析日期到 published_parsed
         date_struct = entry.get("published_parsed") or entry.get("updated_parsed")
@@ -290,7 +289,7 @@ class RSSParser:
 
         return None
 
-    def _parse_summary(self, entry: Any) -> Optional[str]:
+    def _parse_summary(self, entry: Any) -> str | None:
         """解析摘要"""
         summary = entry.get("summary") or entry.get("description", "")
 
@@ -311,7 +310,7 @@ class RSSParser:
 
         return summary
 
-    def _parse_author(self, entry: Any) -> Optional[str]:
+    def _parse_author(self, entry: Any) -> str | None:
         """解析作者"""
         author = entry.get("author")
         if author:

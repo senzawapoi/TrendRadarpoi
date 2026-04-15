@@ -5,20 +5,19 @@
 支持 MCP 客户端将参数序列化为字符串的情况。
 """
 
-from datetime import datetime
-from typing import List, Optional, Union
-import os
-import json
-import yaml
 import ast
+import json
+import os
+from datetime import datetime
 
-from .errors import InvalidParameterError
+import yaml
+
 from .date_parser import DateParser
-
+from .errors import InvalidParameterError
 
 # ==================== 辅助函数：处理字符串序列化 ====================
 
-def _parse_string_to_list(value: str) -> List[str]:
+def _parse_string_to_list(value: str) -> list[str]:
     """
     将字符串解析为列表
 
@@ -98,7 +97,7 @@ def _parse_string_to_int(value: str, param_name: str = "参数") -> int:
     except ValueError:
         raise InvalidParameterError(
             f"{param_name} 必须是整数，无法解析: {value}",
-            suggestion=f"请提供有效的整数值，如: 10, 50, 100"
+            suggestion="请提供有效的整数值，如: 10, 50, 100"
         )
 
 
@@ -123,7 +122,7 @@ def _parse_string_to_float(value: str, param_name: str = "参数") -> float:
     except ValueError:
         raise InvalidParameterError(
             f"{param_name} 必须是数字，无法解析: {value}",
-            suggestion=f"请提供有效的数字值，如: 0.6, 3.0"
+            suggestion="请提供有效的数字值，如: 0.6, 3.0"
         )
 
 
@@ -148,7 +147,7 @@ def _parse_string_to_bool(value: str) -> bool:
         return bool(value)
 
 
-def get_supported_platforms() -> List[str]:
+def get_supported_platforms() -> list[str]:
     """
     从 config.yaml 动态获取支持的平台列表
 
@@ -165,7 +164,7 @@ def get_supported_platforms() -> List[str]:
         config_path = os.path.join(current_dir, "..", "..", "config", "config.yaml")
         config_path = os.path.normpath(config_path)
 
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, encoding='utf-8') as f:
             config = yaml.safe_load(f)
             platforms = config.get('platforms', [])
             return [p['id'] for p in platforms if 'id' in p]
@@ -175,7 +174,7 @@ def get_supported_platforms() -> List[str]:
         return []
 
 
-def validate_platforms(platforms: Optional[Union[List[str], str]]) -> List[str]:
+def validate_platforms(platforms: list[str] | str | None) -> list[str]:
     """
     验证平台列表
 
@@ -236,7 +235,7 @@ def validate_platforms(platforms: Optional[Union[List[str], str]]) -> List[str]:
     return platforms
 
 
-def validate_limit(limit: Optional[Union[int, str]], default: int = 20, max_limit: int = 1000) -> int:
+def validate_limit(limit: int | str | None, default: int = 20, max_limit: int = 1000) -> int:
     """
     验证数量限制参数
 
@@ -267,7 +266,7 @@ def validate_limit(limit: Optional[Union[int, str]], default: int = 20, max_limi
     if limit > max_limit:
         raise InvalidParameterError(
             f"limit 不能超过 {max_limit}",
-            suggestion=f"请使用分页或降低limit值"
+            suggestion="请使用分页或降低limit值"
         )
 
     return limit
@@ -295,7 +294,7 @@ def validate_date(date_str: str) -> datetime:
         )
 
 
-def normalize_date_range(date_range: Optional[Union[dict, str]]) -> Optional[Union[dict, str]]:
+def normalize_date_range(date_range: dict | str | None) -> dict | str | None:
     """
     规范化 date_range 参数
 
@@ -342,7 +341,7 @@ def normalize_date_range(date_range: Optional[Union[dict, str]]) -> Optional[Uni
     return date_range
 
 
-def validate_date_range(date_range: Optional[Union[dict, str]]) -> Optional[tuple]:
+def validate_date_range(date_range: dict | str | None) -> tuple | None:
     """
     验证日期范围
 
@@ -455,7 +454,7 @@ def validate_keyword(keyword: str) -> str:
     return keyword
 
 
-def validate_top_n(top_n: Optional[Union[int, str]], default: int = 10) -> int:
+def validate_top_n(top_n: int | str | None, default: int = 10) -> int:
     """
     验证TOP N参数
 
@@ -472,7 +471,7 @@ def validate_top_n(top_n: Optional[Union[int, str]], default: int = 10) -> int:
     return validate_limit(top_n, default=default, max_limit=100)
 
 
-def validate_mode(mode: Optional[str], valid_modes: List[str], default: str) -> str:
+def validate_mode(mode: str | None, valid_modes: list[str], default: str) -> str:
     """
     验证模式参数
 
@@ -502,7 +501,7 @@ def validate_mode(mode: Optional[str], valid_modes: List[str], default: str) -> 
     return mode
 
 
-def validate_config_section(section: Optional[str]) -> str:
+def validate_config_section(section: str | None) -> str:
     """
     验证配置节参数
 
@@ -520,7 +519,7 @@ def validate_config_section(section: Optional[str]) -> str:
 
 
 def validate_threshold(
-    threshold: Optional[Union[float, int, str]],
+    threshold: float | int | str | None,
     default: float = 0.6,
     min_value: float = 0.0,
     max_value: float = 1.0,

@@ -1,16 +1,14 @@
-# coding=utf-8
 """
 消息分批处理模块
 
 提供消息内容分批拆分功能，确保消息大小不超过各平台限制
 """
 
+from collections.abc import Callable
 from datetime import datetime
-from typing import Dict, List, Optional, Callable
 
 from trendradar.report.formatter import format_title_for_platform
 from trendradar.utils.time import format_iso_time_friendly
-
 
 # 默认批次大小配置
 DEFAULT_BATCH_SIZES = {
@@ -22,20 +20,20 @@ DEFAULT_BATCH_SIZES = {
 
 
 def split_content_into_batches(
-    report_data: Dict,
+    report_data: dict,
     format_type: str,
-    update_info: Optional[Dict] = None,
-    max_bytes: Optional[int] = None,
+    update_info: dict | None = None,
+    max_bytes: int | None = None,
     mode: str = "daily",
-    batch_sizes: Optional[Dict[str, int]] = None,
+    batch_sizes: dict[str, int] | None = None,
     feishu_separator: str = "---",
     reverse_content_order: bool = False,
-    get_time_func: Optional[Callable[[], datetime]] = None,
-    rss_items: Optional[list] = None,
-    rss_new_items: Optional[list] = None,
+    get_time_func: Callable[[], datetime] | None = None,
+    rss_items: list | None = None,
+    rss_new_items: list | None = None,
     timezone: str = "Asia/Shanghai",
     display_mode: str = "keyword",
-) -> List[str]:
+) -> list[str]:
     """分批处理消息内容，确保词组标题+至少第一条新闻的完整性（支持热榜+RSS合并）
 
     热榜统计与RSS统计并列显示，热榜新增与RSS新增并列显示。
@@ -91,7 +89,7 @@ def split_content_into_batches(
     elif format_type == "dingtalk":
         base_header = f"**总新闻数：** {total_titles}\n\n"
         base_header += f"**时间：** {now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-        base_header += f"**类型：** 热点分析报告\n\n"
+        base_header += "**类型：** 热点分析报告\n\n"
         base_header += "---\n\n"
     elif format_type == "slack":
         base_header = f"*总新闻数：* {total_titles}\n\n"
@@ -130,11 +128,7 @@ def split_content_into_batches(
             stats_header = f"📊 **{stats_title}**\n\n"
         elif format_type == "telegram":
             stats_header = f"📊 {stats_title}\n\n"
-        elif format_type == "ntfy":
-            stats_header = f"📊 **{stats_title}**\n\n"
-        elif format_type == "feishu":
-            stats_header = f"📊 **{stats_title}**\n\n"
-        elif format_type == "dingtalk":
+        elif format_type == "ntfy" or format_type == "feishu" or format_type == "dingtalk":
             stats_header = f"📊 **{stats_title}**\n\n"
         elif format_type == "slack":
             stats_header = f"📊 *{stats_title}*\n\n"
@@ -355,17 +349,15 @@ def split_content_into_batches(
             if i < len(report_data["stats"]) - 1:
                 separator = ""
                 if format_type in ("wework", "bark"):
-                    separator = f"\n\n\n\n"
-                elif format_type == "telegram":
-                    separator = f"\n\n"
-                elif format_type == "ntfy":
-                    separator = f"\n\n"
+                    separator = "\n\n\n\n"
+                elif format_type == "telegram" or format_type == "ntfy":
+                    separator = "\n\n"
                 elif format_type == "feishu":
                     separator = f"\n{feishu_separator}\n\n"
                 elif format_type == "dingtalk":
-                    separator = f"\n---\n\n"
+                    separator = "\n---\n\n"
                 elif format_type == "slack":
-                    separator = f"\n\n"
+                    separator = "\n\n"
 
                 test_content = current_batch + separator
                 if (
@@ -418,11 +410,7 @@ def split_content_into_batches(
                 source_header = f"**{source_data['source_name']}** ({len(source_data['titles'])} 条):\n\n"
             elif format_type == "telegram":
                 source_header = f"{source_data['source_name']} ({len(source_data['titles'])} 条):\n\n"
-            elif format_type == "ntfy":
-                source_header = f"**{source_data['source_name']}** ({len(source_data['titles'])} 条):\n\n"
-            elif format_type == "feishu":
-                source_header = f"**{source_data['source_name']}** ({len(source_data['titles'])} 条):\n\n"
-            elif format_type == "dingtalk":
+            elif format_type == "ntfy" or format_type == "feishu" or format_type == "dingtalk":
                 source_header = f"**{source_data['source_name']}** ({len(source_data['titles'])} 条):\n\n"
             elif format_type == "slack":
                 source_header = f"*{source_data['source_name']}* ({len(source_data['titles'])} 条):\n\n"
@@ -574,15 +562,15 @@ def split_content_into_batches(
     if report_data["failed_ids"]:
         failed_header = ""
         if format_type == "wework":
-            failed_header = f"\n\n\n\n⚠️ **数据获取失败的平台：**\n\n"
+            failed_header = "\n\n\n\n⚠️ **数据获取失败的平台：**\n\n"
         elif format_type == "telegram":
-            failed_header = f"\n\n⚠️ 数据获取失败的平台：\n\n"
+            failed_header = "\n\n⚠️ 数据获取失败的平台：\n\n"
         elif format_type == "ntfy":
-            failed_header = f"\n\n⚠️ **数据获取失败的平台：**\n\n"
+            failed_header = "\n\n⚠️ **数据获取失败的平台：**\n\n"
         elif format_type == "feishu":
             failed_header = f"\n{feishu_separator}\n\n⚠️ **数据获取失败的平台：**\n\n"
         elif format_type == "dingtalk":
-            failed_header = f"\n---\n\n⚠️ **数据获取失败的平台：**\n\n"
+            failed_header = "\n---\n\n⚠️ **数据获取失败的平台：**\n\n"
 
         test_content = current_batch + failed_header
         if (
@@ -634,7 +622,7 @@ def _process_rss_stats_section(
     max_bytes: int,
     current_batch: str,
     current_batch_has_content: bool,
-    batches: List[str],
+    batches: list[str],
     timezone: str = "Asia/Shanghai",
 ) -> tuple:
     """处理 RSS 统计区块（按关键词分组，与热榜统计格式一致）
@@ -812,9 +800,7 @@ def _process_rss_stats_section(
             separator = ""
             if format_type in ("wework", "bark"):
                 separator = "\n\n\n\n"
-            elif format_type == "telegram":
-                separator = "\n\n"
-            elif format_type == "ntfy":
+            elif format_type == "telegram" or format_type == "ntfy":
                 separator = "\n\n"
             elif format_type == "feishu":
                 separator = f"\n{feishu_separator}\n\n"
@@ -839,7 +825,7 @@ def _process_rss_new_titles_section(
     max_bytes: int,
     current_batch: str,
     current_batch_has_content: bool,
-    batches: List[str],
+    batches: list[str],
     timezone: str = "Asia/Shanghai",
 ) -> tuple:
     """处理 RSS 新增区块（按来源分组，与热榜新增格式一致）
@@ -915,11 +901,7 @@ def _process_rss_new_titles_section(
             source_header = f"**{source_name}** ({count} 条):\n\n"
         elif format_type == "telegram":
             source_header = f"{source_name} ({count} 条):\n\n"
-        elif format_type == "ntfy":
-            source_header = f"**{source_name}** ({count} 条):\n\n"
-        elif format_type == "feishu":
-            source_header = f"**{source_name}** ({count} 条):\n\n"
-        elif format_type == "dingtalk":
+        elif format_type == "ntfy" or format_type == "feishu" or format_type == "dingtalk":
             source_header = f"**{source_name}** ({count} 条):\n\n"
         elif format_type == "slack":
             source_header = f"*{source_name}* ({count} 条):\n\n"
@@ -999,7 +981,7 @@ def _process_rss_new_titles_section(
 
 
 def _format_rss_item_line(
-    item: Dict,
+    item: dict,
     index: int,
     format_type: str,
     timezone: str = "Asia/Shanghai",

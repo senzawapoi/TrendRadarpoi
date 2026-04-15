@@ -7,13 +7,12 @@ v2.0.0: 仅支持 SQLite 数据库，移除 TXT 文件支持
 
 import re
 import sqlite3
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional
 from datetime import datetime
+from pathlib import Path
 
 import yaml
 
-from ..utils.errors import FileParseError, DataNotFoundError
+from ..utils.errors import DataNotFoundError, FileParseError
 from .cache_service import get_cache
 
 
@@ -56,7 +55,7 @@ class ParserService:
             date = datetime.now()
         return date.strftime("%Y-%m-%d")
 
-    def _get_db_path(self, date: datetime = None, db_type: str = "news") -> Optional[Path]:
+    def _get_db_path(self, date: datetime = None, db_type: str = "news") -> Path | None:
         """
         获取数据库文件路径
 
@@ -78,9 +77,9 @@ class ParserService:
     def _read_from_sqlite(
         self,
         date: datetime = None,
-        platform_ids: Optional[List[str]] = None,
+        platform_ids: list[str] | None = None,
         db_type: str = "news"
-    ) -> Optional[Tuple[Dict, Dict, Dict]]:
+    ) -> tuple[dict, dict, dict] | None:
         """
         从 SQLite 数据库读取数据
 
@@ -120,11 +119,11 @@ class ParserService:
     def _read_news_from_sqlite(
         self,
         cursor,
-        platform_ids: Optional[List[str]],
-        all_titles: Dict,
-        id_to_name: Dict,
-        all_timestamps: Dict
-    ) -> Optional[Tuple[Dict, Dict, Dict]]:
+        platform_ids: list[str] | None,
+        all_titles: dict,
+        id_to_name: dict,
+        all_timestamps: dict
+    ) -> tuple[dict, dict, dict] | None:
         """从热榜数据库读取数据"""
         # 检查表是否存在
         cursor.execute("""
@@ -221,11 +220,11 @@ class ParserService:
     def _read_rss_from_sqlite(
         self,
         cursor,
-        feed_ids: Optional[List[str]],
-        all_items: Dict,
-        id_to_name: Dict,
-        all_timestamps: Dict
-    ) -> Optional[Tuple[Dict, Dict, Dict]]:
+        feed_ids: list[str] | None,
+        all_items: dict,
+        id_to_name: dict,
+        all_timestamps: dict
+    ) -> tuple[dict, dict, dict] | None:
         """从 RSS 数据库读取数据"""
         # 检查表是否存在
         cursor.execute("""
@@ -303,9 +302,9 @@ class ParserService:
     def read_all_titles_for_date(
         self,
         date: datetime = None,
-        platform_ids: Optional[List[str]] = None,
+        platform_ids: list[str] | None = None,
         db_type: str = "news"
-    ) -> Tuple[Dict, Dict, Dict]:
+    ) -> tuple[dict, dict, dict]:
         """
         读取指定日期的所有数据（带缓存）
 
@@ -363,13 +362,13 @@ class ParserService:
             raise FileParseError(str(config_path), "配置文件不存在")
 
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
             return config_data
         except Exception as e:
             raise FileParseError(str(config_path), str(e))
 
-    def parse_frequency_words(self, words_file: str = None) -> List[Dict]:
+    def parse_frequency_words(self, words_file: str = None) -> list[dict]:
         """
         解析关键词配置文件
 
@@ -404,7 +403,7 @@ class ParserService:
         except Exception as e:
             raise FileParseError(words_file, str(e))
 
-    def get_available_dates(self, db_type: str = "news") -> List[str]:
+    def get_available_dates(self, db_type: str = "news") -> list[str]:
         """
         获取可用的日期列表
 
@@ -426,7 +425,7 @@ class ParserService:
 
         return sorted(dates, reverse=True)
 
-    def get_available_date_range(self, db_type: str = "news") -> Tuple[Optional[datetime], Optional[datetime]]:
+    def get_available_date_range(self, db_type: str = "news") -> tuple[datetime | None, datetime | None]:
         """
         获取可用的日期范围
 

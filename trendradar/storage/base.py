@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 存储后端抽象基类和数据模型
 
@@ -7,7 +6,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 
 @dataclass
@@ -23,11 +22,11 @@ class NewsItem:
     crawl_time: str = ""                # 抓取时间（HH:MM 格式）
 
     # 统计信息（用于分析）
-    ranks: List[int] = field(default_factory=list)  # 历史排名列表
+    ranks: list[int] = field(default_factory=list)  # 历史排名列表
     first_time: str = ""                # 首次出现时间
     last_time: str = ""                 # 最后出现时间
     count: int = 1                      # 出现次数
-    
+
     # 翻译信息
     title_translated: str = ""          # 翻译后的标题（英文->中文）
     title_english: str = ""             # 英文翻译（中文->英文）
@@ -36,7 +35,7 @@ class NewsItem:
     summary_english: str = ""            # 英文摘要翻译（中文->英文）
     is_english: bool = False            # 是否为英文标题
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         return {
             "title": self.title,
@@ -59,7 +58,7 @@ class NewsItem:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "NewsItem":
+    def from_dict(cls, data: dict[str, Any]) -> "NewsItem":
         """从字典创建"""
         return cls(
             title=data.get("title", ""),
@@ -100,7 +99,7 @@ class RSSItem:
     last_time: str = ""                 # 最后抓取时间
     count: int = 1                      # 抓取次数
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         return {
             "title": self.title,
@@ -117,7 +116,7 @@ class RSSItem:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RSSItem":
+    def from_dict(cls, data: dict[str, Any]) -> "RSSItem":
         """从字典创建"""
         return cls(
             title=data.get("title", ""),
@@ -149,11 +148,11 @@ class RSSData:
 
     date: str                                   # 日期
     crawl_time: str                             # 抓取时间
-    items: Dict[str, List[RSSItem]]             # 按 feed_id 分组的条目
-    id_to_name: Dict[str, str] = field(default_factory=dict)   # ID到名称映射
-    failed_ids: List[str] = field(default_factory=list)        # 失败的ID
+    items: dict[str, list[RSSItem]]             # 按 feed_id 分组的条目
+    id_to_name: dict[str, str] = field(default_factory=dict)   # ID到名称映射
+    failed_ids: list[str] = field(default_factory=list)        # 失败的ID
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         items_dict = {}
         for feed_id, rss_list in self.items.items():
@@ -168,7 +167,7 @@ class RSSData:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RSSData":
+    def from_dict(cls, data: dict[str, Any]) -> "RSSData":
         """从字典创建"""
         items = {}
         items_data = data.get("items", {})
@@ -203,11 +202,11 @@ class NewsData:
 
     date: str                                   # 日期
     crawl_time: str                             # 抓取时间
-    items: Dict[str, List[NewsItem]]            # 按来源分组的新闻
-    id_to_name: Dict[str, str] = field(default_factory=dict)   # ID到名称映射
-    failed_ids: List[str] = field(default_factory=list)        # 失败的ID
+    items: dict[str, list[NewsItem]]            # 按来源分组的新闻
+    id_to_name: dict[str, str] = field(default_factory=dict)   # ID到名称映射
+    failed_ids: list[str] = field(default_factory=list)        # 失败的ID
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         items_dict = {}
         for source_id, news_list in self.items.items():
@@ -222,7 +221,7 @@ class NewsData:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "NewsData":
+    def from_dict(cls, data: dict[str, Any]) -> "NewsData":
         """从字典创建"""
         items = {}
         items_data = data.get("items", {})
@@ -335,7 +334,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def get_today_all_data(self, date: Optional[str] = None) -> Optional[NewsData]:
+    def get_today_all_data(self, date: str | None = None) -> NewsData | None:
         """
         获取指定日期的所有新闻数据
 
@@ -348,7 +347,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def get_latest_crawl_data(self, date: Optional[str] = None) -> Optional[NewsData]:
+    def get_latest_crawl_data(self, date: str | None = None) -> NewsData | None:
         """
         获取最新一次抓取的数据
 
@@ -361,7 +360,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def detect_new_titles(self, current_data: NewsData) -> Dict[str, Dict]:
+    def detect_new_titles(self, current_data: NewsData) -> dict[str, dict]:
         """
         检测新增的标题
 
@@ -374,7 +373,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def save_txt_snapshot(self, data: NewsData) -> Optional[str]:
+    def save_txt_snapshot(self, data: NewsData) -> str | None:
         """
         保存 TXT 快照（可选功能，本地环境可用）
 
@@ -387,7 +386,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def save_html_report(self, html_content: str, filename: str, is_summary: bool = False) -> Optional[str]:
+    def save_html_report(self, html_content: str, filename: str, is_summary: bool = False) -> str | None:
         """
         保存 HTML 报告
 
@@ -402,7 +401,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def is_first_crawl_today(self, date: Optional[str] = None) -> bool:
+    def is_first_crawl_today(self, date: str | None = None) -> bool:
         """
         检查是否是当天第一次抓取
 
@@ -453,7 +452,7 @@ class StorageBackend(ABC):
     # === 推送记录相关方法 ===
 
     @abstractmethod
-    def has_pushed_today(self, date: Optional[str] = None) -> bool:
+    def has_pushed_today(self, date: str | None = None) -> bool:
         """
         检查指定日期是否已推送过
 
@@ -466,7 +465,7 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def record_push(self, report_type: str, date: Optional[str] = None) -> bool:
+    def record_push(self, report_type: str, date: str | None = None) -> bool:
         """
         记录推送
 
@@ -481,9 +480,9 @@ class StorageBackend(ABC):
 
 
 def convert_crawl_results_to_news_data(
-    results: Dict[str, Dict],
-    id_to_name: Dict[str, str],
-    failed_ids: List[str],
+    results: dict[str, dict],
+    id_to_name: dict[str, str],
+    failed_ids: list[str],
     crawl_time: str,
     crawl_date: str,
 ) -> NewsData:

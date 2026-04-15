@@ -5,16 +5,16 @@ TrendRadar 主程序
 支持热榜平台 + RSS 订阅双路数据抓取
 """
 
-import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from trendradar.utils.logging import get_run_id, log
 
-def _convert_rss_items_to_list(rss_data, ctx) -> List[Dict]:
+
+def _convert_rss_items_to_list(rss_data, ctx) -> list[dict]:
     """
     将 RSS 条目转换为列表格式，并应用新鲜度过滤
     （复刻原始 NewsAnalyzer._convert_rss_items_to_list）
@@ -60,7 +60,7 @@ def _convert_rss_items_to_list(rss_data, ctx) -> List[Dict]:
             })
 
     if filtered_count > 0:
-        print(f"[RSS] 新鲜度过滤：跳过 {filtered_count} 篇超过指定天数的旧文章")
+        log.info(f"新鲜度过滤：跳过 {filtered_count} 篇超过指定天数的旧文章", feed_id=feed_id)
 
     return rss_items
 
@@ -106,30 +106,29 @@ def _apply_translations_to_hot_results(results, hot_news_items):
 def main():
     """主函数"""
     try:
-        from trendradar.core import load_config
         from trendradar.context import AppContext
-        from trendradar.services.translation_service import TranslationService
-        from trendradar.crawler.rss import RSSFetcher, RSSFeedConfig
+        from trendradar.core import load_config
         from trendradar.crawler.fetcher import DataFetcher
+        from trendradar.crawler.rss import RSSFeedConfig, RSSFetcher
+        from trendradar.services.translation_service import TranslationService
         from trendradar.storage.base import (
-            NewsItem, NewsData,
+            NewsItem,
             convert_crawl_results_to_news_data,
         )
 
-        print("🚀 TrendRadar 双语版本启动")
-        print("=" * 50)
+        log.start(f"TrendRadar 双语版本启动 (run_id={get_run_id()})")
 
         # 加载配置 & 创建上下文
         config = load_config()
         ctx = AppContext(config)
-        print("✅ 配置加载成功")
+        log.success("配置加载成功")
 
         # 初始化翻译服务
         translator = TranslationService()
         if translator.translation_tools:
-            print("✅ Gemini 双语翻译服务就绪")
+            log.success("Gemini 双语翻译服务就绪")
         else:
-            print("⚠️ 翻译服务未初始化，将使用单语模式")
+            log.warning("翻译服务未初始化，将使用单语模式")
 
         # 初始化存储管理器
         storage_manager = ctx.get_storage_manager()
@@ -140,7 +139,7 @@ def main():
 
         # 读取报告模式（daily / current / incremental）
         report_mode = config.get("REPORT_MODE", "current")
-        print(f"📋 报告模式: {report_mode}")
+        log.info(f"报告模式: {report_mode}", mode=report_mode)
 
         # ================================================================
         # A. 热榜数据抓取
@@ -153,14 +152,14 @@ def main():
 
         platforms = ctx.platforms
         if platforms:
-            print(f"\n🔥 开始热榜数据抓取: {len(platforms)} 个平台")
+            log.info("开始热榜数据抓取", platforms=len(platforms), platform_names=[p.get('name', p['id']) for p in platforms])
+
             ids = []
             for p in platforms:
                 if "name" in p:
                     ids.append((p["id"], p["name"]))
                 else:
                     ids.append(p["id"])
-            print(f"  监控平台: {[p.get('name', p['id']) for p in platforms]}")
 
             Path("output").mkdir(parents=True, exist_ok=True)
             data_fetcher = DataFetcher(proxy_url=proxy_url)
@@ -169,7 +168,7 @@ def main():
             )
 
             total_hot_titles = sum(len(titles) for titles in results.values())
-            print(f"✅ 热榜抓取完成: {total_hot_titles} 条标题")
+            log.success("热榜抓取完成", total_titles=total_hot_titles, failed=len(failed_ids))
 
             # 转换并保存热榜数据 → output/news/
             crawl_time = ctx.get_time_display()
@@ -185,12 +184,12 @@ def main():
                     hot_news_items.extend(items_list)
 
                 if hot_news_items:
-                    print(f"\n🔄 翻译热榜数据: {len(hot_news_items)} 条...")
+                    log.info("翻译热榜数据", count=len(hot_news_items))
                     hot_translated = translator.translate_news_items(
                         hot_news_items, skip_existing=False
                     )
                     translated_count += hot_translated
-                    print(f"✅ 热榜翻译完成: {hot_translated}/{len(hot_news_items)} 条")
+                    log.success("热榜翻译完成", translated=hot_translated, total=len(hot_news_items))
 
                     # 回写翻译到 results dict，使 HTML/推送显示双语
                     results = _apply_translations_to_hot_results(results, hot_news_items)
@@ -215,9 +214,9 @@ def main():
                     mode=report_mode, global_filters=global_filters, quiet=False,
                 )
             except (FileNotFoundError, ImportError) as e:
-                print(f"[热榜] 词频统计跳过: {e}")
+                log.warning("热榜词频统计跳过", error=str(e))
         else:
-            print("\n⚠️ 未配置热榜平台，跳过热榜抓取")
+            log.warning("未配置热榜平台，跳过热榜抓取")
 
         # ================================================================
         # B. RSS 数据抓取
@@ -229,12 +228,12 @@ def main():
         rss_data = None
 
         if ctx.rss_enabled:
-            print(f"\n📰 开始 RSS 数据抓取...")
+            log.info("开始 RSS 数据抓取")
 
             rss_feeds = ctx.rss_feeds
             if not rss_feeds:
                 import yaml
-                with open('config/config.yaml', 'r', encoding='utf-8') as f:
+                with open('config/config.yaml', encoding='utf-8') as f:
                     raw_config = yaml.safe_load(f)
                 rss_feeds = raw_config.get('rss', {}).get('feeds', [])
 
@@ -262,9 +261,9 @@ def main():
                     feeds.append(feed)
 
             if feeds:
-                print(f"📋 RSS 源配置: {len(feeds)} 个源")
+                log.info("RSS 源配置", feed_count=len(feeds), feeds=[f"{f.name} ({f.id})" for f in feeds])
                 for feed in feeds:
-                    print(f"  - {feed.name} ({feed.id})")
+                    log.debug(f"  - {feed.name} ({feed.id})")
 
                 rss_config = ctx.rss_config
                 fetcher = RSSFetcher(
@@ -279,15 +278,15 @@ def main():
 
                 if rss_data and rss_data.items:
                     total_rss_items = sum(len(items) for items in rss_data.items.values())
-                    print(f"✅ RSS 数据抓取成功: {total_rss_items} 条新闻")
+                    log.success("RSS 数据抓取成功", total_items=total_rss_items)
 
                     # 保存 RSS 数据 → output/rss/
                     if storage_manager.save_rss_data(rss_data):
-                        print("✅ RSS 数据已保存到 output/rss/")
+                        log.success("RSS 数据已保存到 output/rss/")
 
                     # 转换为列表格式
                     rss_items_list = _convert_rss_items_to_list(rss_data, ctx)
-                    print(f"📋 过滤后 RSS 条目: {len(rss_items_list)} 条")
+                    log.info("过滤后 RSS 条目", count=len(rss_items_list))
 
                     # 翻译 RSS 数据
                     rss_news_items = []
@@ -304,12 +303,12 @@ def main():
                             )
                             rss_news_items.append(news_item)
 
-                        print(f"\n🔄 翻译 RSS 数据: {len(rss_news_items)} 条...")
+                        log.info("翻译 RSS 数据", count=len(rss_news_items))
                         rss_translated = translator.translate_news_items(
                             rss_news_items, skip_existing=False
                         )
                         translated_count += rss_translated
-                        print(f"✅ RSS 翻译完成: {rss_translated}/{len(rss_news_items)} 条")
+                        log.success("RSS 翻译完成", translated=rss_translated, total=len(rss_news_items))
 
                         # 回写翻译到 rss_items_list，使 HTML/推送显示双语
                         _apply_translations_to_rss_items(rss_items_list, rss_news_items)
@@ -334,7 +333,7 @@ def main():
                                 url = new_item.get("url", "")
                                 if url and url in translated_map:
                                     new_item["title"] = translated_map[url]
-                            print(f"[RSS] 检测到 {len(rss_new_items_list)} 条新增")
+                            log.info("检测到 RSS 新增条目", count=len(rss_new_items_list))
 
                     # RSS 关键词统计
                     try:
@@ -370,11 +369,11 @@ def main():
                                 quiet=True,
                             )
                     except (FileNotFoundError, ImportError) as e:
-                        print(f"[RSS] 关键词统计跳过: {e}")
+                        log.warning("RSS 关键词统计跳过", error=str(e))
                 else:
-                    print("⚠️ RSS 数据抓取失败")
-        else:
-            print("\n⚠️ RSS 未启用，跳过 RSS 抓取")
+                    log.warning("RSS 数据抓取失败")
+            else:
+                log.warning("RSS 未启用，跳过 RSS 抓取")
 
         # ================================================================
         # C. 生成 HTML 报告 + 发送通知
@@ -410,7 +409,7 @@ def main():
             all_id_to_name.update(rss_data.id_to_name)
 
         # 生成 HTML 报告 → output/index.html
-        print("\n📊 生成 HTML 报告...")
+        log.info("生成 HTML 报告")
         html_file = ctx.generate_html(
             stats=hot_stats,
             total_titles=total_all,
@@ -423,10 +422,10 @@ def main():
             rss_new_items=rss_new_stats,
         )
         if html_file:
-            print(f"✅ HTML 报告已生成: {html_file}")
+            log.success("HTML 报告已生成", file=html_file)
 
         # 发送通知
-        print("\n📱 发送通知...")
+        log.info("发送通知")
         # 增量模式：如果没有新增标题且非首次抓取，跳过通知
         skip_notification = False
         if report_mode == "incremental":
@@ -435,7 +434,7 @@ def main():
             is_first = storage_manager.is_first_crawl_today()
             if not is_first and not has_hot_new and not has_rss_new:
                 skip_notification = True
-                print("  ℹ️ 增量模式：无新增内容，跳过通知")
+                log.info("增量模式：无新增内容，跳过通知")
 
         report_data = ctx.prepare_report(
             stats=hot_stats,
@@ -453,30 +452,27 @@ def main():
                 report_data=report_data,
                 report_type="热点新闻分析",
                 mode=report_mode,
-            html_file_path=html_file,
-            rss_items=rss_stats,
-            rss_new_items=rss_new_stats,
-        )
+                html_file_path=html_file,
+                rss_items=rss_stats,
+                rss_new_items=rss_new_stats,
+            )
 
         if notify_results:
             for channel, success in notify_results.items():
                 status = "✅" if success else "❌"
-                print(f"  {status} {channel}")
+                log.info("通知发送结果", channel=channel, success=success)
         else:
-            print("  ⚠️ 未配置通知渠道或无内容推送")
+            log.warning("未配置通知渠道或无内容推送")
 
         # 清理资源
         ctx.cleanup()
 
-        print(f"\n🎉 TrendRadar 运行完成！")
-        print(f"  � 热榜: {total_hot_titles} 条")
-        print(f"  📰 RSS: {len(rss_items_list)} 条")
-        print(f"  🔄 翻译: {translated_count} 条")
-        print(f"  📊 报告: {html_file or '未生成'}")
+        log.success("TrendRadar 运行完成！")
+        log.info("运行统计", hot_titles=total_hot_titles, rss_items=len(rss_items_list), translated=translated_count, report_file=html_file or "未生成")
         return True
 
     except Exception as e:
-        print(f"❌ 运行错误: {e}")
+        log.error("运行错误", error=str(e))
         import traceback
         traceback.print_exc()
         return False

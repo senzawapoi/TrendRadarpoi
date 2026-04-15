@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 数据获取器模块
 
@@ -12,7 +11,6 @@
 import json
 import random
 import time
-from typing import Dict, List, Tuple, Optional, Union
 
 import requests
 
@@ -34,8 +32,8 @@ class DataFetcher:
 
     def __init__(
         self,
-        proxy_url: Optional[str] = None,
-        api_url: Optional[str] = None,
+        proxy_url: str | None = None,
+        api_url: str | None = None,
     ):
         """
         初始化数据获取器
@@ -49,11 +47,11 @@ class DataFetcher:
 
     def fetch_data(
         self,
-        id_info: Union[str, Tuple[str, str]],
+        id_info: str | tuple[str, str],
         max_retries: int = 2,
         min_retry_wait: int = 3,
         max_retry_wait: int = 5,
-    ) -> Tuple[Optional[str], str, str]:
+    ) -> tuple[str | None, str, str]:
         """
         获取指定ID数据，支持重试
 
@@ -116,9 +114,9 @@ class DataFetcher:
 
     def crawl_websites(
         self,
-        ids_list: List[Union[str, Tuple[str, str]]],
+        ids_list: list[str | tuple[str, str]],
         request_interval: int = 100,
-    ) -> Tuple[Dict, Dict, List]:
+    ) -> tuple[dict, dict, list]:
         """
         爬取多个网站数据
 

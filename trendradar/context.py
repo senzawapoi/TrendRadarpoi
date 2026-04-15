@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 应用上下文模块
 
@@ -7,38 +6,37 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
-from trendradar.utils.time import (
-    get_configured_time,
-    format_date_folder,
-    format_time_filename,
-    get_current_time_display,
-    convert_time_for_display,
-)
 from trendradar.core import (
+    count_word_frequency,
+    detect_latest_new_titles,
     load_frequency_words,
     matches_word_groups,
-    save_titles_to_file,
     read_all_today_titles,
-    detect_latest_new_titles,
-    is_first_crawl_today,
-    count_word_frequency,
+    save_titles_to_file,
+)
+from trendradar.notification import (
+    NotificationDispatcher,
+    PushRecordManager,
+    render_dingtalk_content,
+    render_feishu_content,
+    split_content_into_batches,
 )
 from trendradar.report import (
     clean_title,
-    prepare_report_data,
     generate_html_report,
+    prepare_report_data,
     render_html_content,
 )
-from trendradar.notification import (
-    render_feishu_content,
-    render_dingtalk_content,
-    split_content_into_batches,
-    NotificationDispatcher,
-    PushRecordManager,
-)
 from trendradar.storage import get_storage_manager
+from trendradar.utils.time import (
+    convert_time_for_display,
+    format_date_folder,
+    format_time_filename,
+    get_configured_time,
+    get_current_time_display,
+)
 
 
 class AppContext:
@@ -63,7 +61,7 @@ class AppContext:
         html = ctx.generate_html_report(stats, total_titles, ...)
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         初始化应用上下文
 
@@ -86,22 +84,22 @@ class AppContext:
         return self.config.get("RANK_THRESHOLD", 50)
 
     @property
-    def weight_config(self) -> Dict:
+    def weight_config(self) -> dict:
         """获取权重配置"""
         return self.config.get("WEIGHT_CONFIG", {})
 
     @property
-    def platforms(self) -> List[Dict]:
+    def platforms(self) -> list[dict]:
         """获取平台配置列表"""
         return self.config.get("PLATFORMS", [])
 
     @property
-    def platform_ids(self) -> List[str]:
+    def platform_ids(self) -> list[str]:
         """获取平台ID列表"""
         return [p["id"] for p in self.platforms]
 
     @property
-    def rss_config(self) -> Dict:
+    def rss_config(self) -> dict:
         """获取 RSS 配置"""
         return self.config.get("RSS", {})
 
@@ -111,7 +109,7 @@ class AppContext:
         return self.rss_config.get("ENABLED", False)
 
     @property
-    def rss_feeds(self) -> List[Dict]:
+    def rss_feeds(self) -> list[dict]:
         """获取 RSS 源列表"""
         return self.rss_config.get("FEEDS", [])
 
@@ -181,20 +179,20 @@ class AppContext:
 
     # === 数据处理 ===
 
-    def save_titles(self, results: Dict, id_to_name: Dict, failed_ids: List) -> str:
+    def save_titles(self, results: dict, id_to_name: dict, failed_ids: list) -> str:
         """保存标题到文件"""
         output_path = self.get_output_path("txt", f"{self.format_time()}.txt")
         return save_titles_to_file(results, id_to_name, failed_ids, output_path, clean_title)
 
     def read_today_titles(
-        self, platform_ids: Optional[List[str]] = None, quiet: bool = False
-    ) -> Tuple[Dict, Dict, Dict]:
+        self, platform_ids: list[str] | None = None, quiet: bool = False
+    ) -> tuple[dict, dict, dict]:
         """读取当天所有标题"""
         return read_all_today_titles(self.get_storage_manager(), platform_ids, quiet=quiet)
 
     def detect_new_titles(
-        self, platform_ids: Optional[List[str]] = None, quiet: bool = False
-    ) -> Dict:
+        self, platform_ids: list[str] | None = None, quiet: bool = False
+    ) -> dict:
         """检测最新批次的新增标题"""
         return detect_latest_new_titles(self.get_storage_manager(), platform_ids, quiet=quiet)
 
@@ -205,17 +203,17 @@ class AppContext:
     # === 频率词处理 ===
 
     def load_frequency_words(
-        self, frequency_file: Optional[str] = None
-    ) -> Tuple[List[Dict], List[str], List[str]]:
+        self, frequency_file: str | None = None
+    ) -> tuple[list[dict], list[str], list[str]]:
         """加载频率词配置"""
         return load_frequency_words(frequency_file)
 
     def matches_word_groups(
         self,
         title: str,
-        word_groups: List[Dict],
-        filter_words: List[str],
-        global_filters: Optional[List[str]] = None,
+        word_groups: list[dict],
+        filter_words: list[str],
+        global_filters: list[str] | None = None,
     ) -> bool:
         """检查标题是否匹配词组规则"""
         return matches_word_groups(title, word_groups, filter_words, global_filters)
@@ -224,16 +222,16 @@ class AppContext:
 
     def count_frequency(
         self,
-        results: Dict,
-        word_groups: List[Dict],
-        filter_words: List[str],
-        id_to_name: Dict,
-        title_info: Optional[Dict] = None,
-        new_titles: Optional[Dict] = None,
+        results: dict,
+        word_groups: list[dict],
+        filter_words: list[str],
+        id_to_name: dict,
+        title_info: dict | None = None,
+        new_titles: dict | None = None,
         mode: str = "daily",
-        global_filters: Optional[List[str]] = None,
+        global_filters: list[str] | None = None,
         quiet: bool = False,
-    ) -> Tuple[List[Dict], int]:
+    ) -> tuple[list[dict], int]:
         """统计词频"""
         return count_word_frequency(
             results=results,
@@ -257,12 +255,12 @@ class AppContext:
 
     def prepare_report(
         self,
-        stats: List[Dict],
-        failed_ids: Optional[List] = None,
-        new_titles: Optional[Dict] = None,
-        id_to_name: Optional[Dict] = None,
+        stats: list[dict],
+        failed_ids: list | None = None,
+        new_titles: dict | None = None,
+        id_to_name: dict | None = None,
         mode: str = "daily",
-    ) -> Dict:
+    ) -> dict:
         """准备报告数据"""
         return prepare_report_data(
             stats=stats,
@@ -277,16 +275,16 @@ class AppContext:
 
     def generate_html(
         self,
-        stats: List[Dict],
+        stats: list[dict],
         total_titles: int,
-        failed_ids: Optional[List] = None,
-        new_titles: Optional[Dict] = None,
-        id_to_name: Optional[Dict] = None,
+        failed_ids: list | None = None,
+        new_titles: dict | None = None,
+        id_to_name: dict | None = None,
         mode: str = "daily",
         is_daily_summary: bool = False,
-        update_info: Optional[Dict] = None,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        update_info: dict | None = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> str:
         """生成HTML报告"""
         return generate_html_report(
@@ -310,13 +308,13 @@ class AppContext:
 
     def render_html(
         self,
-        report_data: Dict,
+        report_data: dict,
         total_titles: int,
         is_daily_summary: bool = False,
         mode: str = "daily",
-        update_info: Optional[Dict] = None,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        update_info: dict | None = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> str:
         """渲染HTML内容"""
         return render_html_content(
@@ -336,8 +334,8 @@ class AppContext:
 
     def render_feishu(
         self,
-        report_data: Dict,
-        update_info: Optional[Dict] = None,
+        report_data: dict,
+        update_info: dict | None = None,
         mode: str = "daily",
     ) -> str:
         """渲染飞书内容"""
@@ -352,8 +350,8 @@ class AppContext:
 
     def render_dingtalk(
         self,
-        report_data: Dict,
-        update_info: Optional[Dict] = None,
+        report_data: dict,
+        update_info: dict | None = None,
         mode: str = "daily",
     ) -> str:
         """渲染钉钉内容"""
@@ -367,14 +365,14 @@ class AppContext:
 
     def split_content(
         self,
-        report_data: Dict,
+        report_data: dict,
         format_type: str,
-        update_info: Optional[Dict] = None,
-        max_bytes: Optional[int] = None,
+        update_info: dict | None = None,
+        max_bytes: int | None = None,
         mode: str = "daily",
-        rss_items: Optional[list] = None,
-        rss_new_items: Optional[list] = None,
-    ) -> List[str]:
+        rss_items: list | None = None,
+        rss_new_items: list | None = None,
+    ) -> list[str]:
         """分批处理消息内容（支持热榜+RSS合并）
 
         Args:

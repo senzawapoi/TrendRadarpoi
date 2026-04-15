@@ -1,14 +1,12 @@
-# coding=utf-8
 """
 配置工具模块 - 多账号配置解析和验证
 
 提供多账号推送配置的解析、验证和限制功能
 """
 
-from typing import Dict, List, Optional, Tuple
 
 
-def parse_multi_account_config(config_value: str, separator: str = ";") -> List[str]:
+def parse_multi_account_config(config_value: str, separator: str = ";") -> list[str]:
     """
     解析多账号配置，返回账号列表
 
@@ -38,10 +36,10 @@ def parse_multi_account_config(config_value: str, separator: str = ";") -> List[
 
 
 def validate_paired_configs(
-    configs: Dict[str, List[str]],
+    configs: dict[str, list[str]],
     channel_name: str,
-    required_keys: Optional[List[str]] = None
-) -> Tuple[bool, int]:
+    required_keys: list[str] | None = None
+) -> tuple[bool, int]:
     """
     验证配对配置的数量是否一致
 
@@ -95,10 +93,10 @@ def validate_paired_configs(
 
 
 def limit_accounts(
-    accounts: List[str],
+    accounts: list[str],
     max_count: int,
     channel_name: str
-) -> List[str]:
+) -> list[str]:
     """
     限制账号数量
 
@@ -120,12 +118,12 @@ def limit_accounts(
     """
     if len(accounts) > max_count:
         print(f"⚠️ {channel_name} 配置了 {len(accounts)} 个账号，超过最大限制 {max_count}，只使用前 {max_count} 个")
-        print(f"   ⚠️ 警告：如果您是 fork 用户，过多账号可能导致 GitHub Actions 运行时间过长，存在账号风险")
+        print("   ⚠️ 警告：如果您是 fork 用户，过多账号可能导致 GitHub Actions 运行时间过长，存在账号风险")
         return accounts[:max_count]
     return accounts
 
 
-def get_account_at_index(accounts: List[str], index: int, default: str = "") -> str:
+def get_account_at_index(accounts: list[str], index: int, default: str = "") -> str:
     """
     安全获取指定索引的账号值
 

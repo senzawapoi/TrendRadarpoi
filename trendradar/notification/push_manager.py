@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 推送记录管理模块
 
@@ -6,8 +5,9 @@
 通过 storage_backend 统一存储，支持本地 SQLite 和远程云存储
 """
 
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Optional, Any
+from typing import Any
 
 import pytz
 
@@ -26,7 +26,7 @@ class PushRecordManager:
     def __init__(
         self,
         storage_backend: Any,
-        get_time_func: Optional[Callable[[], datetime]] = None,
+        get_time_func: Callable[[], datetime] | None = None,
     ):
         """
         初始化推送记录管理器

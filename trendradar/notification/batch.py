@@ -1,11 +1,9 @@
-# coding=utf-8
 """
 批次处理模块
 
 提供消息分批发送的辅助函数
 """
 
-from typing import List
 
 
 def get_batch_header(format_type: str, batch_num: int, total_batches: int) -> str:
@@ -76,8 +74,8 @@ def truncate_to_bytes(text: str, max_bytes: int) -> str:
 
 
 def add_batch_headers(
-    batches: List[str], format_type: str, max_bytes: int
-) -> List[str]:
+    batches: list[str], format_type: str, max_bytes: int
+) -> list[str]:
     """为批次添加头部，动态计算确保总大小不超过限制
 
     Args:

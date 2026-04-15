@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 通知调度器模块
 
@@ -10,7 +9,8 @@
     results = dispatcher.dispatch_all(report_data, report_type, ...)
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from trendradar.core.config import (
     get_account_at_index,
@@ -19,6 +19,11 @@ from trendradar.core.config import (
     validate_paired_configs,
 )
 
+from .renderer import (
+    render_rss_dingtalk_content,
+    render_rss_feishu_content,
+    render_rss_markdown_content,
+)
 from .senders import (
     send_to_bark,
     send_to_dingtalk,
@@ -28,11 +33,6 @@ from .senders import (
     send_to_slack,
     send_to_telegram,
     send_to_wework,
-)
-from .renderer import (
-    render_rss_feishu_content,
-    render_rss_dingtalk_content,
-    render_rss_markdown_content,
 )
 
 
@@ -46,7 +46,7 @@ class NotificationDispatcher:
 
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         get_time_func: Callable,
         split_content_func: Callable,
     ):
@@ -65,15 +65,15 @@ class NotificationDispatcher:
 
     def dispatch_all(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict] = None,
-        proxy_url: Optional[str] = None,
+        update_info: dict | None = None,
+        proxy_url: str | None = None,
         mode: str = "daily",
-        html_file_path: Optional[str] = None,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
-    ) -> Dict[str, bool]:
+        html_file_path: str | None = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
+    ) -> dict[str, bool]:
         """
         分发通知到所有已配置的渠道（支持热榜+RSS合并推送）
 
@@ -180,13 +180,13 @@ class NotificationDispatcher:
 
     def _send_feishu(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到飞书（多账号，支持热榜+RSS合并）"""
         return self._send_to_multi_accounts(
@@ -211,13 +211,13 @@ class NotificationDispatcher:
 
     def _send_dingtalk(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到钉钉（多账号，支持热榜+RSS合并）"""
         return self._send_to_multi_accounts(
@@ -241,13 +241,13 @@ class NotificationDispatcher:
 
     def _send_wework(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到企业微信（多账号，支持热榜+RSS合并）"""
         return self._send_to_multi_accounts(
@@ -272,13 +272,13 @@ class NotificationDispatcher:
 
     def _send_telegram(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到 Telegram（多账号，需验证 token 和 chat_id 配对，支持热榜+RSS合并）"""
         telegram_tokens = parse_multi_account_config(self.config["TELEGRAM_BOT_TOKEN"])
@@ -327,13 +327,13 @@ class NotificationDispatcher:
 
     def _send_ntfy(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到 ntfy（多账号，需验证 topic 和 token 配对，支持热榜+RSS合并）"""
         ntfy_server_url = self.config["NTFY_SERVER_URL"]
@@ -381,13 +381,13 @@ class NotificationDispatcher:
 
     def _send_bark(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到 Bark（多账号，支持热榜+RSS合并）"""
         return self._send_to_multi_accounts(
@@ -411,13 +411,13 @@ class NotificationDispatcher:
 
     def _send_slack(
         self,
-        report_data: Dict,
+        report_data: dict,
         report_type: str,
-        update_info: Optional[Dict],
-        proxy_url: Optional[str],
+        update_info: dict | None,
+        proxy_url: str | None,
         mode: str,
-        rss_items: Optional[List[Dict]] = None,
-        rss_new_items: Optional[List[Dict]] = None,
+        rss_items: list[dict] | None = None,
+        rss_new_items: list[dict] | None = None,
     ) -> bool:
         """发送到 Slack（多账号，支持热榜+RSS合并）"""
         return self._send_to_multi_accounts(
@@ -442,7 +442,7 @@ class NotificationDispatcher:
     def _send_email(
         self,
         report_type: str,
-        html_file_path: Optional[str],
+        html_file_path: str | None,
     ) -> bool:
         """发送邮件（保持原有逻辑，已支持多收件人）"""
         return send_to_email(
@@ -460,11 +460,11 @@ class NotificationDispatcher:
 
     def dispatch_rss(
         self,
-        rss_items: List[Dict],
-        feeds_info: Optional[Dict[str, str]] = None,
-        proxy_url: Optional[str] = None,
-        html_file_path: Optional[str] = None,
-    ) -> Dict[str, bool]:
+        rss_items: list[dict],
+        feeds_info: dict[str, str] | None = None,
+        proxy_url: str | None = None,
+        html_file_path: str | None = None,
+    ) -> dict[str, bool]:
         """
         分发 RSS 通知到所有已配置的渠道
 
@@ -545,9 +545,9 @@ class NotificationDispatcher:
 
     def _send_rss_feishu(
         self,
-        rss_items: List[Dict],
-        feeds_info: Optional[Dict[str, str]],
-        proxy_url: Optional[str],
+        rss_items: list[dict],
+        feeds_info: dict[str, str] | None,
+        proxy_url: str | None,
     ) -> bool:
         """发送 RSS 到飞书"""
         import requests
@@ -604,9 +604,9 @@ class NotificationDispatcher:
 
     def _send_rss_dingtalk(
         self,
-        rss_items: List[Dict],
-        feeds_info: Optional[Dict[str, str]],
-        proxy_url: Optional[str],
+        rss_items: list[dict],
+        feeds_info: dict[str, str] | None,
+        proxy_url: str | None,
     ) -> bool:
         """发送 RSS 到钉钉"""
         import requests
@@ -655,13 +655,12 @@ class NotificationDispatcher:
 
     def _send_rss_markdown(
         self,
-        rss_items: List[Dict],
-        feeds_info: Optional[Dict[str, str]],
-        proxy_url: Optional[str],
+        rss_items: list[dict],
+        feeds_info: dict[str, str] | None,
+        proxy_url: str | None,
         channel: str,
     ) -> bool:
         """发送 RSS 到 Markdown 兼容渠道（企业微信、Telegram、ntfy、Bark、Slack）"""
-        import requests
 
         content = render_rss_markdown_content(
             rss_items=rss_items,
@@ -686,7 +685,7 @@ class NotificationDispatcher:
 
         return False
 
-    def _send_rss_wework(self, content: str, proxy_url: Optional[str]) -> bool:
+    def _send_rss_wework(self, content: str, proxy_url: str | None) -> bool:
         """发送 RSS 到企业微信"""
         import requests
 
@@ -722,7 +721,7 @@ class NotificationDispatcher:
 
         return any(results) if results else False
 
-    def _send_rss_telegram(self, content: str, proxy_url: Optional[str]) -> bool:
+    def _send_rss_telegram(self, content: str, proxy_url: str | None) -> bool:
         """发送 RSS 到 Telegram"""
         import requests
 
@@ -766,7 +765,7 @@ class NotificationDispatcher:
 
         return any(results) if results else False
 
-    def _send_rss_ntfy(self, content: str, proxy_url: Optional[str]) -> bool:
+    def _send_rss_ntfy(self, content: str, proxy_url: str | None) -> bool:
         """发送 RSS 到 ntfy"""
         import requests
 
@@ -811,10 +810,11 @@ class NotificationDispatcher:
 
         return any(results) if results else False
 
-    def _send_rss_bark(self, content: str, proxy_url: Optional[str]) -> bool:
+    def _send_rss_bark(self, content: str, proxy_url: str | None) -> bool:
         """发送 RSS 到 Bark"""
-        import requests
         import urllib.parse
+
+        import requests
 
         urls = parse_multi_account_config(self.config["BARK_URL"])
         urls = limit_accounts(urls, self.max_accounts, "Bark")
@@ -847,7 +847,7 @@ class NotificationDispatcher:
 
         return any(results) if results else False
 
-    def _send_rss_slack(self, content: str, proxy_url: Optional[str]) -> bool:
+    def _send_rss_slack(self, content: str, proxy_url: str | None) -> bool:
         """发送 RSS 到 Slack"""
         import requests
 

@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 TrendRadar - 热点新闻聚合与分析工具
 

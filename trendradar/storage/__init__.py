@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 存储模块 - 支持多种存储后端
 
@@ -9,9 +8,9 @@
 """
 
 from trendradar.storage.base import (
-    StorageBackend,
-    NewsItem,
     NewsData,
+    NewsItem,
+    StorageBackend,
     convert_crawl_results_to_news_data,
     convert_news_data_to_results,
 )

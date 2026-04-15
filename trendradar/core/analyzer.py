@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 统计分析模块
 
@@ -8,15 +7,15 @@
 - count_word_frequency: 统计词频
 """
 
-from typing import Dict, List, Tuple, Optional, Callable
+from collections.abc import Callable
 
-from trendradar.core.frequency import matches_word_groups, _word_matches
+from trendradar.core.frequency import _word_matches, matches_word_groups
 
 
 def calculate_news_weight(
-    title_data: Dict,
+    title_data: dict,
     rank_threshold: int,
-    weight_config: Dict,
+    weight_config: dict,
 ) -> float:
     """
     计算新闻权重，用于排序
@@ -88,22 +87,22 @@ def format_time_display(
 
 
 def count_word_frequency(
-    results: Dict,
-    word_groups: List[Dict],
-    filter_words: List[str],
-    id_to_name: Dict,
-    title_info: Optional[Dict] = None,
+    results: dict,
+    word_groups: list[dict],
+    filter_words: list[str],
+    id_to_name: dict,
+    title_info: dict | None = None,
     rank_threshold: int = 3,
-    new_titles: Optional[Dict] = None,
+    new_titles: dict | None = None,
     mode: str = "daily",
-    global_filters: Optional[List[str]] = None,
-    weight_config: Optional[Dict] = None,
+    global_filters: list[str] | None = None,
+    weight_config: dict | None = None,
     max_news_per_keyword: int = 0,
     sort_by_position_first: bool = False,
-    is_first_crawl_func: Optional[Callable[[], bool]] = None,
-    convert_time_func: Optional[Callable[[str], str]] = None,
+    is_first_crawl_func: Callable[[], bool] | None = None,
+    convert_time_func: Callable[[str], str] | None = None,
     quiet: bool = False,
-) -> Tuple[List[Dict], int]:
+) -> tuple[list[dict], int]:
     """
     统计词频，支持必须词、频率词、过滤词、全局过滤词，并标记新增标题
 
@@ -297,16 +296,7 @@ def count_word_frequency(
                     and title_info
                     and source_id in title_info
                     and title in title_info[source_id]
-                ):
-                    info = title_info[source_id][title]
-                    first_time = info.get("first_time", "")
-                    last_time = info.get("last_time", "")
-                    count_info = info.get("count", 1)
-                    if "ranks" in info and info["ranks"]:
-                        ranks = info["ranks"]
-                    url = info.get("url", source_url)
-                    mobile_url = info.get("mobileUrl", source_mobile_url)
-                elif (
+                ) or (
                     title_info
                     and source_id in title_info
                     and title in title_info[source_id]
@@ -315,7 +305,7 @@ def count_word_frequency(
                     first_time = info.get("first_time", "")
                     last_time = info.get("last_time", "")
                     count_info = info.get("count", 1)
-                    if "ranks" in info and info["ranks"]:
+                    if info.get("ranks"):
                         ranks = info["ranks"]
                     url = info.get("url", source_url)
                     mobile_url = info.get("mobileUrl", source_mobile_url)
@@ -485,17 +475,17 @@ def count_word_frequency(
 
 
 def count_rss_frequency(
-    rss_items: List[Dict],
-    word_groups: List[Dict],
-    filter_words: List[str],
-    global_filters: Optional[List[str]] = None,
-    new_items: Optional[List[Dict]] = None,
+    rss_items: list[dict],
+    word_groups: list[dict],
+    filter_words: list[str],
+    global_filters: list[str] | None = None,
+    new_items: list[dict] | None = None,
     max_news_per_keyword: int = 0,
     sort_by_position_first: bool = False,
     timezone: str = "Asia/Shanghai",
     rank_threshold: int = 5,
     quiet: bool = False,
-) -> Tuple[List[Dict], int]:
+) -> tuple[list[dict], int]:
     """
     按关键词分组统计 RSS 条目（与热榜统计格式一致）
 
@@ -703,10 +693,10 @@ def count_rss_frequency(
 
 
 def convert_keyword_stats_to_platform_stats(
-    keyword_stats: List[Dict],
-    weight_config: Dict,
+    keyword_stats: list[dict],
+    weight_config: dict,
     rank_threshold: int = 5,
-) -> List[Dict]:
+) -> list[dict]:
     """
     将按关键词分组的统计数据转换为按平台分组的统计数据
 
@@ -719,7 +709,7 @@ def convert_keyword_stats_to_platform_stats(
         按平台分组的统计数据，格式与原 stats 一致
     """
     # 1. 收集所有新闻，按平台分组
-    platform_map: Dict[str, List[Dict]] = {}
+    platform_map: dict[str, list[dict]] = {}
 
     for stat in keyword_stats:
         keyword = stat["word"]
@@ -736,7 +726,7 @@ def convert_keyword_stats_to_platform_stats(
 
     # 2. 去重（同一平台下相同标题只保留一条，保留第一个匹配的关键词）
     for source_name, titles in platform_map.items():
-        seen_titles: Dict[str, bool] = {}
+        seen_titles: dict[str, bool] = {}
         unique_titles = []
         for title_data in titles:
             title_text = title_data["title"]
