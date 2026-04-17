@@ -127,9 +127,10 @@ def _console_renderer(
     event_dict.pop("run_id", None)
     event_dict.pop("cid", None)
     event_dict.pop("logger", None)
-    event_dict.pop("event", None)
+    event_dict.pop("level", None)
 
-    msg = event_dict.pop("message", event_dict.pop("event", ""))
+    # structlog puts the positional message in "event"
+    msg = event_dict.pop("event", event_dict.pop("message", ""))
     # Build remaining fields as key=value pairs
     extras = ""
     if event_dict:
@@ -142,6 +143,15 @@ def _console_renderer(
 
 def configure_logging(debug: bool = False) -> None:
     """Configure structlog with console output and correlation ID processor."""
+    # Ensure stdout can print emojis on Windows (GBK -> UTF-8)
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
