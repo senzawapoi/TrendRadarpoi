@@ -397,3 +397,89 @@ advanced:
     slack: 4000
   batch_send_interval: 3              # 批次发送间隔（秒）
   feishu_message_separator: "━━━━━━━━━━━━━━━━━━━"
+
+
+# ===============================================================
+# 8. AI 前沿资讯聚合（独立子系统）
+#
+# 独立聚合 ArXiv/Reddit/HackerNews/GitHub Trending/X(Nitter) 五大源
+# 入口：python -m trendradar.ai_frontier
+# 独立数据库：output/ai_frontier.db
+# 独立 Actions：.github/workflows/ai-frontier.yml（每 2 小时）
+#
+# 环境变量（可覆盖 push.bark_url）：
+#   BARK_URL        —— AI 前沿专用 Bark 推送 URL
+#   GEMINI_API_KEY  —— 批量翻译 API Key（可复用主系统）
+# ===============================================================
+ai_frontier:
+  enabled: true                       # 总开关
+
+  # 只保留最近 N 小时内发布的条目（0=禁用过滤）
+  freshness_hours: 24
+
+  # 是否翻译英文标题为中文（需 GEMINI_API_KEY）
+  translate: true
+
+  # 推送配置
+  push:
+    # AI 前沿专用 Bark URL（留空则回退到 notification.channels.bark.url）
+    # 建议在 GitHub Secrets 中配置 BARK_URL，不要写在这里
+    bark_url: ""
+
+    # 各源最低分数阈值（过低的条目不推送）
+    min_score_hackernews: 50          # HN points 阈值
+    min_score_reddit: 30              # Reddit upvote 阈值
+    min_stars_github: 100             # GitHub Trending 本期 stars 阈值
+
+    # 单次推送最多条数（防刷屏）
+    max_items_per_push: 30
+
+  # 数据源配置
+  sources:
+    # ArXiv 论文（免 Key）
+    arxiv:
+      enabled: true
+      categories: ["cs.AI", "cs.LG", "cs.CL"]   # 分类，参考 https://arxiv.org/category_taxonomy
+      max_results: 30
+
+    # Reddit 公开 API（免 Key）
+    reddit:
+      enabled: true
+      subreddits: ["MachineLearning", "LocalLLaMA", "singularity", "OpenAI"]
+      limit_per_sub: 25
+      min_score: 30
+
+    # HackerNews Algolia Search（免 Key）
+    hackernews:
+      enabled: true
+      keywords: ["AI", "LLM", "GPT", "Claude", "Gemini", "Anthropic", "OpenAI"]
+      min_score: 50
+
+    # GitHub Trending（HTML 解析）
+    github_trending:
+      enabled: true
+      languages: ["python", "unknown"]          # unknown = All languages
+      since: "daily"                            # daily | weekly | monthly
+      min_stars: 100
+
+    # X / Twitter 账号（通过 Nitter 镜像 RSS）
+    x_nitter:
+      enabled: true
+      accounts:
+        - "openai"
+        - "anthropicai"
+        - "googledeepmind"
+        - "sama"
+        - "elonmusk"
+        - "karpathy"
+        - "ylecun"
+        - "demishassabis"
+        - "jimfan0"
+        - "_philschmid"
+      max_per_account: 5
+      # Nitter 实例列表（首个可用的会被使用）
+      nitter_instances:
+        - "https://nitter.net"
+        - "https://nitter.privacydev.net"
+        - "https://nitter.poast.org"
+        - "https://nitter.cz"

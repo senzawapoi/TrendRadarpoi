@@ -1,0 +1,63 @@
+name: AI Frontier Crawler
+
+on:
+  schedule:
+    # 每 2 小时执行一次（AI 前沿资讯更新没那么高频）
+    - cron: "0 */2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ai-frontier-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore AI Frontier DB
+        uses: actions/cache@v4
+        with:
+          path: output/ai_frontier.db
+          key: ai-frontier-db-${{ github.run_id }}
+          restore-keys: |
+            ai-frontier-db-
+
+      - name: Run AI Frontier crawler
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BARK_URL: ${{ secrets.BARK_URL }}
+        run: |
+          python -m trendradar.ai_frontier
+
+      - name: Upload AI Frontier report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-frontier-report-${{ github.run_id }}
+          path: |
+            output/ai_frontier/
+            output/ai_frontier.db
+          retention-days: 7
+          if-no-files-found: ignore
