@@ -40,9 +40,12 @@ python -m trendradar.ai_frontier
 
 `.github/workflows/ai-frontier.yml` 已配置每 2 小时触发一次。
 
-**必需 Secrets：**
-- `GEMINI_API_KEY`：Gemini 翻译 Key（可选，未配置则不翻译）
-- `BARK_URL`：Bark 推送 URL（可选，未配置则不推送）
+**无需额外配置 Secrets**：直接复用主仓库已有的 `GEMINI_API_KEY` 与 `BARK_URL`（与 `crawler.yml` 共用同名 secret）。
+
+Bark URL 解析优先级：
+1. `secrets.BARK_URL`（Actions 环境变量）
+2. `config.yaml` 的 `ai_frontier.push.bark_url`（独立专用，可选）
+3. `config.yaml` 的 `notification.channels.bark.url`（回退到主系统已配置的 Bark）
 
 ## 配置
 

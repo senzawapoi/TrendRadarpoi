@@ -407,9 +407,9 @@ advanced:
 # 独立数据库：output/ai_frontier.db
 # 独立 Actions：.github/workflows/ai-frontier.yml（每 2 小时）
 #
-# 环境变量（可覆盖 push.bark_url）：
-#   BARK_URL        —— AI 前沿专用 Bark 推送 URL
-#   GEMINI_API_KEY  —— 批量翻译 API Key（可复用主系统）
+# 环境变量（直接复用主系统已有 Secrets，无需额外配置）：
+#   GEMINI_API_KEY  —— 与 crawler.yml 共用
+#   BARK_URL        —— 与 crawler.yml 共用；未设置时回退 notification.channels.bark.url
 # ===============================================================
 ai_frontier:
   enabled: true                       # 总开关
