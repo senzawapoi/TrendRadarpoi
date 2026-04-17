@@ -26,8 +26,8 @@ def test_is_english_empty():
     assert is_english_title("   ") is False
 
 
-def test_translate_items_skips_when_no_key():
-    items = [AIItem(source="arxiv", source_name="x", title="Hello", url="https://u")]
+def test_translate_items_skips_when_no_english_items():
+    items = [AIItem(source="arxiv", source_name="x", title="中文标题", url="https://u")]
     count = translate_items(items, gemini_api_key=None)
     assert count == 0
     assert items[0].title_translated == ""

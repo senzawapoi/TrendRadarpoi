@@ -24,23 +24,20 @@ def is_english_title(title: str) -> bool:
 
 def translate_items(
     items: list[AIItem],
-    gemini_api_key: str | None,
+    gemini_api_key: str | None = None,
     batch_size: int = 15,
 ) -> int:
     """对 items 中的英文标题做批量翻译，回写 title_translated。
 
     Args:
         items: 条目列表
-        gemini_api_key: Gemini API Key（None/空串则跳过翻译）
+        gemini_api_key: Gemini API Key；传 None/空串时 TranslationService 会使用
+            `mcp_server.tools.translation.TranslationTools` 内置的默认 key
         batch_size: 每批翻译数量
 
     Returns:
         成功翻译的条目数
     """
-    if not gemini_api_key:
-        log.info("未配置 GEMINI_API_KEY，跳过 AI 前沿翻译")
-        return 0
-
     # 筛选英文标题且未翻译的条目
     en_indices: list[int] = []
     en_titles: list[str] = []
@@ -64,8 +61,24 @@ def translate_items(
         log.warning("TranslationService 导入失败", error=str(e))
         return 0
 
+    # 无 env key 时读取 TranslationTools 内置默认 key，避免传 None 覆盖
+    effective_key = gemini_api_key
+    if not effective_key:
+        try:
+            from inspect import signature
+            from mcp_server.tools.translation import TranslationTools
+            default_key = signature(TranslationTools.__init__).parameters["gemini_api_key"].default
+            if isinstance(default_key, str) and default_key:
+                effective_key = default_key
+        except Exception:
+            pass
+
+    if not effective_key:
+        log.warning("Gemini key 不可用，跳过翻译")
+        return 0
+
     try:
-        service = TranslationService(gemini_api_key=gemini_api_key)
+        service = TranslationService(gemini_api_key=effective_key)
         if not service.translation_tools:
             log.warning("翻译工具未初始化")
             return 0
