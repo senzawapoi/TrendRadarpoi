@@ -137,7 +137,7 @@ def _console_renderer(
         extras = " | " + " | ".join(parts)
 
     output = f"{emoji}[{level}]{duration} {msg}{extras}"
-    return [output]
+    return output
 
 
 def configure_logging(debug: bool = False) -> None:
