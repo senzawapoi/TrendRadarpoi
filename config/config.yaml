@@ -443,16 +443,49 @@ ai_frontier:
       max_results: 30
 
     # Reddit 公开 API（免 Key）
+    # 覆盖：学术研究 / 开源模型 / 公司动态 / AI 应用
     reddit:
       enabled: true
-      subreddits: ["MachineLearning", "LocalLLaMA", "singularity", "OpenAI"]
+      subreddits:
+        - "MachineLearning"    # 学术研究 & 论文讨论
+        - "LocalLLaMA"         # 开源模型部署（Llama/Qwen/DeepSeek 等）
+        - "singularity"        # AGI / 重大事件讨论
+        - "OpenAI"             # OpenAI 新品发布
+        - "ClaudeAI"           # Anthropic Claude
+        - "StableDiffusion"    # 图像生成
+        - "ChatGPT"            # ChatGPT 应用与讨论
+        - "artificial"         # 泛 AI 新闻
+        - "LLMDevs"            # LLM 开发者
+        - "AI_Agents"          # AI Agent 生态
       limit_per_sub: 25
       min_score: 30
 
     # HackerNews Algolia Search（免 Key）
+    # 每个关键词是一次独立搜索，关键词越多抓取时间越长
     hackernews:
       enabled: true
-      keywords: ["AI", "LLM", "GPT", "Claude", "Gemini", "Anthropic", "OpenAI"]
+      keywords:
+        # === 通用 AI 关键词 ===
+        - "AI"
+        - "LLM"
+        - "AGI"
+        # === 主流公司 & 产品（新公司创立 / 融资 / 收购） ===
+        - "OpenAI"
+        - "Anthropic"
+        - "xAI"
+        - "Mistral"
+        - "DeepSeek"
+        - "Perplexity"
+        # === 主流模型（新技术上新） ===
+        - "GPT"
+        - "Claude"
+        - "Gemini"
+        - "Llama"
+        - "Sora"
+        # === 热门技术方向（重大事件） ===
+        - "AI agent"
+        - "multimodal"
+        - "RAG"
       min_score: 50
 
     # GitHub Trending（HTML 解析）
@@ -463,20 +496,72 @@ ai_frontier:
       min_stars: 100
 
     # X / Twitter 账号（通过 Nitter 镜像 RSS）
+    # 涵盖：顶级 AI 实验室 / 创业公司 / 关键研究者 / 行业领袖
+    # 最佳实践：账号越多覆盖越全，但会增加抓取时间；按需注释掉不关心的账号
     x_nitter:
       enabled: true
       accounts:
-        - "openai"
-        - "anthropicai"
-        - "googledeepmind"
-        - "sama"
-        - "elonmusk"
-        - "karpathy"
-        - "ylecun"
-        - "demishassabis"
-        - "jimfan0"
-        - "_philschmid"
-      max_per_account: 5
+        # ===== 顶级 AI 实验室 & 公司官方账号（新模型/新产品发布第一手来源）=====
+        - "openai"              # OpenAI
+        - "anthropicai"         # Anthropic
+        - "googledeepmind"      # Google DeepMind
+        - "aiatmeta"            # Meta AI
+        - "xai"                 # xAI（Elon Musk 新公司）
+        - "mistralai"           # Mistral AI
+        - "cohere"              # Cohere
+        - "perplexity_ai"       # Perplexity
+        - "deepseek_ai"         # DeepSeek
+        - "alibaba_qwen"        # 通义千问 Qwen
+        - "kimi_moonshot"       # Moonshot Kimi
+        - "zhipuai"             # 智谱 AI / GLM
+        - "stabilityai"         # Stability AI
+        - "huggingface"         # HuggingFace
+
+        # ===== AI 应用 & 创业公司（新产品 / 新公司动态）=====
+        - "cursor_ai"           # Cursor 编程助手
+        - "v0"                  # Vercel v0
+        - "groqinc"             # Groq 推理芯片
+        - "togethercompute"     # Together AI
+        - "fireworksai_hq"      # Fireworks AI
+        - "liquidai_"           # Liquid AI
+        - "character_ai"        # Character.AI
+        - "inflectionai"        # Inflection AI
+        - "runwayml"            # Runway（视频生成）
+        - "pika_labs"           # Pika（视频生成）
+        - "lumalabsai"          # Luma AI（3D/视频）
+        - "suno_ai_"            # Suno（音乐生成）
+        - "heygen_official"     # HeyGen（数字人）
+        - "krea_ai"             # Krea
+        - "elevenlabsio"        # ElevenLabs（语音）
+        - "replicate"           # Replicate（模型托管）
+
+        # ===== 开发者工具 & 基础设施 =====
+        - "langchainai"         # LangChain
+        - "llama_index"         # LlamaIndex
+        - "nvidiaaidev"         # NVIDIA AI Dev（新芯片/新技术）
+        - "databricks"          # Databricks
+
+        # ===== 关键研究者 & 行业领袖（重大事件 / 行业观点）=====
+        - "sama"                # Sam Altman（OpenAI CEO）
+        - "elonmusk"            # Elon Musk（xAI）
+        - "karpathy"            # Andrej Karpathy
+        - "ylecun"              # Yann LeCun（Meta 首席 AI 科学家）
+        - "demishassabis"       # Demis Hassabis（DeepMind CEO）
+        - "drjimfan"            # Jim Fan（NVIDIA 高级研究员）
+        - "_philschmid"         # Philipp Schmid（Google DeepMind）
+        - "andrewyng"           # Andrew Ng
+        - "gdb"                 # Greg Brockman（OpenAI 总裁）
+        - "miramurati"          # Mira Murati（前 OpenAI CTO）
+        - "jeffdean"            # Jeff Dean（Google DeepMind）
+        - "polynoamial"         # Noam Brown（OpenAI）
+        - "goodside"            # Riley Goodside（Prompt Engineering）
+        - "simonw"              # Simon Willison
+        - "swyx"                # Shawn Wang（AI Engineer）
+        - "rowancheung"         # Rowan Cheung（Rundown AI 创始人）
+        - "emollick"            # Ethan Mollick（宾大沃顿教授）
+        - "bindureddy"          # Bindu Reddy（Abacus.AI CEO）
+        - "garymarcus"          # Gary Marcus（AI 批评者视角）
+      max_per_account: 3        # 账号变多后调低防刷屏；总量 = 账号数 × 此值
       # Nitter 实例列表（首个可用的会被使用）
       nitter_instances:
         - "https://nitter.net"
