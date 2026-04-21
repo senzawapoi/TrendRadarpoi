@@ -476,12 +476,16 @@ ai_frontier:
         - "Mistral"
         - "DeepSeek"
         - "Perplexity"
+        - "Moonshot"            # Moonshot AI（Kimi 背后的公司）
         # === 主流模型（新技术上新） ===
         - "GPT"
         - "Claude"
         - "Gemini"
         - "Llama"
         - "Sora"
+        - "Kimi"                # Kimi K1/K2 系列模型
+        - "Qwen"                # 通义千问
+        - "GLM"                 # 智谱 GLM 系列
         # === 热门技术方向（重大事件） ===
         - "AI agent"
         - "multimodal"
