@@ -12,6 +12,7 @@ import re
 import aiohttp
 from bs4 import BeautifulSoup
 
+from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
 from trendradar.ai_frontier.sources.base import AIItem, AISource
 from trendradar.utils.logging import log
 
@@ -51,24 +52,21 @@ class GitHubTrendingSource(AISource):
         self, session: aiohttp.ClientSession, language: str
     ) -> list[AIItem]:
         url = self._build_url(language)
-        try:
-            async with session.get(
-                url,
-                headers={"User-Agent": USER_AGENT},
-                timeout=aiohttp.ClientTimeout(total=self.timeout),
-            ) as resp:
-                if resp.status != 200:
-                    log.warning(f"GitHub Trending [{language}] 状态异常", status=resp.status)
-                    return []
-                html = await resp.text()
-        except asyncio.TimeoutError:
-            log.warning(f"GitHub Trending [{language}] 超时")
+        resp = await request_with_retry(
+            session, "GET", url, label=f"GitHub Trending [{language}]",
+            max_attempts=2, timeout=self.timeout,
+        )
+        if resp is None:
             return []
-        except Exception as e:
-            log.warning(f"GitHub Trending [{language}] 异常", error=str(e))
+        if resp.status != 200:
+            log.warning(f"GitHub Trending [{language}] 状态异常", status=resp.status)
+            await resp.release()
             return []
+        html_text = await resp.text()
+        await resp.release()
 
-        return self._parse_html(html, language)
+        # BeautifulSoup 是 CPU 密集操作，移到线程池
+        return await asyncio.to_thread(self._parse_html, html_text, language)
 
     def _parse_stars(self, text: str) -> int:
         """从 '1,234 stars today' 或 '1.2k stars today' 中提取数字"""
@@ -158,9 +156,11 @@ class GitHubTrendingSource(AISource):
             return []
 
         log.info(f"抓取 GitHub Trending ({len(self.languages)} langs)")
-        async with aiohttp.ClientSession() as session:
-            tasks = [self._fetch_language(session, lang) for lang in self.languages]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        async with make_session(
+            total_timeout=self.timeout, user_agent=USER_AGENT,
+        ) as session:
+            coros = [self._fetch_language(session, lang) for lang in self.languages]
+            results = await run_with_concurrency(coros, limit=4)
 
         seen: set[str] = set()
         merged: list[AIItem] = []

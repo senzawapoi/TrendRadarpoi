@@ -2,16 +2,23 @@
 
 通过 Nitter（Twitter 第三方镜像）RSS 抓取关键 AI 账号的推文。
 Nitter 实例经常下线，配置多实例并自动回退。
+
+优化：
+- 启动时并发探测可用实例（避免逐个账号重试死实例）
+- Semaphore 限流防反爬
+- feedparser 移到线程池（不阻塞事件循环）
 """
 
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import datetime, timezone
 
 import aiohttp
 import feedparser
 
+from trendradar.ai_frontier._http import make_session, run_with_concurrency
 from trendradar.ai_frontier.sources.base import AIItem, AISource
 from trendradar.utils.logging import log
 
@@ -21,6 +28,20 @@ DEFAULT_INSTANCES = [
     "https://nitter.poast.org",
     "https://nitter.cz",
 ]
+
+# 预编译 nitter 域名替换正则（一次匹配所有实例）
+_NITTER_HOST_RE: re.Pattern | None = None
+
+
+def _build_nitter_re(instances: list[str]) -> re.Pattern:
+    """构建一次性替换所有 nitter 实例域名的正则"""
+    hosts = []
+    for inst in instances:
+        host = inst.replace("https://", "").replace("http://", "").rstrip("/")
+        hosts.append(re.escape(host))
+    if not hosts:
+        hosts = ["nitter\\.net"]
+    return re.compile("|".join(hosts))
 
 
 class NitterSource(AISource):
@@ -34,58 +55,81 @@ class NitterSource(AISource):
             "accounts",
             [
                 "openai", "anthropicai", "googledeepmind", "sama", "elonmusk",
-                "karpathy", "ylecun", "demishassabis", "jimfan0", "_philschmid",
+                "karpathy", "ylecun", "demishassabis", "drjimfan", "_philschmid",
             ],
         )
         self.instances: list[str] = config.get("nitter_instances", DEFAULT_INSTANCES)
         self.max_per_account: int = config.get("max_per_account", 5)
-        self.timeout: int = config.get("timeout", 12)
+        self.timeout: int = config.get("timeout", 8)
+        self._nitter_re = _build_nitter_re(self.instances)
+        self._working_instances: list[str] | None = None  # 预探测后缓存
 
+    # ── 实例预探测 ──────────────────────────────────────
+    async def _probe_instances(self, session: aiohttp.ClientSession) -> list[str]:
+        """并发探测 nitter 实例可用性，只保留 200 响应的"""
+
+        async def _probe_one(inst: str) -> str | None:
+            try:
+                url = f"{inst.rstrip('/')}/openai/rss"
+                async with session.get(
+                    url, timeout=aiohttp.ClientTimeout(total=6),
+                ) as resp:
+                    if resp.status == 200:
+                        text = await resp.text()
+                        if "<rss" in text[:500].lower() or "<feed" in text[:500].lower():
+                            return inst
+            except Exception:
+                pass
+            return None
+
+        results = await asyncio.gather(
+            *[_probe_one(i) for i in self.instances], return_exceptions=True
+        )
+        available = [r for r in results if isinstance(r, str)]
+        log.info(f"Nitter 可用实例: {len(available)}/{len(self.instances)}")
+        return available if available else self.instances[:1]
+
+    # ── 单账号抓取 ──────────────────────────────────────
     async def _fetch_account(
-        self, session: aiohttp.ClientSession, account: str
+        self, session: aiohttp.ClientSession, account: str, instances: list[str]
     ) -> list[AIItem]:
-        """尝试多个 nitter 实例，取首个成功的"""
-        for instance in self.instances:
+        """仅尝试已确认可用的实例"""
+        for instance in instances:
             url = f"{instance.rstrip('/')}/{account}/rss"
             try:
                 async with session.get(
-                    url,
-                    timeout=aiohttp.ClientTimeout(total=self.timeout),
-                    headers={"User-Agent": "TrendRadar-AIFrontier/1.0"},
+                    url, timeout=aiohttp.ClientTimeout(total=self.timeout),
                 ) as resp:
                     if resp.status != 200:
                         continue
                     text = await resp.text()
-                if not text or "<rss" not in text[:500].lower() and "<feed" not in text[:500].lower():
+                if not text or ("<rss" not in text[:500].lower() and "<feed" not in text[:500].lower()):
                     continue
-                items = self._parse_rss(account, text)
+                items = await asyncio.to_thread(self._parse_rss, account, text)
                 if items:
                     return items
             except asyncio.TimeoutError:
                 continue
             except Exception:
                 continue
-        log.warning(f"Nitter @{account} 所有实例均失败")
         return []
 
+    # ── RSS 解析（CPU 密集，在线程池运行）──────────────
     def _parse_rss(self, account: str, text: str) -> list[AIItem]:
         parsed = feedparser.parse(text)
         items: list[AIItem] = []
+        valid_count = 0
 
-        for entry in (parsed.entries or [])[: self.max_per_account]:
+        for entry in parsed.entries or []:
             title = (entry.get("title") or "").strip().replace("\n", " ")
             link = entry.get("link") or ""
             if not (title and link):
                 continue
 
-            # 清理 nitter 的链接（指回 twitter.com）
+            # 用预编译正则一次性替换所有 nitter 域名
             if "nitter" in link:
-                link = link.replace("nitter.net", "twitter.com")
-                for inst in self.instances:
-                    host = inst.replace("https://", "").replace("http://", "").rstrip("/")
-                    link = link.replace(host, "twitter.com")
+                link = self._nitter_re.sub("twitter.com", link)
 
-            # 发布时间
             pub_dt: datetime | None = None
             if getattr(entry, "published_parsed", None):
                 pub_dt = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
@@ -105,16 +149,32 @@ class NitterSource(AISource):
                     summary=summary,
                 )
             )
+            valid_count += 1
+            if valid_count >= self.max_per_account:
+                break
+
         return items
 
+    # ── 主入口 ──────────────────────────────────────────
     async def fetch(self) -> list[AIItem]:
         if not self.enabled or not self.accounts:
             return []
 
         log.info(f"抓取 X/Nitter ({len(self.accounts)} accounts)")
-        async with aiohttp.ClientSession() as session:
-            tasks = [self._fetch_account(session, acc) for acc in self.accounts]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        session = make_session(
+            total_timeout=self.timeout,
+            max_connections=16,
+            max_per_host=4,
+        )
+        async with session:
+            # 1. 预探测可用实例（并发，~6s 内完成）
+            working = await self._probe_instances(session)
+
+            # 2. Semaphore 限流 + 并发抓取所有账号
+            coros = [
+                self._fetch_account(session, acc, working) for acc in self.accounts
+            ]
+            results = await run_with_concurrency(coros, limit=8)
 
         merged: list[AIItem] = []
         for r in results:

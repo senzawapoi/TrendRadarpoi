@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 import aiohttp
 
+from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
 from trendradar.ai_frontier.sources.base import AIItem, AISource
 from trendradar.utils.logging import log
 
@@ -40,21 +41,20 @@ class HackerNewsSource(AISource):
             "hitsPerPage": self.hits_per_keyword,
             "numericFilters": f"points>{self.min_score}",
         }
-        try:
-            async with session.get(
-                HN_SEARCH_URL,
-                params=params,
-                timeout=aiohttp.ClientTimeout(total=self.timeout),
-            ) as resp:
-                if resp.status != 200:
-                    log.warning(f"HN 搜索 '{keyword}' 状态异常", status=resp.status)
-                    return []
-                data = await resp.json()
-        except asyncio.TimeoutError:
-            log.warning(f"HN 搜索 '{keyword}' 超时")
+        resp = await request_with_retry(
+            session, "GET", HN_SEARCH_URL, params=params,
+            label=f"HN '{keyword}'", max_attempts=2, timeout=self.timeout,
+        )
+        if resp is None:
             return []
+        if resp.status != 200:
+            log.warning(f"HN 搜索 '{keyword}' 状态异常", status=resp.status)
+            await resp.release()
+            return []
+        try:
+            data = await resp.json()
         except Exception as e:
-            log.warning(f"HN 搜索 '{keyword}' 异常", error=str(e))
+            log.warning(f"HN '{keyword}' JSON 解析失败", error=str(e))
             return []
 
         return self._parse_hits(keyword, data)
@@ -107,9 +107,11 @@ class HackerNewsSource(AISource):
             return []
 
         log.info(f"抓取 HackerNews ({len(self.keywords)} keywords)")
-        async with aiohttp.ClientSession() as session:
-            tasks = [self._fetch_keyword(session, kw) for kw in self.keywords]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        async with make_session(
+            total_timeout=self.timeout, max_per_host=4,
+        ) as session:
+            coros = [self._fetch_keyword(session, kw) for kw in self.keywords]
+            results = await run_with_concurrency(coros, limit=5)
 
         seen: set[str] = set()
         merged: list[AIItem] = []

@@ -50,14 +50,18 @@ class AIFrontierStorage:
 
     def _get_conn(self) -> sqlite3.Connection:
         if self._conn is None:
-            self._conn = sqlite3.connect(self.db_path)
+            self._conn = sqlite3.connect(self.db_path, isolation_level=None)
             self._conn.row_factory = sqlite3.Row
+            # 性能调优：WAL 并发读写 + 异步提交 + 内存临时表
+            self._conn.execute("PRAGMA journal_mode = WAL")
+            self._conn.execute("PRAGMA synchronous = NORMAL")
+            self._conn.execute("PRAGMA temp_store = MEMORY")
+            self._conn.execute("PRAGMA cache_size = -20000")  # ~20MB
         return self._conn
 
     def _init_schema(self) -> None:
         conn = self._get_conn()
         conn.executescript(SCHEMA)
-        conn.commit()
 
     def close(self) -> None:
         if self._conn is not None:
@@ -74,39 +78,68 @@ class AIFrontierStorage:
     # 写入：upsert 返回 (new_items, updated_items)
     # ─────────────────────────────────────────────────────────────
     def upsert_items(self, items: Iterable[AIItem]) -> tuple[list[AIItem], list[AIItem]]:
-        """插入或更新条目。
+        """插入或更新条目（批量模式）。
+
+        性能优化：
+        - 单次批量 SELECT 查询已存在的 key 集合（避免 N 次查询）
+        - 分别用 executemany 批量 INSERT / UPDATE
+        - 单事务包裹全部写入
 
         返回：
             (new_items, updated_items)
-            new_items：首次出现的条目（first_seen == last_seen，被标记 is_new=True）
-            updated_items：已存在的条目（更新 last_seen、score）
+            new_items：首次出现的条目（被标记 is_new=True）
+            updated_items：已存在的条目（last_seen/score 被刷新）
         """
+        items_list = list(items)
+        if not items_list:
+            return [], []
+
         conn = self._get_conn()
         cur = conn.cursor()
+
+        # 1) 批量查询已存在的 (source, url) —— 用临时表避免 IN 参数过多
+        cur.execute("CREATE TEMP TABLE IF NOT EXISTS _lookup (source TEXT, url TEXT)")
+        cur.execute("DELETE FROM _lookup")
+        cur.executemany(
+            "INSERT INTO _lookup (source, url) VALUES (?, ?)",
+            [(it.source, it.url) for it in items_list],
+        )
+        cur.execute(
+            """
+            SELECT a.source, a.url FROM ai_items a
+            INNER JOIN _lookup l ON a.source = l.source AND a.url = l.url
+            """
+        )
+        existing: set[tuple[str, str]] = {(r[0], r[1]) for r in cur.fetchall()}
 
         now = datetime.now(tz=timezone.utc).isoformat()
         new_items: list[AIItem] = []
         updated_items: list[AIItem] = []
+        insert_rows: list[tuple] = []
+        update_rows: list[tuple] = []
 
-        for item in items:
-            cur.execute(
-                "SELECT id, first_seen FROM ai_items WHERE source = ? AND url = ?",
-                (item.source, item.url),
-            )
-            row = cur.fetchone()
-
+        for item in items_list:
             tags_json = json.dumps(item.tags or [], ensure_ascii=False)
             pub_str = item.published_at.isoformat() if item.published_at else None
+            key = (item.source, item.url)
 
-            if row is None:
-                cur.execute(
-                    """
-                    INSERT INTO ai_items (
-                        source, source_name, title, title_translated, url,
-                        published_at, score, author, summary, tags,
-                        first_seen, last_seen
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
+            if key in existing:
+                item.is_new = False
+                updated_items.append(item)
+                update_rows.append(
+                    (
+                        now,
+                        item.score,
+                        item.title_translated,
+                        item.title_translated,
+                        item.source,
+                        item.url,
+                    )
+                )
+            else:
+                item.is_new = True
+                new_items.append(item)
+                insert_rows.append(
                     (
                         item.source,
                         item.source_name,
@@ -120,25 +153,39 @@ class AIFrontierStorage:
                         tags_json,
                         now,
                         now,
-                    ),
+                    )
                 )
-                item.is_new = True
-                new_items.append(item)
-            else:
-                cur.execute(
+
+        # 2) 单事务批量写入
+        try:
+            cur.execute("BEGIN")
+            if insert_rows:
+                cur.executemany(
+                    """
+                    INSERT INTO ai_items (
+                        source, source_name, title, title_translated, url,
+                        published_at, score, author, summary, tags,
+                        first_seen, last_seen
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    insert_rows,
+                )
+            if update_rows:
+                cur.executemany(
                     """
                     UPDATE ai_items SET
                         last_seen = ?,
                         score = ?,
                         title_translated = CASE WHEN ? != '' THEN ? ELSE title_translated END
-                    WHERE id = ?
+                    WHERE source = ? AND url = ?
                     """,
-                    (now, item.score, item.title_translated, item.title_translated, row["id"]),
+                    update_rows,
                 )
-                item.is_new = False
-                updated_items.append(item)
+            cur.execute("COMMIT")
+        except Exception:
+            cur.execute("ROLLBACK")
+            raise
 
-        conn.commit()
         log.info(f"DB 写入：新增 {len(new_items)}，更新 {len(updated_items)}")
         return new_items, updated_items
 

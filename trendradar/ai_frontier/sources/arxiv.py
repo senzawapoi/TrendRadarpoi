@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import aiohttp
 import feedparser
 
+from trendradar.ai_frontier._http import make_session, request_with_retry
 from trendradar.ai_frontier.sources.base import AIItem, AISource
 from trendradar.utils.logging import log
 
@@ -49,21 +50,22 @@ class ArXivSource(AISource):
         url = self._build_url()
         log.info("抓取 ArXiv", url=url)
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=self.timeout)) as resp:
-                    if resp.status != 200:
-                        log.warning("ArXiv 抓取失败", status=resp.status)
-                        return []
-                    text = await resp.text()
-        except asyncio.TimeoutError:
-            log.warning("ArXiv 超时")
-            return []
-        except Exception as e:
-            log.warning("ArXiv 异常", error=str(e))
-            return []
+        async with make_session(total_timeout=self.timeout) as session:
+            resp = await request_with_retry(
+                session, "GET", url, label="ArXiv", max_attempts=2,
+                timeout=self.timeout,
+            )
+            if resp is None:
+                return []
+            if resp.status != 200:
+                log.warning("ArXiv 抓取失败", status=resp.status)
+                await resp.release()
+                return []
+            text = await resp.text()
+            await resp.release()
 
-        return self._parse_feed(text)
+        # feedparser 是 CPU 密集操作，移到线程池避免阻塞事件循环
+        return await asyncio.to_thread(self._parse_feed, text)
 
     def _parse_feed(self, text: str) -> list[AIItem]:
         parsed = feedparser.parse(text)

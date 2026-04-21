@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 import aiohttp
 
+from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
 from trendradar.ai_frontier.sources.base import AIItem, AISource
 from trendradar.utils.logging import log
 
@@ -33,21 +34,20 @@ class RedditSource(AISource):
 
     async def _fetch_one(self, session: aiohttp.ClientSession, sub: str) -> list[AIItem]:
         url = f"https://www.reddit.com/r/{sub}/hot.json?limit={self.limit_per_sub}"
-        try:
-            async with session.get(
-                url,
-                headers={"User-Agent": USER_AGENT},
-                timeout=aiohttp.ClientTimeout(total=self.timeout),
-            ) as resp:
-                if resp.status != 200:
-                    log.warning(f"Reddit r/{sub} 状态码异常", status=resp.status)
-                    return []
-                data = await resp.json()
-        except asyncio.TimeoutError:
-            log.warning(f"Reddit r/{sub} 超时")
+        resp = await request_with_retry(
+            session, "GET", url, label=f"Reddit r/{sub}",
+            max_attempts=2, timeout=self.timeout,
+        )
+        if resp is None:
             return []
+        if resp.status != 200:
+            log.warning(f"Reddit r/{sub} 状态码异常", status=resp.status)
+            await resp.release()
+            return []
+        try:
+            data = await resp.json()
         except Exception as e:
-            log.warning(f"Reddit r/{sub} 异常", error=str(e))
+            log.warning(f"Reddit r/{sub} JSON 解析失败", error=str(e))
             return []
 
         return self._parse_sub(sub, data)
@@ -110,9 +110,13 @@ class RedditSource(AISource):
             return []
 
         log.info(f"抓取 Reddit ({len(self.subreddits)} subs)")
-        async with aiohttp.ClientSession() as session:
-            tasks = [self._fetch_one(session, sub) for sub in self.subreddits]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        async with make_session(
+            total_timeout=self.timeout,
+            user_agent=USER_AGENT,
+            max_per_host=3,
+        ) as session:
+            coros = [self._fetch_one(session, sub) for sub in self.subreddits]
+            results = await run_with_concurrency(coros, limit=4)
 
         merged: list[AIItem] = []
         for r in results:
