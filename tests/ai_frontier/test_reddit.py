@@ -60,21 +60,21 @@ def test_self_post_uses_permalink():
     sample = _make_sample()
     # Second entry is is_self=True
     items = src._parse_sub("MachineLearning", sample)
-    self_item = [i for i in items if "def" in i.url][0]
+    self_item = next(i for i in items if "def" in i.url)
     assert self_item.url.startswith("https://www.reddit.com/r/")
 
 
 def test_external_url_preferred_for_link_posts():
     src = RedditSource({"min_score": 0})
     items = src._parse_sub("MachineLearning", _make_sample())
-    link_item = [i for i in items if "arxiv" in i.url][0]
+    link_item = next(i for i in items if "arxiv" in i.url)
     assert link_item.url == "https://arxiv.org/abs/1234"
 
 
 def test_tags_from_flair():
     src = RedditSource({"min_score": 0})
     items = src._parse_sub("MachineLearning", _make_sample())
-    research = [i for i in items if i.score == 120][0]
+    research = next(i for i in items if i.score == 120)
     assert research.tags == ["Research"]
 
 

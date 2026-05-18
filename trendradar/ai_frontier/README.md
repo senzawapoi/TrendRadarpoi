@@ -10,7 +10,9 @@
 | 🔥 **Reddit** | r/MachineLearning / r/LocalLLaMA / r/singularity / r/OpenAI | Reddit .json（免 Key）|
 | 🗞️ **HackerNews** | AI/LLM/GPT/Claude/Gemini 高分帖子 | HN Algolia Search |
 | ⭐ **GitHub Trending** | 每日趋势（Python + AI 关键词筛选 All 榜）| HTML 解析 |
-| 🐦 **X / Twitter** | OpenAI / Anthropic / Karpathy / Sama 等关键账号 | Nitter RSS 镜像 |
+| 🐦 **X / Twitter** | OpenAI / Anthropic / Karpathy / Sama + follow-builders AI builders | Nitter RSS 镜像 |
+| 🎙️ **AI Podcasts** | Latent Space / Training Data / No Priors 等播客 | YouTube RSS |
+| 📝 **Official Blogs** | Anthropic Engineering / Claude Blog | HTML 列表解析 |
 
 ## 快速开始
 
@@ -29,7 +31,7 @@ python -m trendradar.ai_frontier
 ```
 
 执行后将会：
-1. 并发抓取 5 个源的最新内容
+1. 并发抓取 7 类源的最新内容
 2. 按 `(source, url)` 去重，过滤 24h 外的旧条目
 3. 写入 `output/ai_frontier.db`（SQLite，独立于主系统）
 4. 按分数阈值过滤 + 翻译英文标题为中文
@@ -51,8 +53,8 @@ Bark URL 解析优先级：
 
 见 `config/config.yaml` 的 `ai_frontier` 节点，可自定义：
 - 数据源启用/禁用
-- ArXiv 分类、Reddit 子版块、HN 关键词、X 账号列表
-- 分数阈值（HN points / Reddit upvotes / GitHub stars）
+- ArXiv 分类、Reddit 子版块、HN 关键词、X 账号、Podcast、Blog 列表
+- 分数阈值（HN points / Reddit upvotes / GitHub stars；Podcast/Blog 默认不过滤）
 - 单次推送最大条数
 - Nitter 实例列表（镜像失效时自动回退）
 
@@ -67,7 +69,9 @@ trendradar/ai_frontier/
 │   ├── reddit.py
 │   ├── hackernews.py
 │   ├── github_trending.py
-│   └── nitter.py
+│   ├── nitter.py
+│   ├── youtube_podcast.py
+│   └── official_blog.py
 ├── fetcher.py           # 并发聚合 + 去重 + 新鲜度过滤
 ├── storage.py           # 独立 SQLite: output/ai_frontier.db
 ├── detector.py          # 分数过滤 + 分组

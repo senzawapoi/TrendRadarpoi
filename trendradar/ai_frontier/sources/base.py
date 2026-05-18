@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-SourceType = Literal["arxiv", "reddit", "hackernews", "github", "x"]
+SourceType = Literal["arxiv", "reddit", "hackernews", "github", "x", "podcast", "blog"]
 
 
 @dataclass

@@ -63,13 +63,16 @@ def test_filter_empty_returns_empty():
 def test_group_by_source_preserves_order():
     items = [
         _item("x", score=10),
+        _item("blog", score=0),
         _item("arxiv", score=5),
+        _item("podcast", score=0),
         _item("hackernews", score=100),
     ]
     groups = group_by_source(items)
     keys = list(groups.keys())
-    # arxiv 在前，x 在后（固定顺序）
+    # arxiv 在前，podcast/blog 在 x 之后（固定顺序）
     assert keys.index("arxiv") < keys.index("hackernews") < keys.index("x")
+    assert keys.index("x") < keys.index("podcast") < keys.index("blog")
 
 
 def test_group_by_source_skips_empty_buckets():

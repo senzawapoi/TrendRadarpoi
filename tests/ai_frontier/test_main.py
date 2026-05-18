@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from trendradar.ai_frontier.__main__ import (
-    _default_config,
     _deep_merge,
+    _default_config,
     _resolve_bark_url,
     load_ai_frontier_config,
 )
@@ -17,7 +17,19 @@ def test_default_config_has_all_sources():
     assert cfg["enabled"] is True
     assert "arxiv" in cfg["sources"]
     assert "x_nitter" in cfg["sources"]
+    assert "youtube_podcast" in cfg["sources"]
+    assert "official_blog" in cfg["sources"]
+    assert cfg["push"]["min_score_podcast"] == 0
+    assert cfg["push"]["min_score_blog"] == 0
     assert cfg["push"]["max_items_per_push"] == 30
+    podcast_urls = {
+        feed["name"]: feed["url"]
+        for feed in cfg["sources"]["youtube_podcast"]["feeds"]
+    }
+    assert podcast_urls["Training Data"].endswith("PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8")
+    assert podcast_urls["Unsupervised Learning"] == "https://www.youtube.com/@RedpointAI"
+    assert podcast_urls["The MAD Podcast with Matt Turck"] == "https://www.youtube.com/@DataDrivenNYC"
+    assert podcast_urls["AI & I by Every"].endswith("PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL")
 
 
 def test_deep_merge_overrides_nested():
@@ -51,6 +63,7 @@ ai_frontier:
     assert cfg["push"]["max_items_per_push"] == 30  # 默认保留
     assert cfg["sources"]["x_nitter"]["enabled"] is False
     assert cfg["sources"]["arxiv"]["enabled"] is True  # 默认保留
+    assert cfg["sources"]["youtube_podcast"]["enabled"] is True
 
 
 def test_resolve_bark_url_prefers_env(monkeypatch):

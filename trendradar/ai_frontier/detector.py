@@ -20,6 +20,8 @@ def _source_threshold(push_cfg: dict, source: SourceType) -> int:
         "github": "min_stars_github",
         "arxiv": "min_score_arxiv",  # 默认 0
         "x": "min_score_x",  # 默认 0
+        "podcast": "min_score_podcast",  # 默认 0
+        "blog": "min_score_blog",  # 默认 0
     }
     key = mapping.get(source, "min_score_default")
     return int(push_cfg.get(key, 0))
@@ -56,13 +58,15 @@ def filter_new_for_push(
 
 
 def group_by_source(items: list[AIItem]) -> dict[str, list[AIItem]]:
-    """按源分组，返回有序字典：arxiv/reddit/hackernews/github/x"""
+    """按源分组，返回有序字典：arxiv/reddit/hackernews/github/x/podcast/blog"""
     groups: dict[str, list[AIItem]] = {
         "arxiv": [],
         "reddit": [],
         "hackernews": [],
         "github": [],
         "x": [],
+        "podcast": [],
+        "blog": [],
     }
     for item in items:
         if item.source in groups:

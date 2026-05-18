@@ -33,12 +33,18 @@ def test_render_markdown_groups_by_source():
     items = [
         _item("arxiv", title="Paper 1", url="https://a1"),
         _item("hackernews", title="HN post", url="https://hn1", score=100),
+        _item("podcast", title="Podcast episode", url="https://p1"),
+        _item("blog", title="Blog post", url="https://b1"),
     ]
     out = render_markdown(items)
     assert "ArXiv" in out
     assert "HackerNews" in out
+    assert "Podcasts" in out
+    assert "Official Blogs" in out
     assert "Paper 1" in out
     assert "HN post" in out
+    assert "Podcast episode" in out
+    assert "Blog post" in out
     assert "100🔥" in out
 
 

@@ -9,7 +9,7 @@
 
 流程：
     1. 加载 config（config/config.yaml 的 ai_frontier 节点）
-    2. 并发抓取 5 大源
+    2. 并发抓取 7 类源
     3. 去重 + 新鲜度过滤
     4. 写入 SQLite，得到 new_items
     5. 分数过滤 + 截断
@@ -70,6 +70,8 @@ def _default_config() -> dict:
             "min_score_hackernews": 50,
             "min_score_reddit": 30,
             "min_stars_github": 100,
+            "min_score_podcast": 0,
+            "min_score_blog": 0,
             "max_items_per_push": 30,
         },
         "sources": {
@@ -78,6 +80,43 @@ def _default_config() -> dict:
             "hackernews": {"enabled": True},
             "github_trending": {"enabled": True},
             "x_nitter": {"enabled": True},
+            "youtube_podcast": {
+                "enabled": True,
+                "feeds": [
+                    {"name": "Latent Space", "url": "https://www.youtube.com/@LatentSpacePod"},
+                    {
+                        "name": "Training Data",
+                        "url": "https://www.youtube.com/playlist?list=PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8",
+                    },
+                    {"name": "No Priors", "url": "https://www.youtube.com/@NoPriorsPodcast"},
+                    {"name": "Unsupervised Learning", "url": "https://www.youtube.com/@RedpointAI"},
+                    {
+                        "name": "The MAD Podcast with Matt Turck",
+                        "url": "https://www.youtube.com/@DataDrivenNYC",
+                    },
+                    {
+                        "name": "AI & I by Every",
+                        "url": "https://www.youtube.com/playlist?list=PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL",
+                    },
+                ],
+                "max_items_per_feed": 5,
+            },
+            "official_blog": {
+                "enabled": True,
+                "sites": [
+                    {
+                        "name": "Anthropic Engineering",
+                        "url": "https://www.anthropic.com/engineering",
+                        "include_patterns": ["anthropic.com/engineering"],
+                    },
+                    {
+                        "name": "Claude Blog",
+                        "url": "https://claude.com/blog",
+                        "include_patterns": ["claude.com/blog"],
+                    },
+                ],
+                "max_items_per_site": 10,
+            },
         },
     }
 

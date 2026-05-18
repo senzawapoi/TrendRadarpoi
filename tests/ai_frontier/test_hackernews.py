@@ -37,7 +37,7 @@ def _make_sample():
 def test_parse_hits_uses_external_url_when_available():
     src = HackerNewsSource({})
     items = src._parse_hits("Claude", _make_sample())
-    anthropic_item = [i for i in items if "anthropic" in i.url][0]
+    anthropic_item = next(i for i in items if "anthropic" in i.url)
     assert anthropic_item.source == "hackernews"
     assert anthropic_item.score == 800
     assert anthropic_item.tags == ["Claude"]
@@ -46,7 +46,7 @@ def test_parse_hits_uses_external_url_when_available():
 def test_parse_hits_falls_back_to_discussion():
     src = HackerNewsSource({})
     items = src._parse_hits("LLM", _make_sample())
-    show_hn = [i for i in items if "ycombinator" in i.url][0]
+    show_hn = next(i for i in items if "ycombinator" in i.url)
     assert "item?id=67890" in show_hn.url
     assert show_hn.score == 120
 

@@ -69,3 +69,10 @@ def test_disabled_returns_empty():
         return await src.fetch()
 
     assert asyncio.run(run()) == []
+
+
+def test_default_accounts_exclude_elonmusk():
+    src = NitterSource({})
+    assert "elonmusk" not in src.accounts
+    assert "karpathy" in src.accounts
+    assert "sama" in src.accounts

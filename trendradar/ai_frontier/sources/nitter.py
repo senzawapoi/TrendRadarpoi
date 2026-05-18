@@ -54,8 +54,13 @@ class NitterSource(AISource):
         self.accounts: list[str] = config.get(
             "accounts",
             [
-                "openai", "anthropicai", "googledeepmind", "sama", "elonmusk",
-                "karpathy", "ylecun", "demishassabis", "drjimfan", "_philschmid",
+                "openai", "anthropicai", "googledeepmind", "sama", "karpathy",
+                "ylecun", "demishassabis", "drjimfan", "_philschmid",
+                "joshwoodward", "kevinweil", "petergyang", "thenanyu",
+                "realmadhuguru", "AmandaAskell", "_catwu", "trq212",
+                "GoogleLabs", "amasad", "rauchg", "alexalbert__",
+                "levie", "ryolu_", "garrytan", "mattturck", "zarazhangrui",
+                "nikunj", "steipete", "danshipper", "adityaag", "claudeai",
             ],
         )
         self.instances: list[str] = config.get("nitter_instances", DEFAULT_INSTANCES)

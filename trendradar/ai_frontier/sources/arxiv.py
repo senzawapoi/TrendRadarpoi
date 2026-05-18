@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 
-import aiohttp
 import feedparser
 
 from trendradar.ai_frontier._http import make_session, request_with_retry

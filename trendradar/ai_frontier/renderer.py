@@ -20,6 +20,8 @@ SOURCE_LABELS = {
     "hackernews": "🗞️ HackerNews",
     "github": "⭐ GitHub Trending",
     "x": "🐦 X / Twitter",
+    "podcast": "🎙️ AI Podcasts",
+    "blog": "📝 Official Blogs",
 }
 
 # 源对应的 emoji（推送使用）
@@ -29,6 +31,8 @@ SOURCE_EMOJI = {
     "hackernews": "🗞️",
     "github": "⭐",
     "x": "🐦",
+    "podcast": "🎙️",
+    "blog": "📝",
 }
 
 

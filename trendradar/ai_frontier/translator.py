@@ -66,7 +66,9 @@ def translate_items(
     if not effective_key:
         try:
             from inspect import signature
+
             from mcp_server.tools.translation import TranslationTools
+
             default_key = signature(TranslationTools.__init__).parameters["gemini_api_key"].default
             if isinstance(default_key, str) and default_key:
                 effective_key = default_key

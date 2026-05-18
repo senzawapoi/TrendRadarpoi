@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import random
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable
+from typing import Any
 
 import aiohttp
 

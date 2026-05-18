@@ -40,18 +40,20 @@ def test_build_sources_respects_enabled_flag():
             "hackernews": {"enabled": True},
             "github_trending": {"enabled": False},
             "x_nitter": {"enabled": True},
+            "youtube_podcast": {"enabled": True},
+            "official_blog": {"enabled": False},
         }
     }
     sources = build_sources(cfg)
-    assert len(sources) == 3
+    assert len(sources) == 4
     types = {s.source_type for s in sources}
-    assert types == {"arxiv", "hackernews", "x"}
+    assert types == {"arxiv", "hackernews", "x", "podcast"}
 
 
 def test_build_sources_defaults_enabled_true():
     cfg = {"sources": {}}
     sources = build_sources(cfg)
-    assert len(sources) == 5  # 全部启用
+    assert len(sources) == 7  # 全部启用
 
 
 def test_dedupe_items_by_source_and_url():

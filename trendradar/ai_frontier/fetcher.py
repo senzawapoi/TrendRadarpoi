@@ -13,7 +13,9 @@ from trendradar.ai_frontier.sources.base import AIItem, AISource
 from trendradar.ai_frontier.sources.github_trending import GitHubTrendingSource
 from trendradar.ai_frontier.sources.hackernews import HackerNewsSource
 from trendradar.ai_frontier.sources.nitter import NitterSource
+from trendradar.ai_frontier.sources.official_blog import OfficialBlogSource
 from trendradar.ai_frontier.sources.reddit import RedditSource
+from trendradar.ai_frontier.sources.youtube_podcast import YouTubePodcastSource
 from trendradar.utils.logging import log
 
 SOURCE_CLASSES: dict[str, type[AISource]] = {
@@ -22,6 +24,8 @@ SOURCE_CLASSES: dict[str, type[AISource]] = {
     "hackernews": HackerNewsSource,
     "github_trending": GitHubTrendingSource,
     "x_nitter": NitterSource,
+    "youtube_podcast": YouTubePodcastSource,
+    "official_blog": OfficialBlogSource,
 }
 
 

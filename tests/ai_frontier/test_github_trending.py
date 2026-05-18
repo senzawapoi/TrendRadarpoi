@@ -70,7 +70,7 @@ def test_parse_html_unknown_lang_filters_by_keywords():
 def test_parse_html_extracts_metadata():
     src = GitHubTrendingSource({"languages": ["python"]})
     items = src._parse_html(SAMPLE_HTML, "python")
-    whisper = [i for i in items if i.title == "openai/whisper"][0]
+    whisper = next(i for i in items if i.title == "openai/whisper")
     assert whisper.url == "https://github.com/openai/whisper"
     assert whisper.score == 1234
     assert "Python" in whisper.tags

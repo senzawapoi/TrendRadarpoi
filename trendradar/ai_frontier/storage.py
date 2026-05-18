@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
 
 from trendradar.ai_frontier.sources.base import AIItem
 from trendradar.utils.logging import log
@@ -68,7 +68,7 @@ class AIFrontierStorage:
             self._conn.close()
             self._conn = None
 
-    def __enter__(self) -> "AIFrontierStorage":
+    def __enter__(self) -> AIFrontierStorage:
         return self
 
     def __exit__(self, *exc) -> None:
