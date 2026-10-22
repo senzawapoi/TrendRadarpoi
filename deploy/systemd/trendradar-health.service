@@ -1,0 +1,18 @@
+[Unit]
+Description=TrendRadar read-only health snapshot
+
+[Service]
+Type=oneshot
+Slice=trendradar.slice
+User=trendradar
+Group=trendradar
+WorkingDirectory=/var/lib/trendradar
+EnvironmentFile=-/etc/trendradar/common.env
+EnvironmentFile=-/etc/trendradar/release.env
+ExecStart=/opt/trendradar/current/venv/bin/python -m trendradar.ops health --config /etc/trendradar/config.yaml --json
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/run/trendradar
+UMask=0077

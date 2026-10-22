@@ -1,0 +1,36 @@
+{
+  "baseline": "final-inputs-v6-20261022.json",
+  "count": 6,
+  "changes": [
+    {
+      "path": ".github/workflows/phase7-ci.yml",
+      "v6_sha256": "69cf4aedd4ef533c106174ae5f2c98e7e07d4ccd68cf1bef46d5d796ae9b9d8f",
+      "candidate_sha256": "9f51b9c03092311f550e3c8894b5ff3db918aadbada23f224faccf453f1d9d43"
+    },
+    {
+      "path": ".github/workflows/phase7-deploy.yml",
+      "v6_sha256": "dc6c7392c08eeb230fa4db5f51e45b926b3f6460a44cbe46187f1381456f63c4",
+      "candidate_sha256": "156fc869f9d52de229315b2dc52b32dc0e1e94638843b0a80790dec514780b40"
+    },
+    {
+      "path": "config/config.yaml",
+      "v6_sha256": "bb61935728aa4a1f7548452e8be462006e50ed86c21fe7a5aa72c635ad3ba27c",
+      "candidate_sha256": "35462a3d8966e1300c20ea9c5193f37d1824d7570225b1f709369e6b2b1eb9f5"
+    },
+    {
+      "path": "tests/deployment/test_deployment_contracts.py",
+      "v6_sha256": "d6591f75861739c42694ec599f7d22309b3ebc8190b468af08ba32db1061181f",
+      "candidate_sha256": "ad09fc38f275748696feec5b7329578cb2c5459429fa15eff9c0941e92a18643"
+    },
+    {
+      "path": "scripts/deploy/build_release.py",
+      "v6_sha256": "3901550a6d5141c5c6978bf83e583dac7ae3a4dc17950af8bcd8ddd5fd4ee0e0",
+      "candidate_sha256": "cefe95ad321d7c859d08ae8a146c320dec3d8df03697df51e03e64ea7c40d79b"
+    },
+    {
+      "path": "tests/deployment/test_ci_acceptance_scope.py",
+      "v6_sha256": "eff2a45c937c79cf3f522ef6652a2c03749365ae6ddc7d228d1cb9fa819c8ae1",
+      "candidate_sha256": "5d44119fe53066c8cac3a71ce690f85eeddecd247290b856478ccd31487f9c39"
+    }
+  ]
+}

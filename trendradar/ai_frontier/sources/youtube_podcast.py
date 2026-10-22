@@ -63,6 +63,7 @@ class YouTubePodcastSource(AISource):
 
     async def _resolve_rss_url(self, session: aiohttp.ClientSession, feed: dict) -> str:
         """把配置 URL 解析为 YouTube RSS URL。"""
+        name = (feed.get("name") or "YouTube Podcast").strip()
         raw_url = (feed.get("rss_url") or feed.get("url") or "").strip()
         if not raw_url:
             return ""
@@ -77,13 +78,22 @@ class YouTubePodcastSource(AISource):
             session,
             "GET",
             raw_url,
-            label=f"YouTube podcast page [{feed.get('name', raw_url)}]",
+            label=f"YouTube podcast page [{name}]",
             max_attempts=2,
             timeout=self.timeout,
         )
         if resp is None:
             return ""
+        # YouTube 未登录常 302 到 consent.youtube.com（最终 status 仍可能 200）
+        # 检测最终 URL 是否还在 youtube.com 主域，consent 页解析不到 channelId
+        final_host = resp.url.host or ""
         if resp.status != 200:
+            log.warning(
+                "YouTube podcast 页面状态异常",
+                feed_name=name,
+                url=raw_url,
+                status=resp.status,
+            )
             await resp.release()
             return ""
         html_text = await resp.text()
@@ -91,6 +101,13 @@ class YouTubePodcastSource(AISource):
 
         channel_id = self._parse_channel_id(html_text)
         if not channel_id:
+            log.warning(
+                "YouTube podcast 解析 channelId 失败（可能是 consent 页），"
+                "建议在配置中直接填 channel_id 或 playlist URL",
+                feed_name=name,
+                url=raw_url,
+                final_host=final_host,
+            )
             return ""
         return YOUTUBE_CHANNEL_RSS.format(channel_id=channel_id)
 

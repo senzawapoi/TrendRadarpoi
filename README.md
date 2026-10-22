@@ -43,6 +43,9 @@
 
 > 本项目以轻量，易部署为目标
 
+> 本分支文档入口：[文档导航](docs/README.md)。统一情报、Story、安全分析、Assistant、
+> 飞书接入、回滚与历史回填说明见 [intelligence.md](docs/intelligence.md)。
+
 <br>
 
 ## 📑 快速导航

@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "candidate": {
+    "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "dirty": true,
+    "manifest": "final-inputs-v4-20261022.json",
+    "manifest_sha256": "fb5ee83a7e6306932b0955b5b1c41422691e77880d5eae9aa7e1bb94f281468d",
+    "source_inputs": 301,
+    "constraints_separate": 12
+  },
+  "windows": {
+    "session": 85492,
+    "interpreter": "%TEMP%/trendradar-p7-final-20261022/venv/Scripts/python.exe",
+    "command": "<isolated-windows-python> -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --junitxml=docs/phase7-actual-gap-evidence/windows-final-v4-20261022.xml",
+    "python": "3.10.11",
+    "sqlite": "3.40.1",
+    "result": "683 passed, 342 skipped, 2 warnings in 45.91s",
+    "exit_code": 0,
+    "log": "windows-final-v4-20261022.txt",
+    "junit": "windows-final-v4-20261022.xml"
+  },
+  "linux": {
+    "session": 26371,
+    "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --durations=10 --basetemp=/var/lib/trendradar-p7-gap-20261022/full-v4 --junitxml=docs/phase7-actual-gap-evidence/linux-final-v4-20261022.xml",
+    "python": "3.10.22",
+    "sqlite": "3.53.1",
+    "uid": 0,
+    "pid1": "systemd",
+    "fixture": "/var/lib/trendradar-p7-gap-20261022/full-v4",
+    "log": "linux-final-v4-20261022.txt",
+    "junit": "linux-final-v4-20261022.xml",
+    "status": "terminal; superseded by v5 fixture revision",
+    "result": "1018 passed, 1 failed, 6 skipped, 2 warnings in 1057.20s",
+    "exit_code": 1,
+    "failed_node": "tests/deployment/test_release_inputs.py::test_archive_cannot_replace_the_executed_fixed_installer",
+    "observed": "Fixed installer remained unchanged, malicious archive script did not execute, but final health confirmation returned nonzero. Generic output does not establish its exact reason.",
+    "fixture_revision": "Simulated installer service timestamps are now recent (30 seconds old), inside the real freshness window rather than at the zero/future boundary. Production health/guard rules unchanged; focused archive/UID/full health scope passed 50 tests in 35.04s, exit 0."
+  },
+  "focused": {
+    "h1": "22 passed in 123.23s; exit 0; h1-focused-20261022.json",
+    "lease_rollback_systemd": "118 passed in 375.00s; exit 0; lease-clock-focused-20261022.txt",
+    "uid_and_original_timer_node": "2 passed in 46.13s; exit 0; uid-telemetry-removal-20261022.txt"
+  },
+  "fixture_diagnostic": "Temporary authorization telemetry removed after diagnosis. Its v3 service-UID PermissionError is retained in final-run-status-20261022.json and linux-final-v3-20261022.txt; production guards and all acceptance assertions unchanged by removal.",
+  "checks": {
+    "ruff": "8 affected Python paths passed, exit 0; scoped-ruff-v4-20261022.txt",
+    "static": "252 ASTs, 4 Bash files, 3 workflows/17 run blocks passed; changed lease paths and installer syntax rechecked after production repair",
+    "dependencies": "Both isolated pip checks passed; global Windows conflicts untouched",
+    "whitespace": "Tracked diff and 188 untracked source text files passed before narrative finalization"
+  },
+  "artifact": "pending opt-in empty-venv install",
+  "limits": "Direct parent execution only; running Linux suite is not acceptance. Dirty mechanics cannot establish a clean candidate. No commit, push, GitHub execution, provider, remote restic or VPS action."
+}

@@ -38,30 +38,122 @@ CREATE INDEX IF NOT EXISTS idx_ai_score ON ai_items(score DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_first_seen ON ai_items(first_seen);
 """
 
+SCHEMA_VERSION = 1
+SQLITE_SYNCHRONOUS_MODES = frozenset({"OFF", "NORMAL", "FULL", "EXTRA"})
+
 
 class AIFrontierStorage:
     """AI 前沿独立 SQLite 存储后端"""
 
-    def __init__(self, db_path: str | Path = "output/ai_frontier.db") -> None:
+    def __init__(
+        self,
+        db_path: str | Path = "output/ai_frontier.db",
+        *,
+        allow_create: bool = True,
+        allow_migrate: bool = True,
+        synchronous: str = "FULL",
+    ) -> None:
         self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.allow_create = allow_create
+        self.allow_migrate = allow_migrate
+        self.synchronous = self._normalize_synchronous(synchronous)
+        if not allow_create and not self.db_path.is_file():
+            raise FileNotFoundError(f"AI Frontier database is missing: {self.db_path}")
+        if allow_create:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
         self._init_schema()
 
+    @classmethod
+    def open_existing(
+        cls,
+        db_path: str | Path,
+        *,
+        synchronous: str = "FULL",
+    ) -> AIFrontierStorage:
+        """Open a prepared AI Frontier database without creating or migrating it."""
+        return cls(
+            db_path,
+            allow_create=False,
+            allow_migrate=False,
+            synchronous=synchronous,
+        )
+
+    @classmethod
+    def migrate(
+        cls,
+        db_path: str | Path,
+        *,
+        synchronous: str = "FULL",
+    ) -> AIFrontierStorage:
+        """Create or explicitly migrate the compatibility database."""
+        return cls(db_path, synchronous=synchronous)
+
+    @staticmethod
+    def _normalize_synchronous(value: str) -> str:
+        normalized = str(value or "FULL").strip().upper()
+        if normalized not in SQLITE_SYNCHRONOUS_MODES:
+            raise ValueError(
+                "SQLite synchronous mode must be one of OFF, NORMAL, FULL, or EXTRA"
+            )
+        return normalized
+
     def _get_conn(self) -> sqlite3.Connection:
         if self._conn is None:
-            self._conn = sqlite3.connect(self.db_path, isolation_level=None)
+            target: str | Path = self.db_path
+            connect_kwargs: dict[str, object] = {}
+            if not self.allow_create:
+                target = self.db_path.resolve().as_uri() + "?mode=rw"
+                connect_kwargs["uri"] = True
+            self._conn = sqlite3.connect(
+                target,
+                timeout=5,
+                isolation_level=None,
+                check_same_thread=False,
+                **connect_kwargs,
+            )
             self._conn.row_factory = sqlite3.Row
-            # 性能调优：WAL 并发读写 + 异步提交 + 内存临时表
+            self._conn.execute("PRAGMA busy_timeout = 5000")
+            self._conn.execute("PRAGMA foreign_keys = ON")
             self._conn.execute("PRAGMA journal_mode = WAL")
-            self._conn.execute("PRAGMA synchronous = NORMAL")
+            self._conn.execute(f"PRAGMA synchronous = {self.synchronous}")
             self._conn.execute("PRAGMA temp_store = MEMORY")
             self._conn.execute("PRAGMA cache_size = -20000")  # ~20MB
         return self._conn
 
     def _init_schema(self) -> None:
         conn = self._get_conn()
+        current = int(conn.execute("PRAGMA user_version").fetchone()[0])
+        if current > SCHEMA_VERSION:
+            raise RuntimeError(
+                f"AI Frontier database schema {current} is newer than supported "
+                f"{SCHEMA_VERSION}"
+            )
+        if not self.allow_migrate:
+            if current != SCHEMA_VERSION:
+                raise RuntimeError(
+                    f"AI Frontier database schema {current} requires explicit migration"
+                )
+            try:
+                conn.execute("SELECT id, source, url FROM ai_items LIMIT 0")
+            except sqlite3.Error as exc:
+                raise RuntimeError("AI Frontier database schema is incomplete or corrupt") from exc
+            return
         conn.executescript(SCHEMA)
+        conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+    @property
+    def connection(self) -> sqlite3.Connection:
+        return self._get_conn()
+
+    @property
+    def connection_policy(self) -> dict[str, object]:
+        mode = int(self.connection.execute("PRAGMA synchronous").fetchone()[0])
+        return {
+            "sqlite_synchronous": ("OFF", "NORMAL", "FULL", "EXTRA")[mode],
+            "database_path": str(self.db_path.expanduser().resolve()),
+            "schema": int(self.connection.execute("PRAGMA user_version").fetchone()[0]),
+        }
 
     def close(self) -> None:
         if self._conn is not None:

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run TrendRadar main collection hourly
+
+[Timer]
+OnCalendar=*-*-* *:30:00
+Persistent=false
+Unit=trendradar-collect-main.service
+
+[Install]
+WantedBy=timers.target

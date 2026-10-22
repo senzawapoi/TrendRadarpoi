@@ -1,0 +1,196 @@
+name: Phase 7 controlled deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Validated branch, tag, or commit to package"
+        required: true
+        default: master
+        type: string
+      release_id:
+        description: "Immutable release identifier"
+        required: true
+        type: string
+      environment:
+        description: "GitHub Environment; require an approval rule for production"
+        required: true
+        default: production
+        type: environment
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: trendradar-deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validated-artifact:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.revision.outputs.sha }}
+    steps:
+      - name: Checkout selected ref
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Resolve immutable revision
+        id: revision
+        run: |
+          set -eu
+          sha="$(git rev-parse HEAD)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          test -z "$(git status --porcelain)"
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
+        with:
+          python-version: '3.10'
+      - name: Validate release identifier before packaging
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: python -B scripts/deploy/validate_deploy_inputs.py --release-only
+      - name: Install and validate this exact revision
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.lock pytest ruff
+          python -m pip check
+          python -m ruff check trendradar/core/locking.py trendradar/core/heartbeat.py trendradar/ops scripts/deploy tests/deployment tests/integrations/feishu
+          python -B -m pytest tests -q -p no:cacheprovider
+          python -B -m compileall -q trendradar mcp_server scripts/deploy
+      - name: Build the already validated artifact
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -eu
+          python -B scripts/deploy/validate_deploy_inputs.py --release-only
+          python -B scripts/deploy/build_release.py --output-dir dist --release-id "$RELEASE_ID"
+          artifact="dist/trendradar-$RELEASE_ID.tar.gz"
+          python -B scripts/deploy/create_manifest.py \
+            --artifact "$artifact" --output dist/RELEASE-MANIFEST.json \
+            --release-id "$RELEASE_ID"
+          manifest_sha="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["git_commit"])' dist/RELEASE-MANIFEST.json)"
+          test "$manifest_sha" = "$(git rev-parse HEAD)"
+      - name: Upload the validated deployment bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: trendradar-deploy-${{ inputs.release_id }}
+          path: |
+            dist/trendradar-${{ inputs.release_id }}.tar.gz
+            dist/RELEASE-MANIFEST.json
+          if-no-files-found: error
+
+  deploy:
+    needs: validated-artifact
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+    steps:
+      - name: Download the validated bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: trendradar-deploy-${{ inputs.release_id }}
+          path: dist
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends openssh-client
+      - name: Copy bundle and activate through the fixed installer
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+          DEPLOY_HOST: ${{ secrets.TRENDRADAR_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.TRENDRADAR_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.TRENDRADAR_DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.TRENDRADAR_DEPLOY_PATH }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.TRENDRADAR_DEPLOY_KNOWN_HOSTS }}
+          SSH_PRIVATE_KEY: ${{ secrets.TRENDRADAR_DEPLOY_SSH_KEY }}
+        run: |
+          set -eu
+          # No checkout in this job. Keep this stdlib-only parser identical to
+          # scripts/deploy/validate_deploy_inputs.py; behavior tests enforce it.
+          port="$(python3 -B - <<'PY'
+          """Validate literal deployment inputs before constructing SSH commands."""
+
+          from __future__ import annotations
+
+          import argparse
+          import ipaddress
+          import os
+          import re
+          import sys
+          from collections.abc import Mapping
+
+
+          def validate_release_id(value: str) -> None:
+              if (
+                  not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,119}", value)
+                  or ".." in value
+                  or value.endswith((".", "-"))
+              ):
+                  raise ValueError("invalid RELEASE_ID")
+
+
+          def validate_deploy_inputs(values: Mapping[str, str]) -> int:
+              validate_release_id(values.get("RELEASE_ID", ""))
+              path = values.get("DEPLOY_PATH", "")
+              if (
+                  not re.fullmatch(r"/[A-Za-z0-9_./-]+", path)
+                  or any(part in {"", ".", ".."} for part in path.split("/")[1:])
+              ):
+                  raise ValueError("invalid DEPLOY_PATH")
+              user = values.get("DEPLOY_USER", "")
+              if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]{0,31}", user):
+                  raise ValueError("invalid DEPLOY_USER")
+              host = values.get("DEPLOY_HOST", "")
+              # DNS names and IPv4 literals only; no SSH aliases, options, URI or IPv6 syntax.
+              label = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+              if len(host) > 253 or not re.fullmatch(rf"{label}(?:\.{label})*", host):
+                  raise ValueError("invalid DEPLOY_HOST")
+              if re.fullmatch(r"[0-9.]+", host):
+                  try:
+                      ipaddress.IPv4Address(host)
+                  except ipaddress.AddressValueError:
+                      raise ValueError("invalid DEPLOY_HOST") from None
+              port = values.get("DEPLOY_PORT", "") or "22"
+              if not re.fullmatch(r"[0-9]{1,5}", port) or not 1 <= int(port) <= 65535:
+                  raise ValueError("invalid DEPLOY_PORT")
+              return int(port)
+
+
+          def main(argv: list[str] | None = None) -> int:
+              parser = argparse.ArgumentParser(description=__doc__)
+              parser.add_argument("--release-only", action="store_true")
+              args = parser.parse_args(argv)
+              try:
+                  if args.release_only:
+                      validate_release_id(os.environ.get("RELEASE_ID", ""))
+                  else:
+                      print(validate_deploy_inputs(os.environ))
+              except ValueError as error:
+                  # Report field names only; input values may be GitHub secrets.
+                  print(str(error), file=sys.stderr)
+                  return 2
+              return 0
+
+
+          if __name__ == "__main__":
+              raise SystemExit(main())
+          PY
+          )"
+          test -n "$DEPLOY_KNOWN_HOSTS" -a -n "$SSH_PRIVATE_KEY"
+          install -m 0700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 0600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0644 "$HOME/.ssh/known_hosts"
+          ssh_opts=(-p "$port" -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15 -o ConnectionAttempts=1)
+          archive="dist/trendradar-$RELEASE_ID.tar.gz"
+          remote_dir="$DEPLOY_PATH/$RELEASE_ID"
+          # Authenticate against the pinned key before issuing any remote mutation.
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" true
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "install -d -m 0750 '$remote_dir'"
+          scp -P "$port" -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15 -o ConnectionAttempts=1 \
+            "$archive" dist/RELEASE-MANIFEST.json \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote_dir/"
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "sudo -- /usr/local/sbin/trendradar-install-release '$RELEASE_ID' '$remote_dir/$(basename "$archive")' '$remote_dir/RELEASE-MANIFEST.json'"
+

@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-14",
+  "environment": "Ubuntu WSL, real systemd, Python 3.10.22, SQLite 3.53.1",
+  "scope": "RG-03 automatic deployment snapshot rollback",
+  "root_cause": {
+    "confidence": "high",
+    "diagnostic_directory": "/var/lib/p7-quiesce-caqusnx_",
+    "diagnostic_session": 44029,
+    "diagnostic_result": "1 failed in 28.31s",
+    "operation": "maintenance confirm-deployment-rollback",
+    "uid": 65534,
+    "returncode": 2,
+    "error": "Permission denied reading control/restore-guard.json",
+    "guard_metadata_before_repair": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0600"
+    },
+    "consequence": "Databases restored but guard could not be cleared by the service identity; old units did not restart"
+  },
+  "repairs": [
+    "Run installer backup restore and backup activate through as_service, matching snapshot, migration and confirmation identity",
+    "Persist rollback state before restore, after restore and after activation; renew the bounded controller lease before authorization",
+    "Permit rollback state only for a live exact controller, explicit false business boundary and matching complete old snapshot",
+    "Reject missing, null and numeric-false boundary flags during rollback confirmation"
+  ],
+  "changed_source_paths": [
+    "scripts/deploy/install_release.sh",
+    "trendradar/ops/backup.py",
+    "trendradar/ops/maintenance.py"
+  ],
+  "regressions": [
+    {
+      "session": 62455,
+      "command": "python -B -m pytest tests/deployment/test_systemd_quiesce_linux.py::test_snapshot_backed_rollback_keeps_real_writers_stopped_and_restores_active_units -q -p no:cacheprovider --tb=short",
+      "result": "1 passed in 26.96s",
+      "directory": "/var/lib/p7-quiesce-4ynxxyan",
+      "proof": "Four previous active units restored; initially inactive units preserved; guard/active transaction removed; confirmation executed as UID65534 with exit0"
+    },
+    {
+      "session": 4884,
+      "command": "python -B -m pytest tests/deployment/test_systemd_quiesce_linux.py::test_snapshot_backed_rollback_keeps_real_writers_stopped_and_restores_active_units[True] tests/deployment/test_deployment_rollback.py tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected -q -p no:cacheprovider --tb=short",
+      "result": "29 passed in 29.17s",
+      "directory": "/var/lib/p7-quiesce-d1q6dzt6",
+      "proof": "Real systemd expired-lease scenario, 18 direct rollback tests and 10 confirmation boundary/failure tests"
+    },
+    {
+      "session": 74021,
+      "command": "python -B -m pytest tests/deployment/test_restore_durability.py tests/deployment/test_restore_crash_recovery.py tests/deployment/test_restore_recovery.py tests/deployment/test_backup.py -q -p no:cacheprovider --tb=short",
+      "result": "43 passed in 9.62s",
+      "proof": "Restore durability, abrupt crash recovery, repeated rollback and complete snapshots"
+    }
+  ],
+  "test_changes": [
+    "tests/deployment/test_systemd_quiesce_linux.py",
+    "tests/deployment/test_deployment_rollback.py",
+    "tests/deployment/test_installer_behavior.py"
+  ],
+  "lease_simulation": "The test-owned restore helper atomically rewrites its private controller updated_at to 30 seconds old after restore; no long sleep or production hook.",
+  "limitations": [
+    "Focused scopes overlap and are not final full regression",
+    "Systemd business helpers are synthetic; dependency setup is simulated",
+    "No real Lark, Gemini, collector or remote restic calls",
+    "No commit, push or production deployment",
+    "Clean candidate and VPS gates remain open"
+  ],
+  "cleanup": "Each systemd fixture stopped exact owned services/timers, checked zero PIDs and removed exact owned unit files; evidence directories retained"
+}

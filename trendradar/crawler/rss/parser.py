@@ -7,6 +7,7 @@ RSS 解析器
 import html
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -107,8 +108,8 @@ class RSSParser:
         """
         try:
             data = json.loads(content)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"JSON Feed 解析失败 ({feed_url}): {e}")
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"JSON Feed 解析失败 ({feed_url}): {exc}") from exc
 
         items_data = data.get("items", [])
         if not items_data:
@@ -232,7 +233,10 @@ class RSSParser:
         published_at = self._parse_date(entry)
         summary = self._parse_summary(entry)
         author = self._parse_author(entry)
-        guid = entry.get("id") or entry.get("guid", {}).get("value") or url
+        guid_value = entry.get("guid")
+        if isinstance(guid_value, Mapping):
+            guid_value = guid_value.get("value")
+        guid = entry.get("id") or guid_value or url
 
         return ParsedRSSItem(
             title=title,

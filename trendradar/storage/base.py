@@ -98,6 +98,7 @@ class RSSItem:
     first_time: str = ""                # 首次抓取时间
     last_time: str = ""                 # 最后抓取时间
     count: int = 1                      # 抓取次数
+    guid: str = ""                      # Feed-provided stable identifier
 
     def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
@@ -113,6 +114,7 @@ class RSSItem:
             "first_time": self.first_time,
             "last_time": self.last_time,
             "count": self.count,
+            "guid": self.guid,
         }
 
     @classmethod
@@ -130,6 +132,7 @@ class RSSItem:
             first_time=data.get("first_time", ""),
             last_time=data.get("last_time", ""),
             count=data.get("count", 1),
+            guid=data.get("guid", ""),
         )
 
 

@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-22",
+  "baseline": "resume-inputs-20261015.json",
+  "candidate": "final-inputs-v6-20261022.json",
+  "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+  "dirty": true,
+  "changed_existing_inputs": [
+    "pyproject.toml",
+    "requirements.lock",
+    "requirements.txt",
+    "scripts/deploy/install_release.sh",
+    "tests/deployment/installer_harness.py",
+    "tests/deployment/test_installer_behavior.py",
+    "tests/deployment/test_remaining_gap_assertions.py",
+    "tests/deployment/test_restore_crash_recovery.py",
+    "tests/deployment/test_restore_recovery.py",
+    "tests/deployment/test_runtime_guards.py",
+    "tests/deployment/test_systemd_quiesce_linux.py",
+    "trendradar/ops/maintenance.py"
+  ],
+  "newly_inventoried_paths": [
+    ".env.example",
+    ".gitignore",
+    "config/frequency_words.txt",
+    "config/frequency_words_backup",
+    "deploy/systemd/README.md",
+    "deploy/systemd/trendradar-tmpfiles.conf",
+    "trendradar/ai_frontier/README.md",
+    "trendradar/storage/migration_bilingual.sql",
+    "trendradar/storage/rss_schema.sql",
+    "trendradar/storage/schema.sql",
+    "version"
+  ],
+  "limits": "Newly inventoried paths are existing resources added to hash coverage, not newly implemented functionality. Narrative constraints are tracked separately. Dirty tree and HEAD do not imply an authorized clean candidate."
+}

@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "candidate": {
+    "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "dirty": true,
+    "manifest": "final-inputs-v6-20261022.json",
+    "manifest_sha256": "236de09722e23237d99aee0b1680ec020709ce61066e57ca85779e57d47ca4cf",
+    "source_inputs": 301,
+    "constraints_separate": 12
+  },
+  "windows": {
+    "session": 41501,
+    "interpreter": "%TEMP%/trendradar-p7-final-20261022/venv/Scripts/python.exe",
+    "command": "<isolated-windows-python> -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --junitxml=docs/phase7-actual-gap-evidence/windows-final-v6-20261022.xml",
+    "log": "windows-final-v6-20261022.txt",
+    "junit": "windows-final-v6-20261022.xml",
+    "status": "terminated",
+    "python": "3.10.11",
+    "sqlite": "3.40.1",
+    "result": "683 passed, 342 skipped, 2 warnings in 46.20s",
+    "exit_code": 0
+  },
+  "linux": {
+    "session": 25442,
+    "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --durations=10 --basetemp=/var/lib/trendradar-p7-gap-20261022/full-v6 --junitxml=docs/phase7-actual-gap-evidence/linux-final-v6-20261022.xml",
+    "python": "3.10.22",
+    "sqlite": "3.53.1",
+    "uid": 0,
+    "pid1": "systemd",
+    "fixture": "/var/lib/trendradar-p7-gap-20261022/full-v6",
+    "log": "linux-final-v6-20261022.txt",
+    "junit": "linux-final-v6-20261022.xml",
+    "status": "terminated",
+    "result": "1019 passed, 6 skipped, 2 warnings in 1060.42s (0:17:40)",
+    "exit_code": 0
+  },
+  "focused": {
+    "positive_lease": "91 passed in 5.51s; exit 0; positive-lease-focused-20261022.xml",
+    "h1": "22 passed in 123.23s; exit 0; h1-focused-20261022.json",
+    "lease_rollback_systemd": "118 passed in 375.00s; exit 0; lease-clock-focused-20261022.txt",
+    "heartbeat_archive_uid": "50 passed in 35.04s; exit 0; heartbeat-fixture-focused-20261022.txt"
+  },
+  "artifact": {
+    "status": "terminated",
+    "session": 87770,
+    "fixture": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6",
+    "result": "1 passed in 41.23s",
+    "exit_code": 0,
+    "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env PYTHONDONTWRITEBYTECODE=1 TRENDRADAR_P7_ARTIFACT_INSTALL=true TRENDRADAR_P7_WHEELHOUSE=/var/tmp/trendradar-p7-gap-20261014/wheels310 /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_release_install_linux.py -q -s -ra -p no:cacheprovider --tb=short --basetemp=/var/lib/trendradar-p7-gap-20261022/artifact-install-v6 --junitxml=docs/phase7-actual-gap-evidence/artifact-install-v6-20261022.xml",
+    "evidence": "artifact-install-evidence-v6-20261022.json",
+    "log": "artifact-install-v6-20261022.txt",
+    "junit": "artifact-install-v6-20261022.xml",
+    "release_id": "isolated-install",
+    "artifact": {
+      "name": "trendradar-isolated-install.tar.gz",
+      "sha256": "480430d8976ac499c7cd1e9dc35c0a37cab4ed4acf1fcdf7801c0f954a13c255",
+      "bytes": 11880521
+    },
+    "git_commit": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "git_dirty": true,
+    "dependencies": {
+      "pyproject.toml": "66a9c96f8df3bdad055aace8852b889c5741cfdf35fe2b80c60ca1fafca2256e",
+      "requirements.txt": "22d5a7430cbb798d066a1c83149da751ea3890aa5c3a60ab94ecb0cefcc853fe",
+      "requirements.lock": "4cbe0ddbdacf42ae1e28dc4e05afdec2147786c1651dd711e6231ec9f9a466be",
+      "build-requirements.lock": "36f24a8e0cc554eb925c5e33dff2085e3e2ce3a817bd4916e8632b8ef4a124e5"
+    },
+    "runtime": "{\"python\": \"3.10.22\", \"sqlite\": \"3.53.1\"}",
+    "pip_check": "No broken requirements found.",
+    "checkout_imports": false,
+    "clean_candidate": false,
+    "installation_evidence_path": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6/test_locked_artifact_installs_0/installation-evidence.json",
+    "archive_path": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6/test_locked_artifact_installs_0/artifacts/trendradar-isolated-install.tar.gz",
+    "source_verification": {
+      "manifest": "final-inputs-v6-20261022.json",
+      "manifest_sha256": "236de09722e23237d99aee0b1680ec020709ce61066e57ca85779e57d47ca4cf",
+      "matching_source_resource_files": 301,
+      "different": [],
+      "narrative_documents": "Packaged at build time; final status documents reconciled afterwards; source/resource hashes frozen"
+    }
+  },
+  "limits": "No commit, push, GitHub execution, provider, remote restic or VPS action; dirty test artifact cannot close clean-candidate RG-04; narrative constraint files may be reconciled while source/resource files remain frozen",
+  "preceding_failed_run": "final-run-v5-20261022.json; retained single authorized-controller positive fixture failure; modern fixture now records boottime lease",
+  "checks": {
+    "source_hashes": "301 unchanged after Windows/Linux regression and archive installation; all 301 archive members match manifest",
+    "ruff": "8 affected paths pass via host Ruff0.5.6; scoped-ruff-v6-host-20261022.txt; isolated test venv has no Ruff, retained initial tool error",
+    "syntax": "253 Python ASTs pass; ast-and-inputs-v6-20261022.txt. Four Bash files and three workflows/17 run blocks unchanged from static-final-02-20261022.txt",
+    "dependencies": "Both isolated pip checks pass; archive empty-venv pip check passes; global Windows dependency conflicts untouched",
+    "skips": "See skip-audit-v6-20261022.json; Linux six skips resolved by Windows Job tests, historical archived pre-fix evidence and separate installation",
+    "warnings": "Two Authlib jose/httpx deprecations per full run, retained",
+    "post_run": "post-run-verification-v6-20261022.json; source hashes unchanged, activity-document hashes/links checked, tracked diff and 205 untracked source/activity paths pass whitespace/conflict checks; no remaining test process/unit"
+  },
+  "results": {
+    "systemd_quiesce": "11 passed in Linux final full",
+    "systemd_backup_units": "2 passed in Linux final full",
+    "installer_control_flow": "60 passed in Linux final full; pip/venv/systemctl mocked",
+    "matrix": "case-results-20261022.json"
+  }
+}

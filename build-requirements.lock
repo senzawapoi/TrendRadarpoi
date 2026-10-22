@@ -1,0 +1,10 @@
+# Build toolchain resolved in isolated Linux Python 3.10.22 on 2026-10-14.
+# Install before requirements.lock; build with --no-build-isolation.
+pip==26.1.2
+hatchling==1.32.4
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0
+tomli==2.5.0
+tomlkit==0.15.1
+trove-classifiers==2026.9.21.13

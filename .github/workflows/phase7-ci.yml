@@ -1,0 +1,117 @@
+name: Phase 7 offline checks
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase7-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
+        with:
+          python-version: '3.10'
+      - name: Install declared dependencies and checks
+        run: python -m pip install --disable-pip-version-check -r requirements.lock pytest ruff
+      - name: Dependency check
+        run: python -m pip check
+      - name: Focused lint
+        run: python -m ruff check trendradar/core/locking.py trendradar/core/heartbeat.py trendradar/ops scripts/deploy tests/deployment tests/integrations/feishu
+      - name: Tests
+        run: python -B -m pytest tests -q -p no:cacheprovider
+      - name: Compile and build source artifact
+        run: |
+          python -B -m compileall -q trendradar mcp_server scripts/deploy
+          python -B scripts/deploy/build_release.py --output-dir dist --release-id "ci-${GITHUB_SHA}"
+          python -B scripts/deploy/create_manifest.py --artifact "dist/trendradar-ci-${GITHUB_SHA}.tar.gz" --output dist/RELEASE-MANIFEST.json --release-id "ci-${GITHUB_SHA}"
+      - name: Upload release evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase7-release-evidence
+          path: dist/RELEASE-MANIFEST.json
+          if-no-files-found: error
+
+  privileged-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
+        with:
+          python-version: '3.10'
+      - name: Require actual systemd and create isolated toolchain
+        run: |
+          set -eu
+          test "$(cat /proc/1/comm)" = systemd
+          sudo install -d -m 0755 /var/lib/trendradar-p7-ci
+          sudo "$(command -v python)" -B -m venv /var/lib/trendradar-p7-ci/venv
+          sudo /var/lib/trendradar-p7-ci/venv/bin/python -B -m pip install -r build-requirements.lock
+          sudo /var/lib/trendradar-p7-ci/venv/bin/python -B -m pip install -r requirements.lock pytest ruff
+          sudo /var/lib/trendradar-p7-ci/venv/bin/python -B -m pip check
+          sudo /var/lib/trendradar-p7-ci/venv/bin/python -B - <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          assert os.geteuid() == 0
+          assert sys.version_info[:2] == (3, 10), sys.version
+          for executable in (sys.executable, sys._base_executable):
+              resolved = Path(executable).resolve()
+              assert not any(directory == resolved or directory in resolved.parents
+                             for directory in (Path('/tmp'), Path('/var/tmp'))), resolved
+          PY
+          # Service UIDs cannot traverse the runner's private home directory.
+          # Clone the exact revision outside /home; retain all service hardening.
+          sudo git -c safe.directory="$GITHUB_WORKSPACE" clone --no-hardlinks \
+            "$GITHUB_WORKSPACE" /var/lib/trendradar-p7-ci/source
+          sudo git -C /var/lib/trendradar-p7-ci/source checkout --detach "$GITHUB_SHA"
+          sudo runuser -u nobody -- /var/lib/trendradar-p7-ci/venv/bin/python -B -c \
+            'import os,sys; from pathlib import Path; assert os.getuid() == 65534; assert sys.version_info[:2] == (3, 10); root=Path("/var/lib/trendradar-p7-ci/source"); assert (root/"tests/deployment/test_systemd_quiesce_linux.py").read_bytes(); sys.path.insert(0,str(root)); import trendradar.ops; assert Path(trendradar.ops.__file__).is_relative_to(root)'
+      - name: Real UID, controller, lock, installer and systemd checks
+        working-directory: /var/lib/trendradar-p7-ci/source
+        run: |
+          sudo env PYTHONDONTWRITEBYTECODE=1 \
+            /var/lib/trendradar-p7-ci/venv/bin/python -B -m pytest \
+            tests/deployment/test_actual_gap_health.py \
+            tests/deployment/test_backup.py \
+            tests/deployment/test_ci_acceptance_scope.py \
+            tests/deployment/test_combined_readiness.py \
+            tests/deployment/test_deployment_contracts.py \
+            tests/deployment/test_deployment_rollback.py \
+            tests/deployment/test_environment_entry_linux.py \
+            tests/deployment/test_environment_loading.py \
+            tests/deployment/test_health.py \
+            tests/deployment/test_installer_behavior.py \
+            tests/deployment/test_offsite_backup.py \
+            tests/deployment/test_offsite_processes.py \
+            tests/deployment/test_release_inputs.py \
+            tests/deployment/test_remaining_gap_assertions.py \
+            tests/deployment/test_runtime_guards.py \
+            tests/deployment/test_restore_permissions_linux.py \
+            tests/deployment/test_restore_crash_recovery.py \
+            tests/deployment/test_restore_durability.py \
+            tests/deployment/test_restore_recovery.py \
+            tests/deployment/test_systemd_contract_linux.py \
+            tests/deployment/test_systemd_quiesce_linux.py \
+            tests/integrations/feishu/test_phase7_roles.py \
+            -q -p no:cacheprovider --tb=short
+      - name: Actual empty-venv artifact installation outside checkout
+        working-directory: /var/lib/trendradar-p7-ci/source
+        run: |
+          sudo env PYTHONDONTWRITEBYTECODE=1 TRENDRADAR_P7_ARTIFACT_INSTALL=true \
+            /var/lib/trendradar-p7-ci/venv/bin/python -B -m pytest \
+            tests/deployment/test_release_install_linux.py -q -s -p no:cacheprovider --tb=short

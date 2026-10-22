@@ -1,0 +1,26 @@
+[Unit]
+Description=TrendRadar consistent local database snapshot
+
+[Service]
+Type=oneshot
+Slice=trendradar.slice
+User=trendradar
+Group=trendradar
+WorkingDirectory=/var/lib/trendradar
+EnvironmentFile=-/etc/trendradar/common.env
+Environment=TRENDRADAR_OFFSITE_TIMEOUT_SECONDS=900
+Environment=TRENDRADAR_OFFSITE_KILL_GRACE_SECONDS=10
+EnvironmentFile=-/etc/trendradar/backup.env
+EnvironmentFile=-/etc/trendradar/release.env
+Environment=TRENDRADAR_LOCK_DIR=/run/trendradar
+ExecStart=/opt/trendradar/current/venv/bin/python -m trendradar.ops backup create --root /var/lib/trendradar/output --destination /var/backups/trendradar/local --release-id ${TRENDRADAR_RELEASE_ID}
+ExecStartPost=/opt/trendradar/current/venv/bin/python /opt/trendradar/current/scripts/deploy/offsite_backup.py --snapshot-root /var/backups/trendradar/local --timeout-seconds ${TRENDRADAR_OFFSITE_TIMEOUT_SECONDS} --kill-grace-seconds ${TRENDRADAR_OFFSITE_KILL_GRACE_SECONDS}
+TimeoutStartSec=20min
+KillMode=control-group
+KillSignal=SIGTERM
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/trendradar /var/backups/trendradar /run/trendradar
+UMask=0077

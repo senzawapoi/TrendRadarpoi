@@ -1,0 +1,162 @@
+{
+  "recorded_at": "2026-10-22T08:38:04.487030+00:00",
+  "candidate": "final-inputs-v6-20261022.json",
+  "source_inputs": 301,
+  "changed_source_inputs": [],
+  "constraint_files": [
+    {
+      "path": "AGENTS.md",
+      "frozen_sha256": "cd00999417d445cf9e1433f80dae7082b218f816bb7ff402308d287601f90f98",
+      "final_sha256": "cd00999417d445cf9e1433f80dae7082b218f816bb7ff402308d287601f90f98",
+      "changed": false
+    },
+    {
+      "path": "CLAUDE.md",
+      "frozen_sha256": "085856356057296f92c0cf9bb60997d60ebcd506d81a7ff20b271b270e6963c9",
+      "final_sha256": "085856356057296f92c0cf9bb60997d60ebcd506d81a7ff20b271b270e6963c9",
+      "changed": false
+    },
+    {
+      "path": ".planning/PROJECT.md",
+      "frozen_sha256": "73e0dbc1f24aa2607ea92f24ff7e57ccd546162ed5f41b4991a3d691a0541009",
+      "final_sha256": "854f377c025a447fa0942e5d8ea014f822fc51f7430d16f86fbbbb9ee3810d1e",
+      "changed": true
+    },
+    {
+      "path": ".planning/REQUIREMENTS.md",
+      "frozen_sha256": "7c25791c520baddbbf17093deffb15931939669f51d88343a82d08347ec6b840",
+      "final_sha256": "7c25791c520baddbbf17093deffb15931939669f51d88343a82d08347ec6b840",
+      "changed": false
+    },
+    {
+      "path": ".planning/STATE.md",
+      "frozen_sha256": "e1b42884896385e2eb95149628abd4c9284eaa8f9c43ba613ee5f4d338e84c2a",
+      "final_sha256": "f72136bd6fbe9a3f6da8fc5b59b1aea978464c85c9a747c930b3751a8e1a3624",
+      "changed": true
+    },
+    {
+      "path": "TrendRadarpoi-Phase7-Codex交接操作指南-2026-10-15.md",
+      "frozen_sha256": "7b56f4e2c89a3f6c3a3829e0681a9301d09845c96cb78b33bd1029cc6621fddb",
+      "final_sha256": "7b56f4e2c89a3f6c3a3829e0681a9301d09845c96cb78b33bd1029cc6621fddb",
+      "changed": false
+    },
+    {
+      "path": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "frozen_sha256": "1b160179484c1e89c0154bbe7ebb8c3ee75a94b1e7e0a225d2d723b703181013",
+      "final_sha256": "1b160179484c1e89c0154bbe7ebb8c3ee75a94b1e7e0a225d2d723b703181013",
+      "changed": false
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-01-PLAN.md",
+      "frozen_sha256": "63f3eb3125ecae562b6945c60455cce02ee2a3c07550196a37238cc5bbaf72f2",
+      "final_sha256": "63f3eb3125ecae562b6945c60455cce02ee2a3c07550196a37238cc5bbaf72f2",
+      "changed": false
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-02-PLAN.md",
+      "frozen_sha256": "51a26950e758e4481136450e14cd319ec40a02272c8a9fd32b671146a9dc2dff",
+      "final_sha256": "51a26950e758e4481136450e14cd319ec40a02272c8a9fd32b671146a9dc2dff",
+      "changed": false
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-03-PLAN.md",
+      "frozen_sha256": "9a961cd5f42ba95835c6c1b98cb8546b1a2710f9890e0de4f8db2e46fd309a61",
+      "final_sha256": "9a961cd5f42ba95835c6c1b98cb8546b1a2710f9890e0de4f8db2e46fd309a61",
+      "changed": false
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-04-PLAN.md",
+      "frozen_sha256": "e0f8871d749c6344effb6ca49abeea714f704dd0c05b8cab72f610a941b62945",
+      "final_sha256": "e0f8871d749c6344effb6ca49abeea714f704dd0c05b8cab72f610a941b62945",
+      "changed": false
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-05-PLAN.md",
+      "frozen_sha256": "1926fb1fce3cc28e37c9433196c6bc892a8f3f22688b2fa7f05a6d46163327c9",
+      "final_sha256": "7f5a8820545dcd7c2afc8fe6bd554be007adf72efc8848004cdb8dbc7358a294",
+      "changed": true
+    }
+  ],
+  "constraint_change_reason": "Activity/state/plan narrative reconciled after frozen-source testing; no executable source/resource changed",
+  "final_documents": [
+    {
+      "path": "docs/phase7-actual-gap-evidence/verification-20261022.md",
+      "sha256": "176f7d610ee5d52bdc9943e957f33e09c62e07cb714e6fc89083ab893aac5280"
+    },
+    {
+      "path": "docs/phase7-actual-gap-evidence/HANDOFF.md",
+      "sha256": "4e82d9d8b96953989c193e466c70753e1bc6978e3c5397ceb9fe461f5d8a2922"
+    },
+    {
+      "path": "docs/phase7-actual-gap-evidence/case-matrix.md",
+      "sha256": "e702e1b4942c54caeb1d86c67215cbccf03aee7b0f60ae858b26adab5160f902"
+    },
+    {
+      "path": "docs/phase7-actual-gap-evidence/README.md",
+      "sha256": "1fbc7fb9fdbc7bd129269821811d33117184b8e6f9761dd3a1cf35a0d98a440e"
+    },
+    {
+      "path": ".planning/STATE.md",
+      "sha256": "f72136bd6fbe9a3f6da8fc5b59b1aea978464c85c9a747c930b3751a8e1a3624"
+    },
+    {
+      "path": ".planning/PROJECT.md",
+      "sha256": "854f377c025a447fa0942e5d8ea014f822fc51f7430d16f86fbbbb9ee3810d1e"
+    },
+    {
+      "path": ".planning/ROADMAP.md",
+      "sha256": "41f12d62f8f7420be8d115343a47934effac039214121589a0f2d9f394c45e48"
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-05-PLAN.md",
+      "sha256": "7f5a8820545dcd7c2afc8fe6bd554be007adf72efc8848004cdb8dbc7358a294"
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-05-SUMMARY.md",
+      "sha256": "151d7f32443c11e4ca1ddf7389d8a514a1e371fd6b6779561e7b714dee8c5283"
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-VERIFICATION.md",
+      "sha256": "8d2256d2c3d7c92d0802076815577b2800db37603ed7a84988454085278b6919"
+    },
+    {
+      "path": ".planning/phases/07-deployment/07-CONTEXT.md",
+      "sha256": "9464669b67b1248cac2c88f67162d1cc43b82f3bc3d9bc44656b1ce170ab3500"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "a5a5313458815ea9a76655b0dccd4376a5ce6c392edf19ab5945d43eea463cc6"
+    },
+    {
+      "path": "docs/deployment.md",
+      "sha256": "faa4927dc06cb872d0837c06c408f9acad575201be565279ed08ecfef5f25f4c"
+    },
+    {
+      "path": "docs/phase7-acceptance.md",
+      "sha256": "11a978bb65712bbf85d9e3a6fb8417ebb2c66addd474bf57c47cf515512ec7ce"
+    },
+    {
+      "path": "docs/phase7-remediation.md",
+      "sha256": "6a0048c201e7df366e042b123757f022cc6112ae039d30c8d98d5b83972c6438"
+    },
+    {
+      "path": ".planning/codebase/CONCERNS.md",
+      "sha256": "81c6ca9024212f8964795c8e74ff8857eb9a82cea6e7ad2594eb3de7d3b6d2f0"
+    },
+    {
+      "path": ".planning/codebase/TESTING.md",
+      "sha256": "4caab43d0289cfc9a4ff62d8831611ae7d9eecab7299a7b4c93ae75810802e2b"
+    }
+  ],
+  "markdown_local_links_missing": [],
+  "tracked_diff_check_exit": 0,
+  "untracked_source_and_activity_doc_whitespace_paths": 205,
+  "whitespace_or_conflict_findings": [],
+  "json_records_valid": true,
+  "case_results": {
+    "PASS": 27,
+    "BLOCKED": 1
+  },
+  "process_and_unit_check": "2026-10-22T16:35:29+08:00: no Windows Python/pytest/Ruff process, Linux Python/pytest process, test unit or test unit file; list-unit-files returned 1 with empty output for no matches",
+  "retained_state": "No cache/runtime/failed-fixture/toolchain cleanup; no commit/push/provider/remote/VPS operation"
+}

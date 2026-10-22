@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-14",
+  "layer": "L",
+  "python": "3.10.22",
+  "uid_gid": "0/0",
+  "source_kind": "retained immutable pre-fix audit archive",
+  "artifact": "dist/trendradar-phase7-audit.tar.gz",
+  "artifact_sha256": "e759ee1b5d8efc9e524a773435e0a281a7d9de558c633cd2561fc43e8578130a",
+  "artifact_git_dirty": true,
+  "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env TRENDRADAR_P7_PRE_FIX=true /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_pre_fix_linux.py -q -s -p no:cacheprovider --tb=short",
+  "exit_code": 0,
+  "terminal_summary": "2 passed in 6.31s",
+  "interpretation": "Reproduction assertions passed because archived behavior failed the intended contracts; these are not current-code acceptance tests.",
+  "cases": [
+    {
+      "case_id": "F-01",
+      "configured_readiness_exit": 0,
+      "archived_entry_readiness_exit": 2,
+      "trusted_common_configuration_loaded": false,
+      "module_from_archive": true,
+      "limit": "Root-controlled installer replaced only with a real archived health CLI probe; no writer or real installer default paths were invoked."
+    },
+    {
+      "case_id": "F-04",
+      "service_uid_gid": "65534/65534",
+      "service_read_before": 0,
+      "service_read_after": 1,
+      "restored_uid_gid": "0/0",
+      "restored_mode": "0600",
+      "module_from_archive": true,
+      "limit": "Actual root restore/activate and actual service UID reads in an isolated runtime directory; no production database."
+    }
+  ],
+  "business_provider_calls": 0,
+  "lark_calls": 0,
+  "remote_restic_calls": 0
+}

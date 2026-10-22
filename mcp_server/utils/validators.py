@@ -7,10 +7,10 @@
 
 import ast
 import json
-import os
 from datetime import datetime
+from pathlib import Path
 
-import yaml
+from trendradar.core.settings import load_yaml_config
 
 from .date_parser import DateParser
 from .errors import InvalidParameterError
@@ -94,11 +94,11 @@ def _parse_string_to_int(value: str, param_name: str = "参数") -> int:
     # 尝试解析浮点数后取整
     try:
         return int(float(value))
-    except ValueError:
+    except ValueError as exc:
         raise InvalidParameterError(
             f"{param_name} 必须是整数，无法解析: {value}",
             suggestion="请提供有效的整数值，如: 10, 50, 100"
-        )
+        ) from exc
 
 
 def _parse_string_to_float(value: str, param_name: str = "参数") -> float:
@@ -119,11 +119,11 @@ def _parse_string_to_float(value: str, param_name: str = "参数") -> float:
 
     try:
         return float(value)
-    except ValueError:
+    except ValueError as exc:
         raise InvalidParameterError(
             f"{param_name} 必须是数字，无法解析: {value}",
             suggestion="请提供有效的数字值，如: 0.6, 3.0"
-        )
+        ) from exc
 
 
 def _parse_string_to_bool(value: str) -> bool:
@@ -160,14 +160,10 @@ def get_supported_platforms() -> list[str]:
     """
     try:
         # 获取 config.yaml 路径（相对于当前文件）
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(current_dir, "..", "..", "config", "config.yaml")
-        config_path = os.path.normpath(config_path)
-
-        with open(config_path, encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-            platforms = config.get('platforms', [])
-            return [p['id'] for p in platforms if 'id' in p]
+        config_path = Path(__file__).resolve().parents[2] / "config" / "config.yaml"
+        config = load_yaml_config(config_path)
+        platforms = config.get('platforms', [])
+        return [p['id'] for p in platforms if 'id' in p]
     except Exception as e:
         # 降级方案：返回空列表，允许所有平台
         print(f"警告：无法加载平台配置 ({config_path}): {e}")
@@ -287,11 +283,11 @@ def validate_date(date_str: str) -> datetime:
     """
     try:
         return datetime.strptime(date_str, "%Y-%m-%d")
-    except ValueError:
+    except ValueError as exc:
         raise InvalidParameterError(
             f"日期格式错误: {date_str}",
             suggestion="请使用 YYYY-MM-DD 格式，例如: 2025-10-11"
-        )
+        ) from exc
 
 
 def normalize_date_range(date_range: dict | str | None) -> dict | str | None:
@@ -365,7 +361,7 @@ def validate_date_range(date_range: dict | str | None) -> tuple | None:
             raise InvalidParameterError(
                 f"date_range JSON 解析失败: {e}",
                 suggestion='请使用正确的JSON格式: {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"}'
-            )
+            ) from e
 
     if not isinstance(date_range, dict):
         raise InvalidParameterError(
@@ -609,4 +605,3 @@ def validate_date_query(
     DateParser.validate_date_not_too_old(parsed_date, max_days=max_days_ago)
 
     return parsed_date
-

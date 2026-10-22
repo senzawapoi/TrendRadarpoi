@@ -33,7 +33,7 @@ python -m trendradar.ai_frontier
 执行后将会：
 1. 并发抓取 7 类源的最新内容
 2. 按 `(source, url)` 去重，过滤 24h 外的旧条目
-3. 写入 `output/ai_frontier.db`（SQLite，独立于主系统）
+3. 最佳努力写入统一 `output/intelligence.db`，并继续写入兼容权威 `output/ai_frontier.db`
 4. 按分数阈值过滤 + 翻译英文标题为中文
 5. 保存 HTML 报告到 `output/ai_frontier/YYYY-MM-DD/HH-MM.html`
 6. 推送 markdown 摘要到 Bark
@@ -63,7 +63,7 @@ Bark URL 解析优先级：
 ```
 trendradar/ai_frontier/
 ├── __main__.py          # 入口：python -m trendradar.ai_frontier
-├── sources/             # 5 个数据源适配器
+├── sources/             # 7 类数据源解析器
 │   ├── base.py          # AIItem/AISource 基类
 │   ├── arxiv.py
 │   ├── reddit.py
@@ -82,8 +82,8 @@ trendradar/ai_frontier/
 
 ## 与主系统的关系
 
-- **完全解耦**：独立数据库、独立 Actions、独立推送链路
-- **共享能力**：复用 `TranslationService` 批量翻译、`utils/logging`
+- **兼容独立**：保留独立数据库、Actions 和 Bark 推送链路
+- **共享能力**：复用统一 Adapter/ContentItem、核心 `TranslationService` 与 `utils/logging`
 - **可独立开关**：`ai_frontier.enabled: false` 即可关闭，不影响主系统
 
 ## 测试

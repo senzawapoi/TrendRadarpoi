@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "provenance": "direct parent terminal output",
+  "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+  "dirty": true,
+  "environment": {
+    "layer": "Linux WSL, root, systemd PID 1",
+    "python": "3.10.22",
+    "sqlite": "3.53.1",
+    "service_interpreter_executable_as_uid_65534": true
+  },
+  "session": 30181,
+  "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels tests/deployment/test_restore_crash_recovery.py::test_abrupt_restore_death_and_idempotent_complete_rollback tests/deployment/test_restore_recovery.py tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-finalize] -q -ra -p no:cacheprovider --tb=short",
+  "result": "22 passed in 123.23s",
+  "exit_code": 0,
+  "assertions": {
+    "H1-A": "Actual collector, AI Frontier and Lark combined/bot/worker/scheduler-once main guards reach bounded sentinels after real installer success, public finalize confirmation and successful automatic rollback; live resume/verify/finalize controllers also accepted",
+    "H1-B": "Five actual abrupt-death points with present/absent AI targets retain a pending journal, fence all six actual entrypoints and recover all schemas/content/FKs; planned originals and retained paths match the interruption point",
+    "H1-C": "Successful activate leaves guard; terminal journal and no pending transactions permit public maintenance.main clear; existing negative clear tests retained for final regression",
+    "H1-D": "Existing intelligence and AI databases retain distinct probe values/schema/integrity/FKs through success and public finalize confirmation; current target and release.env unchanged by confirmation"
+  },
+  "changes": {
+    "production": [],
+    "tests": [
+      "tests/deployment/test_installer_behavior.py",
+      "tests/deployment/test_remaining_gap_assertions.py",
+      "tests/deployment/test_restore_crash_recovery.py",
+      "tests/deployment/test_restore_recovery.py"
+    ],
+    "post_run": "Removed unused clear_guard import found by Ruff; final regression will bind the resulting candidate"
+  },
+  "limits": [
+    "Pip/venv/systemctl are simulated in installer control-flow tests; actual SQLite migrations/health/guards are exercised",
+    "Business loops and clients are sentinels; no provider, Lark, collector or remote restic call",
+    "SIGKILL evidence does not prove power-loss durability",
+    "Not full-project regression or clean-candidate evidence"
+  ]
+}

@@ -1,0 +1,1264 @@
+﻿{
+    "recorded_at":  "2026-10-22T07:05:50.8614562Z",
+    "head":  "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "dirty":  true,
+    "scope":  "v2 source/resources incl SQL/conf/config/root templates; docs and runtime excluded; constraints separate",
+    "supersedes":  "final-inputs-v2-20261022.json",
+    "changes":  "Same-boot CLOCK_BOOTTIME controller lease, strict legacy compatibility and clock-step regression cases",
+    "source_files":  [
+                         {
+                             "path":  ".env.example",
+                             "sha256":  "bdcdb934666ca3a713e9e9cb087d978e31bde9bacc61f56fa45c6450ced1c23f"
+                         },
+                         {
+                             "path":  ".github/workflows/ai-frontier.yml",
+                             "sha256":  "3f1d6fcd9a73443301aa72b0a81146b24cb7c4f0f4839a5d61116aa962e17176"
+                         },
+                         {
+                             "path":  ".github/workflows/clean-crawler.yml",
+                             "sha256":  "803397dd06780e90f950d4d9409f6dcbcfd6e8002c73c51f1a258c45c82555e3"
+                         },
+                         {
+                             "path":  ".github/workflows/crawler.yml",
+                             "sha256":  "fb9d3dd3157610faa0010fbd86e9cbbf46417bbaddc5c8b4e9c817542e182e20"
+                         },
+                         {
+                             "path":  ".github/workflows/docker.yml",
+                             "sha256":  "4bcafe80c88eeaaf630198d120a5d2766df8eb5c8b7c5127972deaa439873961"
+                         },
+                         {
+                             "path":  ".github/workflows/phase7-ci.yml",
+                             "sha256":  "69cf4aedd4ef533c106174ae5f2c98e7e07d4ccd68cf1bef46d5d796ae9b9d8f"
+                         },
+                         {
+                             "path":  ".github/workflows/phase7-deploy.yml",
+                             "sha256":  "dc6c7392c08eeb230fa4db5f51e45b926b3f6460a44cbe46187f1381456f63c4"
+                         },
+                         {
+                             "path":  ".github/workflows/phase7-release.yml",
+                             "sha256":  "dcb805f8206ed7e36abad7607bf40638fba120db9565adf0b6fef85d7fe2e9ed"
+                         },
+                         {
+                             "path":  ".gitignore",
+                             "sha256":  "bd05ccd1d3aaca1b0db6be8ae6269d5f353d6ac6edd1907091021e8624aa5056"
+                         },
+                         {
+                             "path":  "build-requirements.lock",
+                             "sha256":  "36f24a8e0cc554eb925c5e33dff2085e3e2ce3a817bd4916e8632b8ef4a124e5"
+                         },
+                         {
+                             "path":  "config/config.yaml",
+                             "sha256":  "bb61935728aa4a1f7548452e8be462006e50ed86c21fe7a5aa72c635ad3ba27c"
+                         },
+                         {
+                             "path":  "config/frequency_words.txt",
+                             "sha256":  "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+                         },
+                         {
+                             "path":  "config/frequency_words_backup",
+                             "sha256":  "77ca728d96aacb66ca3d668cd29cbe3dd85ed761c9722bc8f6612757c38841a0"
+                         },
+                         {
+                             "path":  "config/settings.py",
+                             "sha256":  "92527f02aae3c2e6211584f66a6294fc1095eecd2ad7729071b1932578f43aa2"
+                         },
+                         {
+                             "path":  "deploy/bin/trendradar-install-release",
+                             "sha256":  "21ceba6d198a9854668310858d6a487e41d4a7236617ec813a245ce2e83e0fb5"
+                         },
+                         {
+                             "path":  "deploy/config/backup.env.example",
+                             "sha256":  "a5007126fd793c5fcca81c0c381e3d6f140e058abd24bafe62b76b513cedab5f"
+                         },
+                         {
+                             "path":  "deploy/config/bot.env.example",
+                             "sha256":  "c06fa93f07e2da15f6de8b246344707b271cf064a8449ab1f3dd87b8a2f59daa"
+                         },
+                         {
+                             "path":  "deploy/config/collector.env.example",
+                             "sha256":  "657e28e263bdfe2439d1ae7e167eee077020f5dd023c5c44da965bc1b6c4a094"
+                         },
+                         {
+                             "path":  "deploy/config/common.env.example",
+                             "sha256":  "5e71d2a2dd851b65be27ab160f4072bfe58862b525f83b3083f723f848b36034"
+                         },
+                         {
+                             "path":  "deploy/config/config.yaml.example",
+                             "sha256":  "3636de2cf9faa012a383f49592821d4a3d642a2ea8bfe755f7096e88c354d1ad"
+                         },
+                         {
+                             "path":  "deploy/config/scheduler.env.example",
+                             "sha256":  "c7825fe7b22d8873d981badf191f9d324f321cff3d4a327a9dc2c43fae093a58"
+                         },
+                         {
+                             "path":  "deploy/config/worker.env.example",
+                             "sha256":  "c92deac65f3214d40eff33c7774737bb079f3be0e47afeb342678aefbc7cae6c"
+                         },
+                         {
+                             "path":  "deploy/systemd/README.md",
+                             "sha256":  "cd8cc63c652d9f662caa68dafe4d651ea108451f779c9e6dffc933972973bee9"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar.slice",
+                             "sha256":  "b75acc8f0e048c905e4f774baf19eee6941d91b3189ce6dd4be1d380a7a34352"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar.slice.example",
+                             "sha256":  "18cb767d4c054a0dfbfc95bdb301f3cc00c22d26d1e38b12d19663e971721a56"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-backup.service",
+                             "sha256":  "084b8568e6c9275cf4fcfe94ad5f35192038cf1d304ace6decfb66f2d0cc1d5c"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-backup.timer",
+                             "sha256":  "7ad38fb7d8b737650977a6079c367d02c9f812aab3323dc03d7d4daa3662d669"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-bot.service",
+                             "sha256":  "9f7f2f4d8e9c16426a8996dc3e0e760ddeb7f8d0510a57e89a027e6361d9d768"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-collect-ai.service",
+                             "sha256":  "0cfeb39a14c239ef46d2694657bf99c69aac0b444196f0b7246391b166166be2"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-collect-ai.timer",
+                             "sha256":  "f3a7ca6ba4b36b0004784a38d04d57e14e2eaa002ee0eb6cd4b834ba126c23c2"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-collect-main.service",
+                             "sha256":  "72071a7662b4c51a2e5a57acd030d9be518d06d72d10343685d5f52633b0c559"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-collect-main.timer",
+                             "sha256":  "39e6d4d6d6665fd2a01a138afd45f13f2918a2711c529021785539c343f9abee"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-health.service",
+                             "sha256":  "639030c8882a806be48f3cbff54aa5adbe2644eab886012bafe70f7616a77c9a"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-health.timer",
+                             "sha256":  "e1ddda15d8bd16dab58b7453dd0342bb39153fd6b993f609f4859c8743a40b13"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-scheduler.service",
+                             "sha256":  "3c4a348fcabac228bffcac73c49203426de025b18272c2f2cc4040ff60bbcc2b"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-scheduler.timer",
+                             "sha256":  "c6b8f679363b3d60556846290ba3cf05cb5ff59fddb0996f7bdc83bfb029cc23"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-tmpfiles.conf",
+                             "sha256":  "f1ca000c2546dda48768fe5c8441d779a0fd8eac6004c19a1e28108137f5e10a"
+                         },
+                         {
+                             "path":  "deploy/systemd/trendradar-worker.service",
+                             "sha256":  "ae900b731fa4526071c414b345ab9a23dc0c65dc0515d628ade11e801e554a3a"
+                         },
+                         {
+                             "path":  "mcp_server/__init__.py",
+                             "sha256":  "37e7cb31ceb227a73350ae8e9e209582b9c7a9e53bf13796c6e0076c3b701125"
+                         },
+                         {
+                             "path":  "mcp_server/server.py",
+                             "sha256":  "200817f66c718cf03a48480a589308405ec3898a991d8548e3d54b90977eed4e"
+                         },
+                         {
+                             "path":  "mcp_server/services/__init__.py",
+                             "sha256":  "d5e5d915cf9865a2f69f6f79c3843276d4882a8828fa1c189ed05a6ef62bbf02"
+                         },
+                         {
+                             "path":  "mcp_server/services/cache_service.py",
+                             "sha256":  "beff6e1881da8792b105ac05d5508b2eaf885f4eefc9adae8c0f5bafe76ca219"
+                         },
+                         {
+                             "path":  "mcp_server/services/data_service.py",
+                             "sha256":  "00f35dc9b770c4d1f4ab94ad4b4aa7db33d42dec657f5ff0d0b786b3bcdff501"
+                         },
+                         {
+                             "path":  "mcp_server/services/parser_service.py",
+                             "sha256":  "74f1f5fa8197a04e5d855e32025c55843e0b43fb71548c001d3d06cc0db7e069"
+                         },
+                         {
+                             "path":  "mcp_server/tools/__init__.py",
+                             "sha256":  "4ffd7eadd5b10c019eb23bd32c42e5a2eba77fc4ae61b9fffa4bd6b4b98155f3"
+                         },
+                         {
+                             "path":  "mcp_server/tools/analytics.py",
+                             "sha256":  "70bb76fdcc2b472c68fdbd65f6f15c11de0f71473c468c4b635c66793833a72d"
+                         },
+                         {
+                             "path":  "mcp_server/tools/config_mgmt.py",
+                             "sha256":  "0cd9e710d03a38879f70b4593a2699ed5009748c3920ec19e4b77f0e33efe1cd"
+                         },
+                         {
+                             "path":  "mcp_server/tools/data_query.py",
+                             "sha256":  "665f4a1fc588211173cd5ab2613cf1430d7b80d749192441b971d7bc9ee292ce"
+                         },
+                         {
+                             "path":  "mcp_server/tools/search_tools.py",
+                             "sha256":  "58712149e5d3cefa18f590b9ef740b67294fb337ef6c8b9540633d3bb26805e4"
+                         },
+                         {
+                             "path":  "mcp_server/tools/storage_sync.py",
+                             "sha256":  "1cd6b7fbcf7ca5d5ec85058e81a2c86559d6bb120b9d34b2050f4c3f2104dcd3"
+                         },
+                         {
+                             "path":  "mcp_server/tools/system.py",
+                             "sha256":  "8baae4eed9bde3c2fffbb15c283d7e1c4ba623cbc3aaf17af5c2200b5a08282c"
+                         },
+                         {
+                             "path":  "mcp_server/tools/translation.py",
+                             "sha256":  "6ea994cbbd86230f36d8b0b20867801015c3247dcf66fa12230ed9afa05f81cf"
+                         },
+                         {
+                             "path":  "mcp_server/utils/__init__.py",
+                             "sha256":  "94edfd365da2a6fb65a55983786a52e2a5c5e96adc8287b1a9fe59e0b30c3a3c"
+                         },
+                         {
+                             "path":  "mcp_server/utils/date_parser.py",
+                             "sha256":  "3d696897bf8502ecc0805d83f3858b0bff81b70ce34fcf5fb3c8affd4218a556"
+                         },
+                         {
+                             "path":  "mcp_server/utils/errors.py",
+                             "sha256":  "87dae1162e265120ef94d2656eee17486cbc3c598268e85e819d5702aaf2ada9"
+                         },
+                         {
+                             "path":  "mcp_server/utils/validators.py",
+                             "sha256":  "9ac6228aec4277fb9d3cfa3e4b0f54705afc78d167180a74f921dca8fd9275e9"
+                         },
+                         {
+                             "path":  "pyproject.toml",
+                             "sha256":  "66a9c96f8df3bdad055aace8852b889c5741cfdf35fe2b80c60ca1fafca2256e"
+                         },
+                         {
+                             "path":  "requirements.lock",
+                             "sha256":  "4cbe0ddbdacf42ae1e28dc4e05afdec2147786c1651dd711e6231ec9f9a466be"
+                         },
+                         {
+                             "path":  "requirements.txt",
+                             "sha256":  "22d5a7430cbb798d066a1c83149da751ea3890aa5c3a60ab94ecb0cefcc853fe"
+                         },
+                         {
+                             "path":  "scripts/deploy/__init__.py",
+                             "sha256":  "1af79fbdaf8a10bc90055fd57cb982c19b2dd9f6b309016c9c41bd196ca26995"
+                         },
+                         {
+                             "path":  "scripts/deploy/build_release.py",
+                             "sha256":  "3901550a6d5141c5c6978bf83e583dac7ae3a4dc17950af8bcd8ddd5fd4ee0e0"
+                         },
+                         {
+                             "path":  "scripts/deploy/create_manifest.py",
+                             "sha256":  "2242ff5bf0c90aa044fb503f064d9cf80044f7bb726f85c59b2e6a30c5b29f27"
+                         },
+                         {
+                             "path":  "scripts/deploy/install_release.sh",
+                             "sha256":  "904ec4664b1f07a27254714650e13715ead0ead73a39bedb8f66015c2104cb74"
+                         },
+                         {
+                             "path":  "scripts/deploy/linux_smoke.sh",
+                             "sha256":  "3077463aaaf2fed05bfdeac868a76c763836c5f97b1226b9b6f7b9a818b32c52"
+                         },
+                         {
+                             "path":  "scripts/deploy/load_environment.py",
+                             "sha256":  "c2763915124d62e0142686060a06bcfaf4c66983b92cb68bbaf0d38c0ac6459f"
+                         },
+                         {
+                             "path":  "scripts/deploy/offsite_backup.py",
+                             "sha256":  "863d8783583fd5969354e3206f5752f1f01d57e288d447b1bc1a03741ab4510d"
+                         },
+                         {
+                             "path":  "scripts/deploy/preflight.py",
+                             "sha256":  "371aeb3a58ee96571525edc99da3f48db5d560caad01c915e442319f41700fce"
+                         },
+                         {
+                             "path":  "scripts/deploy/process_tree.py",
+                             "sha256":  "4d6c46ea69e79c1f1e9a412bd310fbdb3e18d8979678181685f7c8f3505199eb"
+                         },
+                         {
+                             "path":  "scripts/deploy/release_smoke.sh",
+                             "sha256":  "ffed91620d9c4cc6b2bba1b0e0be443041e93d236032accbeab2f98f9d411f8c"
+                         },
+                         {
+                             "path":  "scripts/deploy/validate_deploy_inputs.py",
+                             "sha256":  "8acc6bcd4dad6c298cc635fb3dc018e8641b2181ce14152d3e5323279ef54b06"
+                         },
+                         {
+                             "path":  "tests/ai/__init__.py",
+                             "sha256":  "6b0ea1edefc0a4cae619ed8f7f3bf7860a923644993aec2dd6d6c1a0b46af849"
+                         },
+                         {
+                             "path":  "tests/ai/conftest.py",
+                             "sha256":  "d7597454933453ec9f50d1a6f9b48cb8344764ffc8f9ed98f770ec5309108fd3"
+                         },
+                         {
+                             "path":  "tests/ai/test_analyzers.py",
+                             "sha256":  "510caa9ea5735ba59ab260dece9304167392295877044c2d3f0d9b78b1cb01d4"
+                         },
+                         {
+                             "path":  "tests/ai/test_assistant.py",
+                             "sha256":  "c4764f8d23189a65eb7ed44ba59fb923de0c01571619471d0eee012d879f8f7a"
+                         },
+                         {
+                             "path":  "tests/ai/test_assistant_integration.py",
+                             "sha256":  "630fa1eeb74f0a00d37d72128fac7181ee5a40d63b4d519cb7d9b69195c6c825"
+                         },
+                         {
+                             "path":  "tests/ai/test_gemini_client.py",
+                             "sha256":  "eaa8498aab3385f1bebb4b12dcd804014b0f4cf080953eebff017c6d6cea56be"
+                         },
+                         {
+                             "path":  "tests/ai/test_media.py",
+                             "sha256":  "62f96d9ed48f0a1faacd6e9739d6b3a1e7bcf56548cbee10e8b1df862c82dad1"
+                         },
+                         {
+                             "path":  "tests/ai/test_retrieval.py",
+                             "sha256":  "66590def71a463054511f8477381323f53a22151542ce169b8f9f28511c5d9cf"
+                         },
+                         {
+                             "path":  "tests/ai/test_session.py",
+                             "sha256":  "f76f17b3372a8cdf28f0fe95807eb45f3de9bd39f016bdf1d1191a867bb0eae7"
+                         },
+                         {
+                             "path":  "tests/ai/test_tools.py",
+                             "sha256":  "e345c252d352aae116412cef05cff8ca319faa2f511d40018fcf77d1b2d30080"
+                         },
+                         {
+                             "path":  "tests/ai/test_translation.py",
+                             "sha256":  "c4743e5cf9979983829a6cae4802f3804e7948ea3ad99b9346a4d56d8402f36f"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/__init__.py",
+                             "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_arxiv.py",
+                             "sha256":  "b5ec030816dfe647e3dbe8ec7fcc11ed9475ecb702f960a252b469480aa59be4"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_base.py",
+                             "sha256":  "10d6b757a59105f42d884a97bff3a5fa726b0123e94b566addbc959741f4848c"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_detector.py",
+                             "sha256":  "f7457e154d87762e8a4db6dfa90926aa4d788c7cd9d59b2ecf3a4520e76dc180"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_fetcher.py",
+                             "sha256":  "e87cba5424b1948ee4b0190630e00f49f008bbbb0f13225a8198df21539215b6"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_github_trending.py",
+                             "sha256":  "2c6a34260aeaa0e42dafeacc1155691fb5a04dfd79c15453265368c8e89bccc0"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_hackernews.py",
+                             "sha256":  "114eb68aacde6abaeac15c9ec50c7984943e391bbf1208cdc20f817beb379f0c"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_main.py",
+                             "sha256":  "2bc813abe320fce327cdc96ae69be07ee7250e2efadc8b9399bb80a4b8c20a92"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_nitter.py",
+                             "sha256":  "f1130737cad8f971eceb09ff63a83f801ddbc523761765a11c7ccce9e5e2fbce"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_official_blog.py",
+                             "sha256":  "1f236dc3cdb607f7ef89000cd71dbf9010f654b5b3bc635ca7d21037b7d7d5cd"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_pusher.py",
+                             "sha256":  "94dbf5cce2c75c4a6dea1e06d7281a3764a5acca8e2d65cb64c362af817c1776"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_reddit.py",
+                             "sha256":  "b0442a71725853afbc77f079d22677f5d3e35ddab4f76915c497ea48c38b9d1d"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_renderer.py",
+                             "sha256":  "0c04cefa88b4a535fcdbcdba34558c6d698300b5f5351bae6b21dff64d5e37cc"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_storage.py",
+                             "sha256":  "4ffd79785b1c2ec57d23181efd90a3df9aa1ea82692c36f36386063fc46f86c4"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_translator.py",
+                             "sha256":  "25c8b194b08553fe91519bff92b5019fe8d9a737ed8c97f40f95a29deb359455"
+                         },
+                         {
+                             "path":  "tests/ai_frontier/test_youtube_podcast.py",
+                             "sha256":  "6c28545f6fa1cf85012f88fd095a7a53f33825fd8700e7832f55cef0872c018e"
+                         },
+                         {
+                             "path":  "tests/baseline/test_dependencies.py",
+                             "sha256":  "d306a577c7025fe7595b87b50bd1af425d17adb591e6c1165397b6e929ec6041"
+                         },
+                         {
+                             "path":  "tests/baseline/test_entrypoints.py",
+                             "sha256":  "12073d18666c0e1fcf603d923cbe38b2c87aaf7a758b5ec04da6fa919d33a738"
+                         },
+                         {
+                             "path":  "tests/baseline/test_storage_compatibility.py",
+                             "sha256":  "67b16c25d1f1ce70484e7488555a3b268ec8a436dbbffdc110ac509783d325f3"
+                         },
+                         {
+                             "path":  "tests/deployment/__init__.py",
+                             "sha256":  "cf43e3ea11024158dee3a32b9039846754667c87ccab54295616c40e8b205b08"
+                         },
+                         {
+                             "path":  "tests/deployment/installer_harness.py",
+                             "sha256":  "fd1745196c7d29d4c50e202ecf6be35965ff090947fc62100e113daf5db22aa1"
+                         },
+                         {
+                             "path":  "tests/deployment/test_actual_gap_health.py",
+                             "sha256":  "09668e29922e39a3363758648ac5b08d9b823349c846943ccc3c0a7a926e5222"
+                         },
+                         {
+                             "path":  "tests/deployment/test_backup.py",
+                             "sha256":  "b75d4bc38712c5735ece80357a992cac2f5796e3215be25e1fafa02a58c91867"
+                         },
+                         {
+                             "path":  "tests/deployment/test_ci_acceptance_scope.py",
+                             "sha256":  "eff2a45c937c79cf3f522ef6652a2c03749365ae6ddc7d228d1cb9fa819c8ae1"
+                         },
+                         {
+                             "path":  "tests/deployment/test_combined_readiness.py",
+                             "sha256":  "a211fa887de711761655bb116b8844688622bbfec2e809c70c4cc4ca6afb6c22"
+                         },
+                         {
+                             "path":  "tests/deployment/test_deployment_contracts.py",
+                             "sha256":  "d6591f75861739c42694ec599f7d22309b3ebc8190b468af08ba32db1061181f"
+                         },
+                         {
+                             "path":  "tests/deployment/test_deployment_rollback.py",
+                             "sha256":  "a03de6ad44c624cb1095a2115cd96ab73898abbfe485bfd4ec495f93c24220c2"
+                         },
+                         {
+                             "path":  "tests/deployment/test_environment_entry_linux.py",
+                             "sha256":  "d1d7fce0af88ddb69d85a52bd280181eea464a60b0654c980e6c0f31d3811188"
+                         },
+                         {
+                             "path":  "tests/deployment/test_environment_loading.py",
+                             "sha256":  "af76c95d437ec90233a106b2e4e7fbc07b27d1f567315a22142e006faf73aeb0"
+                         },
+                         {
+                             "path":  "tests/deployment/test_health.py",
+                             "sha256":  "d1e87205ed6237eb9b895d444734f90e53a6a9addc32628714d32f2e1122b5e6"
+                         },
+                         {
+                             "path":  "tests/deployment/test_installer_behavior.py",
+                             "sha256":  "81a02504c54ae26b03b1e8062d284c8d7b52598252bbb576b4b99ac5dfa1ad7b"
+                         },
+                         {
+                             "path":  "tests/deployment/test_offsite_backup.py",
+                             "sha256":  "e912d5b2c70af6df2d2ef87aba0ff84c4e7d9b71f1c3bb73f05ffad972dab361"
+                         },
+                         {
+                             "path":  "tests/deployment/test_offsite_processes.py",
+                             "sha256":  "546ed3ba136a16e2fcb566b924a6e50c4ea4dce968c6a897ecaf695fdd5259bd"
+                         },
+                         {
+                             "path":  "tests/deployment/test_pre_fix_linux.py",
+                             "sha256":  "3900b843bf18e24396a73de21281994f90afd6eb46c4702d86f57f7e0469e898"
+                         },
+                         {
+                             "path":  "tests/deployment/test_release_inputs.py",
+                             "sha256":  "cd7d2501f962a48bf8329f60444b4280f31b4fd83c86b03c42e3f1548d47c175"
+                         },
+                         {
+                             "path":  "tests/deployment/test_release_install_linux.py",
+                             "sha256":  "8a2bec65b20b41667d65d15cc1ffc27992e18a268eb4d99ab6ebc04853b7862d"
+                         },
+                         {
+                             "path":  "tests/deployment/test_remaining_gap_assertions.py",
+                             "sha256":  "d00c9c7808891ce95fb12d032a6f5a59e88a343dfcc2b94cc1e9c613fdfa32e2"
+                         },
+                         {
+                             "path":  "tests/deployment/test_restore_crash_recovery.py",
+                             "sha256":  "0140b56c880e89db16dbea4d71fb38e84de9790cbb9610b9c8f07aa9226a9805"
+                         },
+                         {
+                             "path":  "tests/deployment/test_restore_durability.py",
+                             "sha256":  "676c9b64009743a0d2f1db9f419a69ef15518113f959661bef7bfd8d0d115442"
+                         },
+                         {
+                             "path":  "tests/deployment/test_restore_permissions_linux.py",
+                             "sha256":  "ff6755c7ff617fe99e138fd5f18507b76d5c6aae1e4c38cac45061d32ded9a20"
+                         },
+                         {
+                             "path":  "tests/deployment/test_restore_recovery.py",
+                             "sha256":  "c4e2810f484d72112526014490a27323c81a056566d69c601038ab42a38f1c85"
+                         },
+                         {
+                             "path":  "tests/deployment/test_runtime_guards.py",
+                             "sha256":  "c138c8154c260a7b3fa6deb9501822c4a703837523110d14eba31ea5c9fd8bc6"
+                         },
+                         {
+                             "path":  "tests/deployment/test_systemd_contract_linux.py",
+                             "sha256":  "6d5b76f6e11419da0e13f447c6cdf5c1dcb4e4f7f30ebd9cb71ed328bb282173"
+                         },
+                         {
+                             "path":  "tests/deployment/test_systemd_quiesce_linux.py",
+                             "sha256":  "42a416e082f609161a0af01e6591b71699169f81868b05b5970e1decda93b505"
+                         },
+                         {
+                             "path":  "tests/integrations/__init__.py",
+                             "sha256":  "600b0a87bdcd1958c743d3012c1590bbf1fafd0581c32e13f3a38a7345a8c3a7"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/__init__.py",
+                             "sha256":  "470ba1cccda396480d7f4d90ecceed0b658fbfaa5b9b89609e5ce3748dbaf609"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_boundaries.py",
+                             "sha256":  "110281e280833ee1165d716ddd0084f53358c0e753d4dbaad758e8be369a4ee8"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_client.py",
+                             "sha256":  "432a3fb53393929b192d2a0c7210a41cdbf37735fdb7f0d304c5705bbce5d001"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_config.py",
+                             "sha256":  "cbceb24b6c347748d0eb09edc03a8c53a905c79afd4f1d8998ad83b16ecbc039"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_delivery.py",
+                             "sha256":  "c007833b3e022cebdbffef4cb25320cf0690fb1094d3af214b769b7b3ad9154a"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_handler.py",
+                             "sha256":  "19272b6cf868b3058bfe5abbbbcec2f6d0f02d1710e5d642b2c403dad496c4f5"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_idempotency.py",
+                             "sha256":  "b78e77586458616fd539bbb380ec7d4feed7ecb72b2b7c1a3e9263b6a62e516b"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_phase7_roles.py",
+                             "sha256":  "607c5efab69e99fdbbdb730aa48c2bd1f2c31297dd6af3f0215f28d835b83f28"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_reconnect.py",
+                             "sha256":  "6c8602820e7a3174f6e08a8b1ace2fb3b9d0d4fb0d2c6f4ee9d70cd647f0c802"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_repair_recovery.py",
+                             "sha256":  "7146b9e0d1f67eb1de6d7223fcf43e210a9d7fd0a238a7433bc52c55c0a4292f"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_runner.py",
+                             "sha256":  "06edc2f4b405e410485ce5b759f5ccb8f049baca9ca3e7acbe4358c0641b510a"
+                         },
+                         {
+                             "path":  "tests/integrations/feishu/test_scheduler.py",
+                             "sha256":  "8c5f7e146e55cf52d10eb6f2d942eaeb59fd094a139e986cafcac37b9ea86cb6"
+                         },
+                         {
+                             "path":  "tests/intelligence/__init__.py",
+                             "sha256":  "ced8a042f905b5dfd56aaafa133ebcc1f2f43514fa4e12cc988dcfbbe73a1dd8"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_adapters.py",
+                             "sha256":  "842bb2e6f4176839f41e911ffbb368ad2bf9cac1edfdddc9ec4bfa77f07a0842"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_backfill.py",
+                             "sha256":  "10d0adea89af35df64be208997c8b6dc4fa479a97b72ae055babcece6d9da201"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_clustering.py",
+                             "sha256":  "2ca61bd1cf010e6ce0aa49e41336a939c608108c0b0a670867e1a19ee0dfb074"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_deduplicate.py",
+                             "sha256":  "59b76abf09751caa74b4fd01e74e06272b1f46f175d251cac998e227683f036a"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_gemini_wording.py",
+                             "sha256":  "f024a7b574abb6727686f0618563786775c040e934d03d7a91c2605c2453a437"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_integration.py",
+                             "sha256":  "478b965339b0a2eaa89ff96e064a78466960cdcff09391c46c9d5818c159d351"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_models.py",
+                             "sha256":  "39c6ba957e0c2fdfbf38b1d02ec2811f3e13ca85be472ddb7371db7424369d09"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_normalization.py",
+                             "sha256":  "9f13ca77bbf024b2a43206a156e876841775fda98aed215dbcdfca7f71fe93f5"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_ranking.py",
+                             "sha256":  "a2974d5f48247bf765316beee3d6d2370f1f9cbc9d3f8c0cac761c7720674cb8"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_security_analyzer.py",
+                             "sha256":  "9fd6448f9131114302d0f16493ceb639b86536960ec3d52f45dacd0bc50dd44f"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_security_collector.py",
+                             "sha256":  "92782ea625f5d34e0cd4d5ce4eb3ca3b624479e33f7b7e830bb66683e529268f"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_security_integration.py",
+                             "sha256":  "4aa42fa03dcaafe03657d9f428987111a74fb04acf49c478c58145bde79114b9"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_security_report.py",
+                             "sha256":  "5f7f2ae73bac8c09a5b8e50d8a00237d7a70a25cb745e7983ef3d2d615056abb"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_storage.py",
+                             "sha256":  "d435ccef8e1492a994946b88bf35e27c81bb2cbbe7b1002ed31fbc4e1ab571fe"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_stories.py",
+                             "sha256":  "95ef3b5af14bc192f03c17d408d641d171ed2c00084de25fe2d3e49844e95efb"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_story.py",
+                             "sha256":  "d65e64e2f8ef2929566f2fa708d1956589ee67633c3fe8933f2be5ef98292230"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_story_generator.py",
+                             "sha256":  "d11e29eccf00cfed8ffedcc83713ddc9f8856032edd5ffc0085ec7ba35f728be"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_story_report.py",
+                             "sha256":  "10cf0f5338133c938a0639d249a32578d835991c514ea8ffe6dad552b5dba8b5"
+                         },
+                         {
+                             "path":  "tests/intelligence/test_translation.py",
+                             "sha256":  "fec813e3910a5b4d3789ac23844b0c083fe848aa340469e0e2892d527324911d"
+                         },
+                         {
+                             "path":  "tests/research/__init__.py",
+                             "sha256":  "bd8cb7f6d8d58cf2d1b510fb6bf4c81ad1897120b66ba1070fef2e7691020c4b"
+                         },
+                         {
+                             "path":  "tests/research/conftest.py",
+                             "sha256":  "51c8251a6a6612aa47ea6f4904fdaa768e3644a92e726063c6ea2886f27d8bc2"
+                         },
+                         {
+                             "path":  "tests/research/test_agent_reach.py",
+                             "sha256":  "df50064fb53f64b5672da4a56a2e106d5461a1099ecb3c1253bcd916ee6bbd92"
+                         },
+                         {
+                             "path":  "tests/research/test_assistant_research.py",
+                             "sha256":  "80657d10e3c88484982a544cd0e6cbee2ff314d41b0c4bfc1275389a8ccd9582"
+                         },
+                         {
+                             "path":  "tests/research/test_gateway.py",
+                             "sha256":  "d741f191171c4bda4184e4ba60a6c695b77085ea9bc11ea37984396e20f95eff"
+                         },
+                         {
+                             "path":  "tests/research/test_research_settings.py",
+                             "sha256":  "fdd8a359ddd4d02f4b167b42b4b2d88cde2bb4d73552cd0c641b0393cee4c79e"
+                         },
+                         {
+                             "path":  "tests/research/test_transport.py",
+                             "sha256":  "f5792a8a8723cecf502624c26ca33553821c15d64170226c5df9ca5759a58eaf"
+                         },
+                         {
+                             "path":  "tests/test_settings.py",
+                             "sha256":  "7d327a27eb3c3d4120784a3c0490cd61505e5ff5930be686834f3d7e756f53eb"
+                         },
+                         {
+                             "path":  "trendradar/__init__.py",
+                             "sha256":  "e394ed39339adf2e867abf6f0b88e0e5c3906cdd0b51ea0cd35c76f2451f0edf"
+                         },
+                         {
+                             "path":  "trendradar/__main__.py",
+                             "sha256":  "b56e012ab1f99964158be79c09c49ce4e4b88d19c6a1a44175926bb239f2ffd5"
+                         },
+                         {
+                             "path":  "trendradar/ai/__init__.py",
+                             "sha256":  "8911825ca0a40c21e6bce67806bc003ac2c4f1b12c26deff9348fdfddabde247"
+                         },
+                         {
+                             "path":  "trendradar/ai/analyzer.py",
+                             "sha256":  "b1224e848303f3f48a14c7e38ac411d35f473bb1bff9cc90086033a370d625b2"
+                         },
+                         {
+                             "path":  "trendradar/ai/assistant.py",
+                             "sha256":  "b61a2865fcac58e4237f9fa6d45929cdec9ee89090168bbbea21bb431391f219"
+                         },
+                         {
+                             "path":  "trendradar/ai/client.py",
+                             "sha256":  "523daeab3d973dab5a77b7cf66ef9dd1d73b8ed0f64c471bef5742f4bf00cf99"
+                         },
+                         {
+                             "path":  "trendradar/ai/errors.py",
+                             "sha256":  "79d169a9852c649752cef9ba298c49e94ab7ff6ae11718caf2b230be93a31459"
+                         },
+                         {
+                             "path":  "trendradar/ai/media.py",
+                             "sha256":  "d240fe489cc0a24b7f96c8f3c357218823a19494586498e30a25a6cb4c617fc2"
+                         },
+                         {
+                             "path":  "trendradar/ai/models.py",
+                             "sha256":  "88cbe93a35dfc3fff6612ab590a815a588fbe0c5d2e6971c9c97e91d5b14095b"
+                         },
+                         {
+                             "path":  "trendradar/ai/retrieval.py",
+                             "sha256":  "8ecb88d23d0d33460666cad5fd1c51f9713e4f81d0d507bf91b9c8f2e20120d1"
+                         },
+                         {
+                             "path":  "trendradar/ai/session.py",
+                             "sha256":  "0c045d0189b9a1deb0fc3d172f0e704700c5132f36392bd18e259a917a5cb501"
+                         },
+                         {
+                             "path":  "trendradar/ai/tools.py",
+                             "sha256":  "e0b7fdb728ffa1d2c706f3c577c91293fa996e036f34f9b01a92f9fd412f0911"
+                         },
+                         {
+                             "path":  "trendradar/ai/translator.py",
+                             "sha256":  "98b394e1a8bbe106a9ac80ea14c27beb5f70bd72473ca2ff5f8be176a0eb2d19"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/__init__.py",
+                             "sha256":  "a8c055e3a56fbbbaeb8758d843cdcb02d36928faa203b09cd9be86677f8e83a5"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/__main__.py",
+                             "sha256":  "16475814ba894441ac61788d107714797a63bb5e54b9b05d54c37f7bb03a0feb"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/_http.py",
+                             "sha256":  "5874f1bf151ecd6a52bdecb22cbca2646374d2ba16914e36de982aaf9e535512"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/detector.py",
+                             "sha256":  "1fd25699cab4d021d8107c068a994644a7043576167d4248f95442eaf5531174"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/fetcher.py",
+                             "sha256":  "f2ca561dd2032ff1288173640a120f0119a41159297af1780efe58fbe2d9f07c"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/pusher.py",
+                             "sha256":  "6d453c38c0f003be01a1ee41f1068b3456441a255d1738b5c2d6862be9c8dfe9"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/README.md",
+                             "sha256":  "8c5c739ac63e28f98f0aa44c12affd78ca9503d3526fbb72ba8a71ff84a7ec4e"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/renderer.py",
+                             "sha256":  "547082acba7b98dadf02dccff0fad75859e238b8136342ff317bc780e589559b"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/__init__.py",
+                             "sha256":  "e4f0d49ea04f958c63ec6eede987caf1cca06661e70040f8ab6933da62343a81"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/arxiv.py",
+                             "sha256":  "55c263ccd81a9692eb5628fc6801a08ddd519a56d57091a7b1267c84fda44598"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/base.py",
+                             "sha256":  "a30a2ba0964c1e4445412c45b321a77650ab5138e2ad656567b3aad4d7c4753f"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/github_trending.py",
+                             "sha256":  "97c97a0dc8b92cbe27ddfe35529953f7bb7d261c62a08a07ba9457026e73c82d"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/hackernews.py",
+                             "sha256":  "9ff2e2fad17e046767743fff2c72fdf6dac3101c8ac01e20fa0b9a088e0313ed"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/nitter.py",
+                             "sha256":  "8b6e8c6602a35317c2773880a52567c7a1a061c20bff6b08ba9c380434b00207"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/official_blog.py",
+                             "sha256":  "25c71919afecfcb1f51701c9c539476fd07dbe207fca972193d0b5fd3e38482f"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/reddit.py",
+                             "sha256":  "044ea7b43eab88b73e733a9f3c6a4d1c4cf1fbb32f468ec6aeb132e6f245bf66"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/sources/youtube_podcast.py",
+                             "sha256":  "d40c4198be858149ab8bb3dbda64b7590f33954832c13feef1d5f4beec14be47"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/storage.py",
+                             "sha256":  "bc0ad51f58d50fa19eba6bb56d5b4adcbb4951d9ebe5bbcdb8d49134d1d7ee64"
+                         },
+                         {
+                             "path":  "trendradar/ai_frontier/translator.py",
+                             "sha256":  "36006957a8ef5a65129fd92c2a931f8fbefc1ef5193037982a87e1a56c2814ee"
+                         },
+                         {
+                             "path":  "trendradar/context.py",
+                             "sha256":  "15e51273a9cfe78b379674000579fa9a0decf19f4f1fa82b5276d38d11731bd3"
+                         },
+                         {
+                             "path":  "trendradar/core/__init__.py",
+                             "sha256":  "705bffbc8c8a896a2c1f94f65e4a5319d1482b0dfb8aaabce3295805048924ff"
+                         },
+                         {
+                             "path":  "trendradar/core/analyzer.py",
+                             "sha256":  "72ff3a3ea79f3b3220afe110701766b152d8153a8bc9a77a638cc91d7cc9f98c"
+                         },
+                         {
+                             "path":  "trendradar/core/config.py",
+                             "sha256":  "68faf368b7f4cd7098d849648a7700796448654e94076869c7e109ef28d15baa"
+                         },
+                         {
+                             "path":  "trendradar/core/data.py",
+                             "sha256":  "ed68f1b3d5c57aead3cb414a50b305fe5b198b05d0b5c245ec6584bf442b7405"
+                         },
+                         {
+                             "path":  "trendradar/core/exceptions.py",
+                             "sha256":  "49824ea5c6f873c1eacbdf13b7746452a3c537f96f9bbbcf3579b78738e20a53"
+                         },
+                         {
+                             "path":  "trendradar/core/frequency.py",
+                             "sha256":  "82573e52876e3746d1c712c23d6ed2a9b272b0d194fd8d5595d1c8e90a888f15"
+                         },
+                         {
+                             "path":  "trendradar/core/heartbeat.py",
+                             "sha256":  "dec016be149867c9ec6e3b2edd12c882963f53fdc9bff98da8d703b75c4d82ef"
+                         },
+                         {
+                             "path":  "trendradar/core/loader.py",
+                             "sha256":  "ce606e04d939e08c608cb2a2091b9019dc4772381771f1886bc14eb16c10f7e9"
+                         },
+                         {
+                             "path":  "trendradar/core/locking.py",
+                             "sha256":  "a2dc7b982c81182cf8e627b4f46fed6cd810d1dd2fc06c22af232cb7656242ad"
+                         },
+                         {
+                             "path":  "trendradar/core/models/__init__.py",
+                             "sha256":  "14d7f1f8b55b37537b9c3eb8f4e33f08e4aa25226b8e48e5cf095e9717107a3f"
+                         },
+                         {
+                             "path":  "trendradar/core/models/compatibility.py",
+                             "sha256":  "18a1e0c4222410348267af5532b43195cfa4de58bae43a426319d8298e8f24e3"
+                         },
+                         {
+                             "path":  "trendradar/core/models/content.py",
+                             "sha256":  "1a1792bf399785cd92f4ed6c6f0f6975985d69c4120365fe73f814a320c555da"
+                         },
+                         {
+                             "path":  "trendradar/core/models/normalization.py",
+                             "sha256":  "1431a7d21d657b92075ce822c82ccf9e98907206ac885a0712b89bcb2a49399a"
+                         },
+                         {
+                             "path":  "trendradar/core/models/story.py",
+                             "sha256":  "cab95283ca241485c22d8fd99a1d08fb583e9596bb2c82bb8082f29c2161ca0c"
+                         },
+                         {
+                             "path":  "trendradar/core/settings.py",
+                             "sha256":  "4c57e11dd505a32fa2157a45400839ddd8e869553621bc6f3d15e9ee0dc51d78"
+                         },
+                         {
+                             "path":  "trendradar/crawler/__init__.py",
+                             "sha256":  "d919ced988fbf4f365aebed1efe61e1db024623f60705c9ca5bfa3db49b705c0"
+                         },
+                         {
+                             "path":  "trendradar/crawler/fetcher.py",
+                             "sha256":  "8ab9a1d923dad7af5cb0a6a6c04115ca71840c722edbe55a065a85637bd3860c"
+                         },
+                         {
+                             "path":  "trendradar/crawler/rss/__init__.py",
+                             "sha256":  "cb3059d2f9252861530f4c129399e1b0e1bc77239ca598df4aae78d859df1aff"
+                         },
+                         {
+                             "path":  "trendradar/crawler/rss/fetcher.py",
+                             "sha256":  "adb45c66a5db6fae5d68c18ecef66e0e725731261b7dc8c29c70d818d31bd93b"
+                         },
+                         {
+                             "path":  "trendradar/crawler/rss/parser.py",
+                             "sha256":  "cd17294554e41dd1dee96858f918800fcb838f287648c0baf6721ca1ab2199c1"
+                         },
+                         {
+                             "path":  "trendradar/domains/__init__.py",
+                             "sha256":  "f9a8744ad2c70694ece8247f646750a9df0728b74aa15e3aa01630b648612c4a"
+                         },
+                         {
+                             "path":  "trendradar/domains/security/__init__.py",
+                             "sha256":  "020f467bb659ea597151278e60c645f9b92b080c522fa79b52f42603c3c0f7d7"
+                         },
+                         {
+                             "path":  "trendradar/domains/security/analyzer.py",
+                             "sha256":  "5e5ec34fcccde6fc8ccc4f90a47a886598079d3331b48ebbbc18d931c08f3500"
+                         },
+                         {
+                             "path":  "trendradar/domains/security/collector.py",
+                             "sha256":  "930072b7b887e6a0cef07523e1f6c2279834f1d2850e5c8f9dae3e1229599381"
+                         },
+                         {
+                             "path":  "trendradar/domains/security/report.py",
+                             "sha256":  "21480d7cc0e988d86897cb93e3eb311b3e1c66641aa16d95181797084611e3ea"
+                         },
+                         {
+                             "path":  "trendradar/integrations/__init__.py",
+                             "sha256":  "eeb7e162eca5034dc4fec35cb3f4449ae9117487c52b7d53a31e1a7f26cc4fc8"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/__init__.py",
+                             "sha256":  "b8d35073daa15fcc9888ad22ffb9269909eeceeb0eaadf448e3ae62b958e0c15"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/__main__.py",
+                             "sha256":  "eda3301f55d1c9e35f89ede74f409fbea9f4edf9cc8e6fcd5d1e9bcb813cff5d"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/client.py",
+                             "sha256":  "4ee7d360575245679ee398e43799aaa4e610836562c26cac454df4bee65b4e45"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/config.py",
+                             "sha256":  "370452b9a46c706d91614bfd332f9f56170c96f04773cf0506097c2235f23851"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/delivery.py",
+                             "sha256":  "f69328048cb303cbd02ac95dafaad1b1187b3207079fdd35dc03f1d5eedb1562"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/handler.py",
+                             "sha256":  "a8542425a0b2397eada1683175485d16907e7802e68186ba90d342d461575146"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/ledger.py",
+                             "sha256":  "bf91f8a44198bbdd8f4db4e8d6f62d2a1702388f5bfae8946a20e7470a8867af"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/media.py",
+                             "sha256":  "dda6d637d0e8846ddad67b7ec387f83051176ce1349078cb66d21b091aa7bbb3"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/models.py",
+                             "sha256":  "f9c3094fac1d162728e1d6c31b8f4f5a2041a66d4482ab3d9288f9235888d594"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/scheduler.py",
+                             "sha256":  "8847d50d0db2557a3436f3d95f01b18387244400b12973ac0662369815533ff6"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/session.py",
+                             "sha256":  "b044e51a537e1691dc8f1fda2a0ba611c124444d2b02178bf93d07a6073ac78d"
+                         },
+                         {
+                             "path":  "trendradar/integrations/feishu/transport.py",
+                             "sha256":  "77aa72247c68a285a582d092f16b8e4df82f72d40631c3aa7984c47357f323b6"
+                         },
+                         {
+                             "path":  "trendradar/integrations/lark/__init__.py",
+                             "sha256":  "9f1a0a66df8401eb919c384e43bec35ee62a1625ee6c0dc7af034f95a926e64b"
+                         },
+                         {
+                             "path":  "trendradar/integrations/lark/__main__.py",
+                             "sha256":  "ff2433a9314f89a910481b2078f9839add89b5820878b70864b2a08797012835"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/__init__.py",
+                             "sha256":  "a92048cd2a482e51e4e504756bf96dfe32ccbbeb2e410d8cb225588a8455c010"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/backfill.py",
+                             "sha256":  "12209f8e86b684287aa8c7f29015b95ee89d0e6ce675e1085c28d82b5c1a512b"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/clustering.py",
+                             "sha256":  "b2ce6291d99692329a1ba27d7e75c59d8359ab1c606d71b7a15540fb9751a47b"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/deduplicate.py",
+                             "sha256":  "d721dcaa14b75fad313c1c5ba340b9774a452886a860af1b95f9aaed9aab0255"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/gemini_wording.py",
+                             "sha256":  "d404fe6f238af1b5c02e9c608de9346f9ce931d47e69e2b3bdaf3dfe2bab3193"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/integration.py",
+                             "sha256":  "319e2cf1e73115a3e9cf54af6e949af2aa4669cee20942d24496b12d0790d0b6"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/pipeline.py",
+                             "sha256":  "1fbec20e5e57a84ebba453d3af79954745ddee6a11adce0a01ad28d7dd69051b"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/ranking.py",
+                             "sha256":  "17f7a958f3c00a62f0e33318304a0ea336516b5f72251000921584e559ec9455"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/runner.py",
+                             "sha256":  "c7a1ae105f17cc0906ef1d2ff4a58931d3e5a5bc666e3fdbde905c53e29aacf4"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/storage.py",
+                             "sha256":  "e759d7678506e6997bdb0bc11ebd37c06f1e4ffa8b065e032940953683a34d00"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/stories.py",
+                             "sha256":  "f37ab93e41b031f3f41f68ab81b61b0fba417bb00018273cec5c22de7380ed7b"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/story_generator.py",
+                             "sha256":  "e4db4aa2f28adcdc726cc6720ce0dac0387ff2554c1869c77dc6826dc709b433"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/story_report.py",
+                             "sha256":  "3d47ae0369a8f4ff88d7057ab2d69b17279700ba28c48ec72e67c58ea2f8f8da"
+                         },
+                         {
+                             "path":  "trendradar/intelligence/translation.py",
+                             "sha256":  "574ce75dd58b60936a606d52361bd8f22cd4e1614cb016f5c42da27e7928969e"
+                         },
+                         {
+                             "path":  "trendradar/notification/__init__.py",
+                             "sha256":  "91e683e73ecef6403cf889ea5a9e2d37b7ae0d39d4064dd1ce28362e9c6b2f25"
+                         },
+                         {
+                             "path":  "trendradar/notification/batch.py",
+                             "sha256":  "68af79061f8f8b1dd79609bf5dcb9be23d8abde6fa5740458f3de81c741486e6"
+                         },
+                         {
+                             "path":  "trendradar/notification/dispatcher.py",
+                             "sha256":  "d5c5fd6b3dd5ac4fa06da3c63e0e83f2e1e44511b63800a0e0081684bdd1f62f"
+                         },
+                         {
+                             "path":  "trendradar/notification/formatters.py",
+                             "sha256":  "28e43e782b0fc9dc9d4d5106bf6e1c36d4a8276132e394f72109c8262080f8e8"
+                         },
+                         {
+                             "path":  "trendradar/notification/push_manager.py",
+                             "sha256":  "b933fd50ff05d21faafbb715ff4473b28f395f546d3a210c07bb7e9ac086db2b"
+                         },
+                         {
+                             "path":  "trendradar/notification/renderer.py",
+                             "sha256":  "9a9d0f1b63f032ef8cc359d5e33929574cf5a1590a42cbad4ef6270341aa742c"
+                         },
+                         {
+                             "path":  "trendradar/notification/senders.py",
+                             "sha256":  "30d0edbeeb6a5a752ee49dad67b09e530572e9dc93b0a3a364d237227ae68444"
+                         },
+                         {
+                             "path":  "trendradar/notification/splitter.py",
+                             "sha256":  "16590e7c4e746c73ace4d1444970e994ef8ca92713c909bad182b0180878cfb3"
+                         },
+                         {
+                             "path":  "trendradar/ops/__init__.py",
+                             "sha256":  "d4da8e810a927d4b574a87071984ca1f4a9db6718e80512ea6977567f9ba3aef"
+                         },
+                         {
+                             "path":  "trendradar/ops/__main__.py",
+                             "sha256":  "3d84dd8df8bf6de9601906f0c64aab66484d2339465c311a4b9b705f93e88e41"
+                         },
+                         {
+                             "path":  "trendradar/ops/backup.py",
+                             "sha256":  "75544f29303d9fde4fdc8d8872c1ae58ca5a04f5817aefb2e7add1ea51818ff9"
+                         },
+                         {
+                             "path":  "trendradar/ops/database.py",
+                             "sha256":  "e949514e9ced4616f16a5798c1cc78046bd4ff3e10d35d3f67a43c8afdf572e7"
+                         },
+                         {
+                             "path":  "trendradar/ops/health.py",
+                             "sha256":  "44b401e1baac2bd0e1e7896c540832aa0c8dca82be0fe69f63d2250c8f70f690"
+                         },
+                         {
+                             "path":  "trendradar/ops/maintenance.py",
+                             "sha256":  "cc5bc1712ef6a18ad9e6878e24a46b95152ff4167e36b51cca855e1d5fd36382"
+                         },
+                         {
+                             "path":  "trendradar/report/__init__.py",
+                             "sha256":  "eaa24031be8f0118393a05ad61293e4c0de64776ee23c0a75c3f43ae8ebf2b91"
+                         },
+                         {
+                             "path":  "trendradar/report/formatter.py",
+                             "sha256":  "fa0b4ee470e4471c81e96bb5742fecc774b2d9de307b8a4cce85513bd3c1db12"
+                         },
+                         {
+                             "path":  "trendradar/report/generator.py",
+                             "sha256":  "5b267226b3c5286205220aba8b053bb31d0f525512d0ffda01557149b150524e"
+                         },
+                         {
+                             "path":  "trendradar/report/helpers.py",
+                             "sha256":  "709035ee4fa70b9b8c038df088bb15ee280f5c520b1a9681ac47700390008135"
+                         },
+                         {
+                             "path":  "trendradar/report/html.py",
+                             "sha256":  "959eacce4571e977b0af796c03bc6584f05ebe8d2d5b3afea6053505b4d7a2ff"
+                         },
+                         {
+                             "path":  "trendradar/report/rss_html.py",
+                             "sha256":  "e77d83b720c0e75f3c480690bea3b41f40d5041d24107dfbd32e759be840cf6d"
+                         },
+                         {
+                             "path":  "trendradar/research/__init__.py",
+                             "sha256":  "12540dcb4543cdf755ffac15a4b0c754bc87b0d5f64b8d46fcbd5202debe6a18"
+                         },
+                         {
+                             "path":  "trendradar/research/adapter.py",
+                             "sha256":  "6d07afac0b0ec4428e5485f4d303949d1a2e0f730e10778edd98d7822e557f4c"
+                         },
+                         {
+                             "path":  "trendradar/research/agent_reach.py",
+                             "sha256":  "b054127f570f1e9ae5cdf12c838bb59b1db5dbf5a4f6d09a71ca9d657f4f0f87"
+                         },
+                         {
+                             "path":  "trendradar/research/config.py",
+                             "sha256":  "f4147073ea3f6dbfac69e78a02442022d66e9d30780c4496b3bfda9cd35e4b3d"
+                         },
+                         {
+                             "path":  "trendradar/research/gateway.py",
+                             "sha256":  "82021c327860c5c9defc4f6bbe9d0dc8f5cf087bbcf7cb9da2a5254e11326b71"
+                         },
+                         {
+                             "path":  "trendradar/research/models.py",
+                             "sha256":  "22c0a48428c691e2839c6eea1a017e177af16b2c49838a6553294c278b52ad29"
+                         },
+                         {
+                             "path":  "trendradar/research/transport.py",
+                             "sha256":  "267d9307726b84c3f4ff8c31abd10cf6ff8cd08bbecc42b1fc984aeb41dcf507"
+                         },
+                         {
+                             "path":  "trendradar/services/__init__.py",
+                             "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                         },
+                         {
+                             "path":  "trendradar/services/translation_service.py",
+                             "sha256":  "7a031af432ce1ebba9bf98ec1ee2d80a4172b9a930ba8d1f28c5b7007aab8807"
+                         },
+                         {
+                             "path":  "trendradar/sources/__init__.py",
+                             "sha256":  "d067a277bce8231a0be1d97f57e274af2e5b2bf1768a374d3e543a5fe8097851"
+                         },
+                         {
+                             "path":  "trendradar/sources/ai_frontier.py",
+                             "sha256":  "1af178cabab48a0b9806cf6e64da3706bb67abab40fe1334c25926d997f9199d"
+                         },
+                         {
+                             "path":  "trendradar/sources/base.py",
+                             "sha256":  "02418c901b202df4ec97be94ef46c8e1b5473fb0e0daa66d6bdfcaba7ff04de9"
+                         },
+                         {
+                             "path":  "trendradar/sources/newsnow.py",
+                             "sha256":  "66f84c7b65f95bbd6d3f4449e82a89d608e5b09124527034a6e73a245fe0e6c6"
+                         },
+                         {
+                             "path":  "trendradar/sources/rss.py",
+                             "sha256":  "6d2baae56a3fd2aa803fc1dd5492379a2adfd28ab81e3719ad9c752d9abeae19"
+                         },
+                         {
+                             "path":  "trendradar/sources/security.py",
+                             "sha256":  "38e009ac82ae741b8bf1ca7797819a7fbbeadd50ac817c45e433150f00de8927"
+                         },
+                         {
+                             "path":  "trendradar/storage/__init__.py",
+                             "sha256":  "fb38bc1c9b6d30d82621199f75241af6334fa85935ff88d0ca8950647e6cbd79"
+                         },
+                         {
+                             "path":  "trendradar/storage/base.py",
+                             "sha256":  "29d1f41af85ff90f718671262d397a1720ac41191fdd00b3a5e513c091ae7410"
+                         },
+                         {
+                             "path":  "trendradar/storage/local.py",
+                             "sha256":  "aa157f583a0696f521417ce04d81f908032a52eb1cdbc588582a13110e4e27d6"
+                         },
+                         {
+                             "path":  "trendradar/storage/manager.py",
+                             "sha256":  "0beae4d0b8e4fce01450f52a18a714fb7b02bc0fc70b34deac9e6771c1e936d9"
+                         },
+                         {
+                             "path":  "trendradar/storage/migration_bilingual.sql",
+                             "sha256":  "7b378e91ec500768104f31f18f2cd0f72f369db20a0b5f92e952e4ba44d72234"
+                         },
+                         {
+                             "path":  "trendradar/storage/remote.py",
+                             "sha256":  "5b1de5ac808585f51dad87c42eb7818384df7923c3bb1ee20030e4fc89b96b27"
+                         },
+                         {
+                             "path":  "trendradar/storage/rss_schema.sql",
+                             "sha256":  "602df5df55869f74d8247be53433a98f24d0a9634921dcd930dcf70cec4c9390"
+                         },
+                         {
+                             "path":  "trendradar/storage/schema.sql",
+                             "sha256":  "089313f840c51dae560a66c6815c7c87b647ae83447db26c2cbe375ace9bd84a"
+                         },
+                         {
+                             "path":  "trendradar/utils/__init__.py",
+                             "sha256":  "ac4e760d1a4c83d892f774e72aefff36a918cccebe128c19d8d68fbc2e8b571e"
+                         },
+                         {
+                             "path":  "trendradar/utils/logging.py",
+                             "sha256":  "181a7dc0c19995dcd2cb2fe068e11834fbed2fdc114f7dc0562f0155d0a4fd05"
+                         },
+                         {
+                             "path":  "trendradar/utils/time.py",
+                             "sha256":  "0f3c7fae57fc0db72f29fb6fb60067d5337830e831a4ebd3de3bd3c47f3d1f3f"
+                         },
+                         {
+                             "path":  "trendradar/utils/url.py",
+                             "sha256":  "edb12d76556e8916e83c0ebc372f74ecca01c3a2f0e141309d0329d5baa156a3"
+                         },
+                         {
+                             "path":  "version",
+                             "sha256":  "91aa98b9f9984c58ad2d48c130377aa528e97fea91927617c739b5f7129602e1"
+                         }
+                     ],
+    "constraint_files":  [
+                             {
+                                 "path":  "AGENTS.md",
+                                 "sha256":  "cd00999417d445cf9e1433f80dae7082b218f816bb7ff402308d287601f90f98"
+                             },
+                             {
+                                 "path":  "CLAUDE.md",
+                                 "sha256":  "085856356057296f92c0cf9bb60997d60ebcd506d81a7ff20b271b270e6963c9"
+                             },
+                             {
+                                 "path":  ".planning/PROJECT.md",
+                                 "sha256":  "f382fce75871efcdd6186f3c08530513cc2a0cde1ccb93d0102cc82b986220a8"
+                             },
+                             {
+                                 "path":  ".planning/REQUIREMENTS.md",
+                                 "sha256":  "7c25791c520baddbbf17093deffb15931939669f51d88343a82d08347ec6b840"
+                             },
+                             {
+                                 "path":  ".planning/STATE.md",
+                                 "sha256":  "80f123cc9163325f8d0c250a3bf19bbc4847917160b52c0fc4c59595287e279b"
+                             },
+                             {
+                                 "path":  "TrendRadarpoi-Phase7-Codex交接操作指南-2026-10-15.md",
+                                 "sha256":  "7b56f4e2c89a3f6c3a3829e0681a9301d09845c96cb78b33bd1029cc6621fddb"
+                             },
+                             {
+                                 "path":  "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+                                 "sha256":  "1b160179484c1e89c0154bbe7ebb8c3ee75a94b1e7e0a225d2d723b703181013"
+                             },
+                             {
+                                 "path":  ".planning/phases/07-deployment/07-01-PLAN.md",
+                                 "sha256":  "63f3eb3125ecae562b6945c60455cce02ee2a3c07550196a37238cc5bbaf72f2"
+                             },
+                             {
+                                 "path":  ".planning/phases/07-deployment/07-02-PLAN.md",
+                                 "sha256":  "51a26950e758e4481136450e14cd319ec40a02272c8a9fd32b671146a9dc2dff"
+                             },
+                             {
+                                 "path":  ".planning/phases/07-deployment/07-03-PLAN.md",
+                                 "sha256":  "9a961cd5f42ba95835c6c1b98cb8546b1a2710f9890e0de4f8db2e46fd309a61"
+                             },
+                             {
+                                 "path":  ".planning/phases/07-deployment/07-04-PLAN.md",
+                                 "sha256":  "e0f8871d749c6344effb6ca49abeea714f704dd0c05b8cab72f610a941b62945"
+                             },
+                             {
+                                 "path":  ".planning/phases/07-deployment/07-05-PLAN.md",
+                                 "sha256":  "a1bb0ec78e488cadb416c681af9ca3397b33973b1eb22e20af5f6f4843a472e9"
+                             }
+                         ]
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run TrendRadar database backup hourly
+
+[Timer]
+OnCalendar=*-*-* *:10:00
+Persistent=false
+Unit=trendradar-backup.service
+
+[Install]
+WantedBy=timers.target

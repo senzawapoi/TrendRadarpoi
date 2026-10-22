@@ -6,6 +6,24 @@
 # ===============================================================
 # 1. 基础设置
 # ===============================================================
+lark:
+  enabled: false
+  identity_fields: {} # open_id/user_id/union_id -> list; empty denies everyone
+  allowed_chat_types: [p2p, group]
+  bot_id: "" # Bot open_id for explicit group mention matching
+  reconnect_attempts: 5
+  cooldown_seconds: 300
+  event_lease_seconds: 120
+  delivery_retry_base_seconds: 5
+  delivery_retry_max_seconds: 300
+  request_timeout_seconds: 30
+  max_message_chars: 8000
+  delivery_max_stories: 20
+  delivery:
+    enabled: false
+    target: "" # chat_id; may be supplied by LARK_DELIVERY_TARGET
+    # time/end inherit notification.push_window; timezone is Asia/Shanghai
+
 app:
   # 时区配置（影响所有时间显示、推送窗口判断、数据存储）
   # 常用时区：
@@ -214,8 +232,139 @@ rss:
     #   max_age_days: 0               # 示例：禁用过滤，推送所有文章
 
 
+# Core Gemini service. GEMINI_API_KEY is environment-only.
+ai:
+  gemini:
+    enabled: true
+    model: "gemini-2.0-flash"
+    timeout_seconds: 30
+    max_attempts: 3
+    retry_backoff_seconds: 1
+    min_request_interval_seconds: 1
+    max_input_chars: 32000
+    max_output_chars: 12000
+
+
 # ===============================================================
-# 4. 报告模式
+# 4. 统一情报数据层（旧 SQLite、报告和通知仍保持兼容权威）
+# ===============================================================
+intelligence:
+  enabled: true
+  database_path: "output/intelligence.db"
+  require_existing: false
+  sqlite_synchronous: "FULL"
+  health:
+    require_source_runs: false
+    require_backup: false
+    heartbeat_max_age_seconds: 60
+    source_max_age_hours: 6
+    queue_wait_seconds: 300
+    backup_max_age_hours: 26
+    backup_dir: "output/backups"
+    expected_roles: []
+    expected_sources: []
+  story:
+    enabled: true
+    output_dir: "output/stories"
+    timezone: "Asia/Shanghai"
+    wording:
+      enabled: false
+      model: "gemini-2.0-flash"
+    clustering:
+      time_window_hours: 24
+      token_jaccard_threshold: 0.35
+      title_similarity_threshold: 0.70
+      min_shared_tokens: 2
+      entity_keywords: {}
+    ranking:
+      weights:
+        diversity: 0.25
+        reliability: 0.20
+        activity: 0.20
+        recency: 0.20
+        interest: 0.15
+      source_reliability: {}
+      user_interests: []
+      recency_half_life_hours: 24
+    report:
+      enabled: true
+      max_stories: 100
+  assistant:
+    enabled: true
+    session_ttl_days: 30
+    max_messages: 100
+    max_history_messages: 12
+    max_context_chars: 24000
+    max_input_chars: 8000
+    max_output_chars: 12000
+    default_lookback_days: 7
+    max_stories: 20
+    max_members_per_story: 8
+    max_observations_per_story: 16
+    max_items: 20
+    max_citations: 12
+    max_tool_calls: 3
+    max_tool_result_chars: 4000
+    tools:
+      search_stories: true
+      search_content_items: true
+      get_story_evidence: true
+  research:
+    enabled: false
+    capabilities:
+      - search_web
+      - search_github
+      - search_reddit
+      - read_webpage
+      - get_video_transcript
+    timeout_seconds: 15
+    max_results: 5
+    max_result_chars: 3000
+    max_response_bytes: 262144
+    max_concurrency: 2
+  security:
+    enabled: true
+    timezone: "Asia/Shanghai"
+    output_dir: "output/security"
+    max_concurrency: 4
+    stale_after_hours: 48
+    sources:
+      cisa_kev:
+        enabled: true
+        timeout: 30
+        max_items: 500
+      nvd:
+        enabled: true
+        timeout: 30
+        lookback_hours: 48
+        results_per_page: 100
+        max_pages: 2
+        max_items: 200
+        request_interval_seconds: 6
+      rss:
+        enabled: true
+        timeout: 20
+        max_age_days: 7
+        feeds:
+          - id: "cisa-advisories"
+            name: "CISA Cybersecurity Advisories"
+            url: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+            max_items: 50
+    ranking:
+      weights:
+        base: 0.15
+        severity: 0.35
+        known_exploited: 0.30
+        action: 0.20
+    report:
+      enabled: true
+      lookback_days: 30
+      max_candidates: 500
+      max_stories: 100
+
+
+# ===============================================================
+# 5. 报告模式
 #
 # 🔸 daily（当日汇总模式）
 #    • 推送时机：按时推送(默认每小时推送一次)
@@ -244,7 +393,7 @@ report:
 
 
 # ===============================================================
-# 5. 推送通知
+# 6. 推送通知
 #
 # ⚠️ 重要安全警告 ⚠️
 #
@@ -308,14 +457,14 @@ notification:
       token: ""                       # ntfy 访问令牌（可选，用于私有主题）
 
     bark:
-      url: "https://api.day.app/AocxghzJ2Thdd3VP9Mpd7n/"                         # Bark 推送 URL（格式：https://api.day.app/your_device_key）
+      url: ""                         # Bark 推送 URL（格式：https://api.day.app/your_device_key）
 
     slack:
       webhook_url: ""                 # Slack Incoming Webhook URL
 
 
 # ===============================================================
-# 6. 存储配置
+# 7. 存储配置
 # ===============================================================
 storage:
   # 存储后端选择
@@ -358,7 +507,7 @@ storage:
 
 
 # ===============================================================
-# 7. 高级设置（一般无需修改）
+# 8. 高级设置（一般无需修改）
 # ===============================================================
 advanced:
   # # 版本检查
@@ -400,7 +549,7 @@ advanced:
 
 
 # ===============================================================
-# 8. AI 前沿资讯聚合（独立子系统）
+# 9. AI 前沿资讯聚合（独立子系统）
 #
 # 独立聚合 ArXiv/Reddit/HackerNews/GitHub Trending/X(Nitter) 五大源
 # 入口：python -m trendradar.ai_frontier

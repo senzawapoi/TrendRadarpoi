@@ -1,0 +1,73 @@
+Phase 7 workspace-cleanup verification
+Date: 2026-10-14 (Asia/Shanghai)
+Checkpoint observation: 2026-10-14T06:27:32Z
+Branch: main; origin/main ahead count: 42; dirty worktree retained
+HEAD: 5a427aba5ded0c9c9c9e050413dcb41f17fa0e23
+
+These are scoped verification results, not a final regression or release gate.
+Test fixtures use isolated temporary databases and fake business providers.
+No Lark, Gemini, upstream collectors or remote restic calls were made.
+
+Windows Python 3.10.11:
+python -B -m pytest tests/deployment/test_actual_gap_health.py tests/deployment/test_runtime_guards.py tests/deployment/test_environment_loading.py tests/deployment/test_offsite_backup.py tests/deployment/test_offsite_processes.py tests/deployment/test_restore_crash_recovery.py tests/deployment/test_restore_recovery.py -q -p no:cacheprovider --tb=short
+Exit code: 0
+101 passed, 25 skipped in 17.14s
+
+Ubuntu WSL Python 3.10.22, root:
+wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_actual_gap_health.py tests/deployment/test_runtime_guards.py tests/deployment/test_environment_entry_linux.py tests/deployment/test_environment_loading.py tests/deployment/test_offsite_backup.py tests/deployment/test_offsite_processes.py -q -p no:cacheprovider --tb=short
+Exit code: 0
+120 passed, 1 skipped in 40.56s
+
+Ubuntu WSL Python 3.10.22, root, actual systemd:
+wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_restore_crash_recovery.py tests/deployment/test_restore_recovery.py tests/deployment/test_systemd_contract_linux.py tests/deployment/test_restore_permissions_linux.py -q -p no:cacheprovider --tb=short
+Exit code: 0
+24 passed in 49.59s
+Backup units retain PrivateTmp=yes and run as UID/GID 65534.
+Default timeout/kill grace: 900/10; explicit overrides: 123/7.
+Installer harness simulates pip, venv and systemctl; this is not artifact-install evidence.
+
+Scoped lint:
+python -B -m ruff check --no-cache trendradar/ops scripts/deploy tests/deployment trendradar/integrations/feishu/__main__.py
+Exit code: 0
+All checks passed!
+
+Additional read-only verification:
+Windows Python 3.10.11; SQLite 3.40.1.
+Linux Python 3.10.22; SQLite 3.53.1; UID/GID 0/0; PID 1 is systemd.
+Python AST syntax: 30 files in the scoped lint roots/entry point; passed.
+Bash -n executed separately for install_release.sh, linux_smoke.sh,
+release_smoke.sh and deploy/bin/trendradar-install-release; all exit code 0.
+Local Markdown links checked across agent guides and changed documentation; passed.
+git -c core.safecrlf=false diff --check; exit code 0.
+Scoped source SHA256 values retained in checkpoint-source-sha256.json.
+Final documentation link check: 46 relative targets passed.
+Checkpoint source-hash check: all 49 recorded digests match the worktree.
+
+Documentation-only cleanup inventory:
+AGENTS.md
+docs/README.md
+docs/baseline.md
+docs/deployment.md
+docs/phase7-acceptance.md
+docs/phase7-remediation.md
+docs/phase7-actual-gap-evidence/README.md
+docs/phase7-actual-gap-evidence/HANDOFF.md
+docs/phase7-actual-gap-evidence/cleanup-verification-20261014.txt
+docs/phase7-actual-gap-evidence/checkpoint-source-sha256.json
+.planning/PROJECT.md
+.planning/STATE.md
+.planning/codebase/CONCERNS.md
+.planning/codebase/TESTING.md
+.planning/phases/07-deployment/07-05-PLAN.md
+.planning/phases/07-deployment/07-VERIFICATION.md
+Existing code/source changes retained; no global agent-memory update.
+
+Read-only checkpoint inventory:
+No Windows python.exe/pythonw.exe/pytest.exe/ruff.exe process found.
+WSL process inventory contained no Python/pytest/restic/uv process.
+systemctl list-units trendradar-p7-test-* --all --no-pager --no-legend returned no units.
+18 ignored Python cache directories remain outside protected runtime state.
+Prior cache deletion was rejected with blocked by policy; not retried.
+
+G1/G2 remain incomplete; G3/V-01..06 remain NOT_RUN/BLOCKED.
+Historical 531-test baseline and earlier failed systemd run are not overwritten.

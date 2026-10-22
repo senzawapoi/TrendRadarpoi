@@ -1,0 +1,1791 @@
+{
+  "date": "2026-10-22",
+  "candidate": "final-inputs-v6-20261022.json",
+  "scope": "Every skip in both final full runs; skips remain skips in their original environment",
+  "junit": [
+    "windows-final-v6-20261022.xml",
+    "linux-final-v6-20261022.xml",
+    "artifact-install-v6-20261022.xml"
+  ],
+  "environments": {
+    "windows": {
+      "skipped": 342,
+      "reasons": {
+        "actual CI Bash argv checks": 18,
+        "actual Linux controller identity": 16,
+        "trusted POSIX entry requires isolated Linux root": 14,
+        "production EnvironmentFile uses POSIX absolute paths": 1,
+        "requires Linux Bash and root in a disposable test scope": 60,
+        "requires isolated Linux root and explicit retained-audit reproduction": 2,
+        "RG behavior requires isolated Linux Bash/root": 117,
+        "requires opt-in isolated Linux dependency installation": 1,
+        "requires isolated Linux root, POSIX permissions and real service UID": 15,
+        "POSIX directory fsync": 1,
+        "POSIX service metadata syscalls": 4,
+        "requires isolated Linux root and UID switching": 11,
+        "Linux controller identity fence": 69,
+        "requires isolated Linux root and running systemd": 2,
+        "requires disposable Linux root and actual systemd": 11
+      },
+      "nodes": [
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_acceptance_failure_is_the_step_exit_code[False]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_acceptance_failure_is_the_step_exit_code[True]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_actual_python_preflight_rejects_wrong_runtime_and_private_tmp_paths[/tmp/venv/bin/python-/usr/bin/python3.10-version1-0-False]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_actual_python_preflight_rejects_wrong_runtime_and_private_tmp_paths[/var/lib/p7/venv/bin/python-/opt/hostedtoolcache/Python/3.10/bin/python-version0-0-True]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_actual_python_preflight_rejects_wrong_runtime_and_private_tmp_paths[/var/lib/p7/venv/bin/python-/usr/bin/python3.10-version4-1001-False]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_actual_python_preflight_rejects_wrong_runtime_and_private_tmp_paths[/var/lib/p7/venv/bin/python-/usr/bin/python3.11-version3-0-False]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_actual_python_preflight_rejects_wrong_runtime_and_private_tmp_paths[/var/lib/p7/venv/bin/python-/var/tmp/python/bin/python-version2-0-False]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_artifact_opt_in_is_separate_and_all_pytest_runs_use_root_toolchain",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_bootstrap_failures_stop_before_later_commands[pip-check]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_bootstrap_failures_stop_before_later_commands[pip-install]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_bootstrap_failures_stop_before_later_commands[preflight]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_bootstrap_failures_stop_before_later_commands[runuser]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_bootstrap_failures_stop_before_later_commands[venv]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_missing_systemd_rejects_before_creating_toolchain",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_privileged_selection_covers_plan_and_current_deployment_modules",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_toolchain_uses_python310_locked_dependencies_and_service_uid",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_workflow_run_blocks_are_valid_bash[offline]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_ci_acceptance_scope.py::test_workflow_run_blocks_are_valid_bash[privileged-linux]",
+          "reason": "actual CI Bash argv checks",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[None]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[boot]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[boundary]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[checksum]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[guard-database]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[manifest-mapping]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[partial-set]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[pid-reused]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[root]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[snapshot]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[source]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[stale]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_deployment_rollback_checks_controller_and_complete_snapshot[state]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_interrupted_deployment_rollback_recovers_candidate_set_without_new_cutover[False]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_interrupted_deployment_rollback_recovers_candidate_set_without_new_cutover[True]",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_deployment_rollback.py::test_live_rollback_stage_restores_while_business_remains_guarded",
+          "reason": "actual Linux controller identity",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_all_runtime_paths_use_trusted_configuration",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[activate-bot]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[activate-collector]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[activate-scheduler]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[activate-worker]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[migrate-bot]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[migrate-collector]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[migrate-scheduler]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock[migrate-worker]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance[config-directory]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance[format]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance[missing]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance[substitution]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance[writable]",
+          "reason": "trusted POSIX entry requires isolated Linux root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_environment_loading.py::test_quoted_configuration_and_caller_environment_are_separate",
+          "reason": "production EnvironmentFile uses POSIX absolute paths",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration[False]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration[True]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_control_marker_directory_durability[False-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_control_marker_directory_durability[False-enter]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_control_marker_directory_durability[False-persist-cutover]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_control_marker_directory_durability[True-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_control_marker_directory_durability[True-enter]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_control_marker_directory_durability[True-persist-cutover]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker[current]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker[dir-fsync]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker[heartbeat]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker[release]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker[unfinished]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_fixed_entry_loads_common_and_clears_caller_environment",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[exception-after-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[exception-before-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[exception-finalize]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[exception-first-start]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[exception-verify]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-after-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-before-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-finalize]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-first-start]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-verify]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigterm-after-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigterm-before-clear]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigterm-finalize]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigterm-first-start]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigterm-verify]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_post_boundary_failure_stops_roles_and_retains_guard[health-error]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_post_boundary_failure_stops_roles_and_retains_guard[readiness]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_post_boundary_failure_stops_roles_and_retains_guard[worker]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_requires_build_lock_and_uses_both_locks_without_build_isolation[False]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_requires_build_lock_and_uses_both_locks_without_build_isolation[True]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_only_previously_active_or_first_install_initial_units_resume[False-active0-test-health.timer-expected0]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_only_previously_active_or_first_install_initial_units_resume[False-active1-test-bot.service test-worker.service-expected1]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_only_previously_active_or_first_install_initial_units_resume[True-active2-test-bot.service test-worker.service-expected2]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[exception-migrate]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[exception-quiesce]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[exception-snapshot]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[exception-switch]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[sigterm-migrate]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[sigterm-quiesce]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[sigterm-snapshot]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units[sigterm-switch]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state[ai-absent]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state[ai-external]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state[cutover]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state[old-schema]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[None]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[absent-ai]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[boundary-integer]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[boundary-missing]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[boundary-unknown]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[guard-sync]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[marker-sync]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[pending-restore]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[schema]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_installer_behavior.py::test_rollback_confirmation_uses_snapshot_schema_and_keeps_failed_confirmation_protected[snapshot-root]",
+          "reason": "requires Linux Bash and root in a disposable test scope",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_pre_fix_linux.py::test_pre_fix_entry_drops_trusted_configuration_and_health_reads_wrong_database",
+          "reason": "requires isolated Linux root and explicit retained-audit reproduction",
+          "resolution": "Historical archived pre-fix reproduction retained in pre-fix-linux.json; not current candidate acceptance; not rerun"
+        },
+        {
+          "node": "tests/deployment/test_pre_fix_linux.py::test_pre_fix_root_restore_removes_service_ownership_and_readability",
+          "reason": "requires isolated Linux root and explicit retained-audit reproduction",
+          "resolution": "Historical archived pre-fix reproduction retained in pre-fix-linux.json; not current candidate acceptance; not rerun"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_actual_packaging_validation_step_rejects_unstable_release_ids[..]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_actual_packaging_validation_step_rejects_unstable_release_ids[back\\\\slash]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_actual_packaging_validation_step_rejects_unstable_release_ids[candidate-]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_actual_packaging_validation_step_rejects_unstable_release_ids[candidate.]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_actual_packaging_validation_step_rejects_unstable_release_ids[quote\"]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_archive_cannot_replace_the_executed_fixed_installer",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_changed_python_and_workflow_shell_parse_without_writing_bytecode",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_deploy_inline_validator_is_the_standalone_source",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_refuses_a_caller_dirty_override",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_an_untrusted_installer",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_invalid_release_before_installer_mutations[../escape]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_invalid_release_before_installer_mutations[bad\"quote]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_invalid_release_before_installer_mutations[bad'quote]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_invalid_release_before_installer_mutations[bad;id]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_invalid_release_before_installer_mutations[bad\\\\slash]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_rejects_invalid_release_before_installer_mutations[bad\\n]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_fixed_entry_requires_root_before_loading_or_installing",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_host_key_rejection_precedes_all_remote_mutations",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST--host.invalid]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST--oProxyCommand=touch]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-../host]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-127.000.0.1]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-999.1.2.3]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-[::1]]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.invalid]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host name]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host\"]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host']",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host-.invalid]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host..invalid]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host:22]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host;touch INPUT-EXECUTED]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host\\\\]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-host\\n]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-ssh://example.invalid]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_HOST-user@host]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/$(touch INPUT-EXECUTED)]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/../escape]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/./incoming]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv//incoming]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/`touch INPUT-EXECUTED`]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/amp&cat]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/double\"quote]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/incoming/]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/one\\\\backslash]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/path\\ntouch INPUT-EXECUTED]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/path\\r]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/pipe|cat]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/semicolon;touch INPUT-EXECUTED]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/single'quote]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/tab\\tpath]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/two\\\\\\\\backslashes]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/unicode-\\xe9]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-/srv/with space]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PATH-relative/path]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-+22]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT--22]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-000022]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-0]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-0x16]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-22 ]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-22;id]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-22\\n]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_PORT-65536]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER--root]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root\"]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root']",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root:host]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root;touch INPUT-EXECUTED]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root@host]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root\\\\]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-root\\n]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[DEPLOY_USER-two words]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-$(touch INPUT-EXECUTED)]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID--option]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-../escape]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-..]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-.]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-back\\\\slash]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-candidate-]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-candidate.]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-newline\\n]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-quote\"]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-quote']",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-semi;colon]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-two words]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_invalid_inputs_reject_actual_workflow_before_ssh_or_key_writes[RELEASE_ID-v1..2]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_legal_synthetic_archive_continues_through_real_migration_and_finalize",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_missing_ssh_material_rejects_before_transport_or_key_writes[DEPLOY_KNOWN_HOSTS]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_missing_ssh_material_rejects_before_transport_or_key_writes[SSH_PRIVATE_KEY]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch[artifact-missing-release manifest has no artifact sha256]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch[dirty-dirty release is not installable]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch[json-invalid manifest]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch[release-release manifest release id mismatch]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch[sha-missing-release manifest has no artifact sha256]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch[sha-release checksum mismatch]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape[absolute-0]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape[fifo-6]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape[hardlink-1]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape[symlink-2]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape[traversal-0]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape[wrong-root-0]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_scp_failure_does_not_invoke_the_fixed_installer",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_valid_inputs_reach_upload_and_only_the_fixed_installer[changes0]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_valid_inputs_reach_upload_and_only_the_fixed_installer[changes1]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_valid_inputs_reach_upload_and_only_the_fixed_installer[changes2]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_valid_inputs_reach_upload_and_only_the_fixed_installer[changes3]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_valid_inputs_reach_upload_and_only_the_fixed_installer[changes4]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_inputs.py::test_valid_inputs_reach_upload_and_only_the_fixed_installer[changes5]",
+          "reason": "RG behavior requires isolated Linux Bash/root",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_release_install_linux.py::test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout",
+          "reason": "requires opt-in isolated Linux dependency installation",
+          "resolution": "PASS in separate opt-in Linux dirty installation"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels[None]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels[finalize]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels[resume]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels[verify]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_first_install_service_uid_writes_both_databases_in_wal",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[AI_FRONTIER_DB_PATH]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[CONFIG_PATH]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[INTELLIGENCE_DB_PATH]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[None]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[TRENDRADAR_BACKUP_DIR]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[TRENDRADAR_CONTROL_DIR]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[TRENDRADAR_HEALTH_DIR]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys[TRENDRADAR_LOCK_DIR]",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_rejects_actually_unreadable_config_before_migration",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_uses_all_configured_paths_for_actual_operations",
+          "reason": "requires isolated Linux root, POSIX permissions and real service UID",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_durability.py::test_journal_directory_fsync_error_refuses_database_publication",
+          "reason": "POSIX directory fsync",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection[False-chmod]",
+          "reason": "POSIX service metadata syscalls",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection[False-chown]",
+          "reason": "POSIX service metadata syscalls",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection[True-chmod]",
+          "reason": "POSIX service metadata syscalls",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection[True-chown]",
+          "reason": "POSIX service metadata syscalls",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[False-chmod]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[False-chown]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[False-copy]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[False-switch]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[True-chmod]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[True-chown]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[True-copy]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata[True-switch]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_restore_keeps_service_metadata_and_real_uid_can_write[384]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_restore_permissions_linux.py::test_restore_keeps_service_metadata_and_real_uid_can_write[432]",
+          "reason": "requires isolated Linux root and UID switching",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[None-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[None-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[None-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[None-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[None-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[None-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boot-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boot-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boot-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boot-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boot-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boot-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boundary-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boundary-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boundary-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boundary-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boundary-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[boundary-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[expired-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[expired-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[expired-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[expired-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[expired-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[expired-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[future-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[future-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[future-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[future-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[future-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[future-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[pid-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[pid-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[pid-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[pid-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[pid-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[pid-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[release-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[release-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[release-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[release-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[release-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[release-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[start-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[start-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[start-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[start-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[start-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[start-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-backward-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-backward-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-backward-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-backward-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-backward-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-backward-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-forward-boottime-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-forward-boottime-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-forward-boottime-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-forward-utc-finalize]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-forward-utc-resume]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller[wall-forward-utc-verify]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[-1-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[24999999999-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[25000000000-True]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[40000000000-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[40000000000-True]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[40000000000.0-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[40000000001-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[None-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_runtime_guards.py::test_controller_boottime_lease_is_strict_and_bounded[True-False]",
+          "reason": "Linux controller identity fence",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_contract_linux.py::test_real_backup_unit_environment_defaults_overrides_and_release[False]",
+          "reason": "requires isolated Linux root and running systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_contract_linux.py::test_real_backup_unit_environment_defaults_overrides_and_release[True]",
+          "reason": "requires isolated Linux root and running systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_exception_before_snapshot_restores_only_previous_active_units",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_inactive_upgrade_does_not_fall_back_to_initial_units",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_service_or_health_failure_stops_resumed_roles_and_retains_guard[health-error]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_service_or_health_failure_stops_resumed_roles_and_retains_guard[readiness]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_service_or_health_failure_stops_resumed_roles_and_retains_guard[worker]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_systemd_quiesce_and_exact_successful_restoration[all-writers]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_systemd_quiesce_and_exact_successful_restoration[explicit-restart]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_systemd_quiesce_and_exact_successful_restoration[first-install]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_real_systemd_quiesce_and_exact_successful_restoration[mixed]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_snapshot_backed_rollback_keeps_real_writers_stopped_and_restores_active_units[False]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_systemd_quiesce_linux.py::test_snapshot_backed_rollback_keeps_real_writers_stopped_and_restores_active_units[True]",
+          "reason": "requires disposable Linux root and actual systemd",
+          "resolution": "PASS in other final environment"
+        }
+      ]
+    },
+    "linux": {
+      "skipped": 6,
+      "reasons": {
+        "Windows Job Object lifecycle": 1,
+        "Windows Job Object attachment": 2,
+        "requires isolated Linux root and explicit retained-audit reproduction": 2,
+        "requires opt-in isolated Linux dependency installation": 1
+      },
+      "nodes": [
+        {
+          "node": "tests/deployment/test_offsite_processes.py::test_job_attachment_failure_reaps_the_actual_suspended_process[False]",
+          "reason": "Windows Job Object attachment",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_offsite_processes.py::test_job_attachment_failure_reaps_the_actual_suspended_process[True]",
+          "reason": "Windows Job Object attachment",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_offsite_processes.py::test_popen_failure_closes_windows_job",
+          "reason": "Windows Job Object lifecycle",
+          "resolution": "PASS in other final environment"
+        },
+        {
+          "node": "tests/deployment/test_pre_fix_linux.py::test_pre_fix_entry_drops_trusted_configuration_and_health_reads_wrong_database",
+          "reason": "requires isolated Linux root and explicit retained-audit reproduction",
+          "resolution": "Historical archived pre-fix reproduction retained in pre-fix-linux.json; not current candidate acceptance; not rerun"
+        },
+        {
+          "node": "tests/deployment/test_pre_fix_linux.py::test_pre_fix_root_restore_removes_service_ownership_and_readability",
+          "reason": "requires isolated Linux root and explicit retained-audit reproduction",
+          "resolution": "Historical archived pre-fix reproduction retained in pre-fix-linux.json; not current candidate acceptance; not rerun"
+        },
+        {
+          "node": "tests/deployment/test_release_install_linux.py::test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout",
+          "reason": "requires opt-in isolated Linux dependency installation",
+          "resolution": "PASS in separate opt-in Linux dirty installation"
+        }
+      ]
+    }
+  },
+  "warnings": {
+    "count_per_full_run": 2,
+    "origin": "Locked FastMCP imports deprecated Authlib jose and httpx integrations",
+    "handling": "Retained and explained; not suppressed"
+  },
+  "limits": "The two historical opt-in pre-fix cases are not executed against current source and are not counted as current passes"
+}

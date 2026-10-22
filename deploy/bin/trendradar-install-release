@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ "${EUID}" -ne 0 ]]; then
+  echo "trendradar-install-release must be invoked through sudo" >&2
+  exit 77
+fi
+
+installer="/usr/local/libexec/trendradar/install_release.sh"
+[[ -x "${installer}" ]] || {
+  echo "controlled TrendRadar installer is missing: ${installer}" >&2
+  exit 78
+}
+
+exec /usr/bin/python3 -I /usr/local/libexec/trendradar/load_environment.py \
+  /etc/trendradar/common.env "${installer}" "$@"

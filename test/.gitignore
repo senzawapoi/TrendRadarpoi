@@ -1,0 +1,9 @@
+runtime/
+.venv/
+*.env
+*.env.*
+*.log
+*.tmp
+__pycache__/
+.pytest_cache/
+.ruff_cache/

@@ -84,7 +84,9 @@ async def request_with_retry(
 
             if resp.status in _RETRY_STATUS and attempt < max_attempts:
                 # 读到内存再关闭，便于 server 迅速释放
-                await resp.release()
+                # aiohttp's ``ClientResponse.release`` is synchronous.  Awaiting
+                # it only fails with test doubles and newer aiohttp versions.
+                resp.release()
                 delay = min(max_delay, base_delay * (2 ** (attempt - 1)))
                 delay += random.uniform(0, 0.3)  # 加抖动
                 log.info(

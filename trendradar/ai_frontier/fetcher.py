@@ -16,6 +16,10 @@ from trendradar.ai_frontier.sources.nitter import NitterSource
 from trendradar.ai_frontier.sources.official_blog import OfficialBlogSource
 from trendradar.ai_frontier.sources.reddit import RedditSource
 from trendradar.ai_frontier.sources.youtube_podcast import YouTubePodcastSource
+from trendradar.intelligence.pipeline import persist_adapter_results_best_effort
+from trendradar.intelligence.runner import AdapterRunner
+from trendradar.intelligence.storage import IntelligenceStorage
+from trendradar.sources.ai_frontier import build_ai_adapters
 from trendradar.utils.logging import log
 
 SOURCE_CLASSES: dict[str, type[AISource]] = {
@@ -40,11 +44,19 @@ def build_sources(config: dict) -> list[AISource]:
     return built
 
 
-def filter_by_freshness(items: list[AIItem], hours: int) -> list[AIItem]:
+def filter_by_freshness(
+    items: list[AIItem],
+    hours: int,
+    *,
+    now: datetime | None = None,
+) -> list[AIItem]:
     """过滤发布时间超过 hours 小时的旧条目；无发布时间的条目保留"""
     if hours <= 0:
         return items
-    cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=hours)
+    timestamp = now or datetime.now(tz=timezone.utc)
+    if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+        raise ValueError("now must be timezone-aware")
+    cutoff = timestamp.astimezone(timezone.utc) - timedelta(hours=hours)
     out: list[AIItem] = []
     for item in items:
         if item.published_at is None:
@@ -91,12 +103,57 @@ async def fetch_all(sources: list[AISource]) -> list[AIItem]:
     return merged
 
 
-async def fetch_and_process(config: dict) -> list[AIItem]:
+async def fetch_and_process(
+    config: dict,
+    *,
+    use_adapters: bool = True,
+    intelligence_storage: IntelligenceStorage | None = None,
+    story_wording_client: object | None = None,
+    digest_analyzer: object | None = None,
+    now: datetime | None = None,
+) -> list[AIItem]:
     """一站式：构造 sources → 并发 fetch → 去重 → 新鲜度过滤"""
-    sources = build_sources(config)
-    raw = await fetch_all(sources)
-    deduped = dedupe_items(raw)
-    freshness_hours = int(config.get("freshness_hours", 24) or 0)
-    fresh = filter_by_freshness(deduped, freshness_hours)
+    if use_adapters:
+        adapters = build_ai_adapters(config)
+        results = await AdapterRunner(
+            max_concurrency=max(1, len(adapters)),
+            storage=intelligence_storage,
+        ).run(adapters)
+        raw = [item for result in results for item in result.raw_items]
+        deduped = dedupe_items(raw)
+        freshness_hours = _safe_freshness_hours(config)
+        fresh = filter_by_freshness(deduped, freshness_hours, now=now)
+        fresh_raw_ids = {id(item) for item in fresh}
+        fresh_content_ids = {
+            content.id
+            for result in results
+            for raw_item, content in zip(
+                result.normalized_raw_items,
+                result.items,
+                strict=False,
+            )
+            if id(raw_item) in fresh_raw_ids
+        }
+        persist_adapter_results_best_effort(
+            results,
+            intelligence_storage,
+            story_content_ids=fresh_content_ids,
+            wording_client=story_wording_client,
+            digest_analyzer=digest_analyzer,
+        )
+    else:
+        sources = build_sources(config)
+        raw = await fetch_all(sources)
+    if not use_adapters:
+        deduped = dedupe_items(raw)
+        freshness_hours = _safe_freshness_hours(config)
+        fresh = filter_by_freshness(deduped, freshness_hours, now=now)
     log.info(f"去重+过滤后 {len(fresh)} 条")
     return fresh
+
+
+def _safe_freshness_hours(config: dict) -> int:
+    try:
+        return max(0, int(config.get("freshness_hours", 24) or 0))
+    except (TypeError, ValueError):
+        return 24

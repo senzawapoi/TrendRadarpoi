@@ -4,12 +4,11 @@
 实现从远程存储拉取数据到本地、获取存储状态、列出可用日期等功能。
 """
 
-import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import yaml
+from trendradar.core.settings import load_settings, load_yaml_config
 
 from ..utils.errors import MCPError
 
@@ -17,7 +16,7 @@ from ..utils.errors import MCPError
 class StorageSyncTools:
     """存储同步工具类"""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None):
         """
         初始化存储同步工具
 
@@ -38,8 +37,7 @@ class StorageSyncTools:
         if self._config is None:
             config_path = self.project_root / "config" / "config.yaml"
             if config_path.exists():
-                with open(config_path, encoding="utf-8") as f:
-                    self._config = yaml.safe_load(f)
+                self._config = load_yaml_config(config_path)
             else:
                 self._config = {}
         return self._config
@@ -53,15 +51,27 @@ class StorageSyncTools:
         """
         获取远程存储配置（合并配置文件和环境变量）
         """
-        storage_config = self._get_storage_config()
-        remote_config = storage_config.get("remote", {})
+        config_path = self.project_root / "config" / "config.yaml"
+        settings = load_settings(config_path, fallback_to_empty=True)
 
         return {
-            "endpoint_url": remote_config.get("endpoint_url") or os.environ.get("S3_ENDPOINT_URL", ""),
-            "bucket_name": remote_config.get("bucket_name") or os.environ.get("S3_BUCKET_NAME", ""),
-            "access_key_id": remote_config.get("access_key_id") or os.environ.get("S3_ACCESS_KEY_ID", ""),
-            "secret_access_key": remote_config.get("secret_access_key") or os.environ.get("S3_SECRET_ACCESS_KEY", ""),
-            "region": remote_config.get("region") or os.environ.get("S3_REGION", ""),
+            "endpoint_url": settings.get_str(
+                "S3_ENDPOINT_URL",
+                "storage.remote.endpoint_url",
+            ),
+            "bucket_name": settings.get_str(
+                "S3_BUCKET_NAME",
+                "storage.remote.bucket_name",
+            ),
+            "access_key_id": settings.get_str(
+                "S3_ACCESS_KEY_ID",
+                "storage.remote.access_key_id",
+            ),
+            "secret_access_key": settings.get_str(
+                "S3_SECRET_ACCESS_KEY",
+                "storage.remote.secret_access_key",
+            ),
+            "region": settings.get_str("S3_REGION", "storage.remote.region"),
         }
 
     def _has_remote_config(self) -> bool:
@@ -293,7 +303,6 @@ class StorageSyncTools:
         """
         try:
             storage_config = self._get_storage_config()
-            config = self._load_config()
 
             # 本地存储状态
             local_config = storage_config.get("local", {})
@@ -444,9 +453,9 @@ class StorageSyncTools:
                 remote_set = set(result["remote"].get("dates", []))
 
                 result["comparison"] = {
-                    "only_local": sorted(list(local_set - remote_set), reverse=True),
-                    "only_remote": sorted(list(remote_set - local_set), reverse=True),
-                    "both": sorted(list(local_set & remote_set), reverse=True),
+                    "only_local": sorted(local_set - remote_set, reverse=True),
+                    "only_remote": sorted(remote_set - local_set, reverse=True),
+                    "both": sorted(local_set & remote_set, reverse=True),
                 }
 
             return result
