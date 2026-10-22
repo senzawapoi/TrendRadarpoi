@@ -1,6 +1,6 @@
 {
   "baseline": "final-inputs-v6-20261022.json",
-  "count": 4,
+  "count": 5,
   "changes": [
     {
       "path": ".github/workflows/phase7-ci.yml",
@@ -21,6 +21,11 @@
       "path": "tests/deployment/test_deployment_contracts.py",
       "v6_sha256": "d6591f75861739c42694ec599f7d22309b3ebc8190b468af08ba32db1061181f",
       "candidate_sha256": "ad09fc38f275748696feec5b7329578cb2c5459429fa15eff9c0941e92a18643"
+    },
+    {
+      "path": "scripts/deploy/build_release.py",
+      "v6_sha256": "3901550a6d5141c5c6978bf83e583dac7ae3a4dc17950af8bcd8ddd5fd4ee0e0",
+      "candidate_sha256": "cefe95ad321d7c859d08ae8a146c320dec3d8df03697df51e03e64ea7c40d79b"
     }
   ]
 }

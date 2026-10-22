@@ -21,7 +21,7 @@ def _excluded(path: Path) -> bool:
     relative = path.relative_to(ROOT)
     if any(part in EXCLUDED_DIRS for part in relative.parts):
         return True
-    if path.name == ".env" or path.name.startswith(".env.") and path.name != ".env.example":
+    if path.name == ".env" or (path.name.startswith(".env.") and path.name != ".env.example"):
         return True
     return any(path.name.endswith(suffix) for suffix in EXCLUDED_SUFFIXES)
 
