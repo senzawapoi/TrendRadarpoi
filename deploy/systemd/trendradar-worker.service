@@ -1,0 +1,28 @@
+[Unit]
+Description=TrendRadar Assistant worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+Slice=trendradar.slice
+User=trendradar
+Group=trendradar
+WorkingDirectory=/var/lib/trendradar
+EnvironmentFile=-/etc/trendradar/common.env
+EnvironmentFile=-/etc/trendradar/worker.env
+EnvironmentFile=-/etc/trendradar/release.env
+Environment=TRENDRADAR_LOCK_DIR=/run/trendradar
+ExecStart=/opt/trendradar/current/venv/bin/python -m trendradar.integrations.lark --role worker --config /etc/trendradar/config.yaml
+Restart=on-failure
+RestartSec=10s
+TimeoutStopSec=90s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/trendradar /run/trendradar
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

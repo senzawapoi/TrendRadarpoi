@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-22",
+  "provenance": "direct parent terminal outputs",
+  "scope": "Windows clean runtime dependency completeness",
+  "candidate_inputs": "final-inputs-20261022.json",
+  "before": {
+    "environment": "Windows Python 3.10.11, new isolated venv, build-requirements.lock and requirements.lock installed",
+    "pip_check": "No broken requirements found (exit 0)",
+    "test_log": "windows-isolated-full-20261022.txt",
+    "test_session": 9471,
+    "result": "7 failed, 676 passed, 297 skipped, 2 warnings in 63.11s",
+    "exit_code": 1,
+    "failure": "ZoneInfoNotFoundError: Asia/Shanghai; tzdata is not declared/installed on Windows",
+    "affected": ["tests/integrations/feishu/test_delivery.py", "tests/integrations/feishu/test_scheduler.py"]
+  },
+  "root_cause_probe": {
+    "change": "Installed tzdata==2026.2 only in the isolated Windows venv; no repository inputs changed",
+    "command": "<isolated-python> -B -m pytest tests/integrations/feishu/test_delivery.py tests/integrations/feishu/test_scheduler.py -q -ra -p no:cacheprovider --tb=short",
+    "result": "8 passed in 0.64s",
+    "exit_code": 0
+  },
+  "existing_global_environment": {
+    "tzdata": "2026.2 already present",
+    "full_regression": "683 passed, 297 skipped, 1 warning in 88.30s",
+    "pip_check_exit_code": 1,
+    "pip_check_limits": "Pre-existing unrelated Torch missing dependencies and FastAPI/Gradio/etc package conflicts; no global package changes made"
+  },
+  "next": "After the running Linux suite terminates, add the Windows conditional runtime dependency to both manifests and pin tzdata in the lock, then refreeze and verify",
+  "limits": "This records the discovered defect and root-cause probe, not a manifest repair or final acceptance"
+}

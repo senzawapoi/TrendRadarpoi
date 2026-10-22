@@ -10,7 +10,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-import yaml
+from trendradar.core.settings import load_yaml_config
 
 from ..utils.errors import DataNotFoundError, FileParseError
 from .cache_service import get_cache
@@ -19,7 +19,7 @@ from .cache_service import get_cache
 class ParserService:
     """数据解析服务类"""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None):
         """
         初始化解析服务
 
@@ -41,7 +41,7 @@ class ParserService:
         title = title.strip()
         return title
 
-    def get_date_folder_name(self, date: datetime = None) -> str:
+    def get_date_folder_name(self, date: datetime | None = None) -> str:
         """
         获取日期字符串（ISO 格式）
 
@@ -55,7 +55,11 @@ class ParserService:
             date = datetime.now()
         return date.strftime("%Y-%m-%d")
 
-    def _get_db_path(self, date: datetime = None, db_type: str = "news") -> Path | None:
+    def _get_db_path(
+        self,
+        date: datetime | None = None,
+        db_type: str = "news",
+    ) -> Path | None:
         """
         获取数据库文件路径
 
@@ -76,7 +80,7 @@ class ParserService:
 
     def _read_from_sqlite(
         self,
-        date: datetime = None,
+        date: datetime | None = None,
         platform_ids: list[str] | None = None,
         db_type: str = "news"
     ) -> tuple[dict, dict, dict] | None:
@@ -301,7 +305,7 @@ class ParserService:
 
     def read_all_titles_for_date(
         self,
-        date: datetime = None,
+        date: datetime | None = None,
         platform_ids: list[str] | None = None,
         db_type: str = "news"
     ) -> tuple[dict, dict, dict]:
@@ -340,7 +344,7 @@ class ParserService:
             suggestion="请先运行爬虫或检查日期是否正确"
         )
 
-    def parse_yaml_config(self, config_path: str = None) -> dict:
+    def parse_yaml_config(self, config_path: str | None = None) -> dict:
         """
         解析YAML配置文件
 
@@ -362,13 +366,11 @@ class ParserService:
             raise FileParseError(str(config_path), "配置文件不存在")
 
         try:
-            with open(config_path, encoding="utf-8") as f:
-                config_data = yaml.safe_load(f)
-            return config_data
+            return load_yaml_config(config_path)
         except Exception as e:
-            raise FileParseError(str(config_path), str(e))
+            raise FileParseError(str(config_path), str(e)) from e
 
-    def parse_frequency_words(self, words_file: str = None) -> list[dict]:
+    def parse_frequency_words(self, words_file: str | None = None) -> list[dict]:
         """
         解析关键词配置文件
 
@@ -401,7 +403,7 @@ class ParserService:
         except FileNotFoundError:
             return []
         except Exception as e:
-            raise FileParseError(words_file, str(e))
+            raise FileParseError(words_file, str(e)) from e
 
     def get_available_dates(self, db_type: str = "news") -> list[str]:
         """

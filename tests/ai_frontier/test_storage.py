@@ -30,6 +30,18 @@ def _item(source="arxiv", url="https://u1", title="t", score=0, title_translated
 def test_storage_creates_schema_and_empty(tmp_db):
     with AIFrontierStorage(tmp_db) as s:
         assert s.count() == 0
+        assert s.connection_policy["sqlite_synchronous"] == "FULL"
+        assert s.connection_policy["schema"] == 1
+
+
+def test_storage_strict_open_requires_explicit_migration(tmp_db):
+    with pytest.raises(FileNotFoundError):
+        AIFrontierStorage.open_existing(tmp_db)
+
+    with AIFrontierStorage.migrate(tmp_db, synchronous="FULL"):
+        pass
+    with AIFrontierStorage.open_existing(tmp_db, synchronous="FULL") as storage:
+        assert storage.connection_policy["sqlite_synchronous"] == "FULL"
 
 
 def test_upsert_inserts_new_items(tmp_db):

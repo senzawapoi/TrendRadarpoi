@@ -6,12 +6,66 @@ TrendRadar 主程序
 """
 
 import sys
+from collections.abc import Mapping
+from contextlib import suppress
+from datetime import datetime
 from pathlib import Path
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from trendradar.utils.logging import get_run_id, log
+from trendradar.core.locking import LockUnavailable, runtime_locks  # noqa: E402
+from trendradar.core.settings import load_settings  # noqa: E402
+from trendradar.ops.maintenance import read_guard  # noqa: E402
+from trendradar.utils.logging import get_run_id, log  # noqa: E402
+
+
+def _run_security_best_effort(
+    *,
+    intelligence_enabled: bool,
+    intelligence_storage: object | None,
+    security_config: object,
+    collected_at: datetime,
+    nvd_api_key: str | None,
+    wording_client: object | None,
+    narrative_analyzer: object | None = None,
+) -> object | None:
+    """Run the additive security pipeline once, without affecting legacy output."""
+    if (
+        not intelligence_enabled
+        or intelligence_storage is None
+        or not isinstance(security_config, Mapping)
+        or not security_config.get("enabled", True)
+    ):
+        return None
+    try:
+        from trendradar.domains.security.collector import run_security_pipeline
+
+        if nvd_api_key is None:
+            from trendradar.core.settings import load_settings
+
+            nvd_api_key = load_settings().nvd_api_key
+
+        summary = run_security_pipeline(
+            security_config,
+            storage=intelligence_storage,
+            collected_at=collected_at,
+            nvd_api_key=nvd_api_key,
+            wording_client=wording_client,
+            narrative_analyzer=narrative_analyzer,
+        )
+        log.info(
+            "安全情报处理完成",
+            data_refreshed=summary.data_refreshed,
+            persistence_succeeded=summary.persistence_succeeded,
+            stories=summary.stories_analyzed,
+            report=str(summary.report_path or "未生成"),
+            errors=len(summary.errors),
+        )
+        return summary
+    except Exception as exc:
+        log.error("安全情报处理失败，旧链路继续", error=str(exc))
+        return None
 
 
 def _convert_rss_items_to_list(rss_data, ctx) -> list[dict]:
@@ -35,10 +89,8 @@ def _convert_rss_items_to_list(rss_data, ctx) -> list[dict]:
         feed_id = feed_cfg.get("id", "")
         max_age = feed_cfg.get("max_age_days")
         if max_age is not None:
-            try:
+            with suppress(ValueError, TypeError):
                 feed_max_age_map[feed_id] = int(max_age)
-            except (ValueError, TypeError):
-                pass
 
     for feed_id, items in rss_data.items.items():
         max_days = feed_max_age_map.get(feed_id, default_max_age_days)
@@ -57,6 +109,7 @@ def _convert_rss_items_to_list(rss_data, ctx) -> list[dict]:
                 "published_at": item.published_at,
                 "summary": item.summary,
                 "author": item.author,
+                "_canonical_content_id": getattr(item, "_canonical_content_id", ""),
             })
 
     if filtered_count > 0:
@@ -103,17 +156,33 @@ def _apply_translations_to_hot_results(results, hot_news_items):
     return new_results
 
 
-def main():
+def _run_main():
     """主函数"""
+    intelligence_storage = None
     try:
+        from trendradar.ai import build_gemini_client
+        from trendradar.ai.analyzer import (
+            DailyDigestAnalyzer,
+            NarrativeLimits,
+            SecurityNarrativeAnalyzer,
+        )
         from trendradar.context import AppContext
         from trendradar.core import load_config
+        from trendradar.core.settings import load_settings
         from trendradar.crawler.fetcher import DataFetcher
         from trendradar.crawler.rss import RSSFeedConfig, RSSFetcher
+        from trendradar.intelligence.gemini_wording import build_story_wording_client
+        from trendradar.intelligence.integration import (
+            fetch_newsnow_with_adapters,
+            fetch_rss_with_adapters,
+            open_intelligence_storage,
+        )
+        from trendradar.intelligence.translation import translate_news_items_canonically
         from trendradar.services.translation_service import TranslationService
         from trendradar.storage.base import (
             NewsItem,
             convert_crawl_results_to_news_data,
+            convert_news_data_to_results,
         )
 
         log.start(f"TrendRadar 双语版本启动 (run_id={get_run_id()})")
@@ -124,7 +193,9 @@ def main():
         log.success("配置加载成功")
 
         # 初始化翻译服务
-        translator = TranslationService()
+        settings = load_settings(fallback_to_empty=True)
+        gemini_client = build_gemini_client(settings)
+        translator = TranslationService(gemini_client=gemini_client)
         if translator.translation_tools:
             log.success("Gemini 双语翻译服务就绪")
         else:
@@ -132,9 +203,65 @@ def main():
 
         # 初始化存储管理器
         storage_manager = ctx.get_storage_manager()
+        intelligence_config = config.get("INTELLIGENCE", {})
+        intelligence_enabled = intelligence_config.get("ENABLED", True)
+        intelligence_storage = open_intelligence_storage(
+            intelligence_enabled,
+            settings.intelligence_database_path,
+            story_config=intelligence_config.get("STORY"),
+            require_existing=settings.intelligence_require_existing,
+            synchronous=settings.intelligence_sqlite_synchronous,
+        )
+        story_wording_client = (
+            build_story_wording_client(
+                settings,
+                story_config=intelligence_config.get("STORY"),
+                gemini_client=gemini_client,
+            )
+            if intelligence_storage is not None
+            else None
+        )
+        digest_analyzer = None
+        security_narrative_analyzer = None
+        if gemini_client is not None and intelligence_storage is not None:
+            try:
+                story_config = intelligence_config.get("STORY")
+                story_config = story_config if isinstance(story_config, Mapping) else {}
+                report_config = story_config.get("report")
+                report_config = report_config if isinstance(report_config, Mapping) else {}
+                digest_config = report_config.get("digest")
+                digest_config = digest_config if isinstance(digest_config, Mapping) else {}
+                digest_analyzer = DailyDigestAnalyzer(
+                    gemini_client,
+                    limits=NarrativeLimits.from_mapping(digest_config),
+                )
+            except Exception as exc:
+                log.warning("Daily digest analyzer unavailable", error_type=type(exc).__name__)
+            try:
+                security_config = intelligence_config.get("SECURITY")
+                security_config = (
+                    security_config if isinstance(security_config, Mapping) else {}
+                )
+                narrative_config = security_config.get("narrative")
+                narrative_config = (
+                    narrative_config if isinstance(narrative_config, Mapping) else {}
+                )
+                security_narrative_analyzer = SecurityNarrativeAnalyzer(
+                    gemini_client,
+                    limits=NarrativeLimits.from_mapping(
+                        narrative_config,
+                        default_output_chars=4000,
+                    ),
+                )
+            except Exception as exc:
+                log.warning(
+                    "Security narrative analyzer unavailable",
+                    error_type=type(exc).__name__,
+                )
         request_interval = config.get("REQUEST_INTERVAL", 100)
         proxy_url = config.get("PROXY_URL", "")
         translated_count = 0
+        canonical_translation_cache = {}
         total_hot_titles = 0
 
         # 读取报告模式（daily / current / incremental）
@@ -163,30 +290,49 @@ def main():
 
             Path("output").mkdir(parents=True, exist_ok=True)
             data_fetcher = DataFetcher(proxy_url=proxy_url)
-            results, id_to_name, failed_ids = data_fetcher.crawl_websites(
-                ids, request_interval
-            )
+            crawl_time = ctx.get_time_display()
+            crawl_date = ctx.format_date()
+            if intelligence_enabled:
+                hot_news_data = fetch_newsnow_with_adapters(
+                    platforms,
+                    fetcher=data_fetcher,
+                    request_interval_ms=request_interval,
+                    crawl_date=crawl_date,
+                    crawl_time=crawl_time,
+                    collected_at=ctx.get_time(),
+                    storage=intelligence_storage,
+                    story_wording_client=story_wording_client,
+                    digest_analyzer=digest_analyzer,
+                )
+                results, id_to_name, _title_info = convert_news_data_to_results(hot_news_data)
+                failed_ids = hot_news_data.failed_ids
+            else:
+                results, id_to_name, failed_ids = data_fetcher.crawl_websites(
+                    ids, request_interval
+                )
+                hot_news_data = convert_crawl_results_to_news_data(
+                    results, id_to_name, failed_ids, crawl_time, crawl_date
+                )
 
             total_hot_titles = sum(len(titles) for titles in results.values())
             log.success("热榜抓取完成", total_titles=total_hot_titles, failed=len(failed_ids))
 
             # 转换并保存热榜数据 → output/news/
-            crawl_time = ctx.get_time_display()
-            crawl_date = ctx.format_date()
-            hot_news_data = convert_crawl_results_to_news_data(
-                results, id_to_name, failed_ids, crawl_time, crawl_date
-            )
-
             # 翻译热榜数据
             if translator.translation_tools and hot_news_data.items:
                 hot_news_items = []
-                for source_id, items_list in hot_news_data.items.items():
+                for _source_id, items_list in hot_news_data.items.items():
                     hot_news_items.extend(items_list)
 
                 if hot_news_items:
                     log.info("翻译热榜数据", count=len(hot_news_items))
-                    hot_translated = translator.translate_news_items(
-                        hot_news_items, skip_existing=False
+                    hot_translated = translate_news_items_canonically(
+                        hot_news_items,
+                        lambda items: translator.translate_news_items(
+                            items,
+                            skip_existing=False,
+                        ),
+                        cache=canonical_translation_cache,
                     )
                     translated_count += hot_translated
                     log.success("热榜翻译完成", translated=hot_translated, total=len(hot_news_items))
@@ -232,9 +378,9 @@ def main():
 
             rss_feeds = ctx.rss_feeds
             if not rss_feeds:
-                import yaml
-                with open('config/config.yaml', encoding='utf-8') as f:
-                    raw_config = yaml.safe_load(f)
+                from trendradar.core.settings import load_settings
+
+                raw_config = load_settings().as_dict()
                 rss_feeds = raw_config.get('rss', {}).get('feeds', [])
 
             feeds = []
@@ -274,7 +420,24 @@ def main():
                     proxy_url=rss_config.get("PROXY_URL", ""),
                     timezone=ctx.timezone,
                 )
-                rss_data = fetcher.fetch_all()
+                if intelligence_enabled:
+                    rss_data = fetch_rss_with_adapters(
+                        feeds,
+                        max_concurrency=5,
+                        crawl_date=ctx.format_date(),
+                        crawl_time=ctx.get_time_display(),
+                        collected_at=ctx.get_time(),
+                        storage=intelligence_storage,
+                        story_wording_client=story_wording_client,
+                        digest_analyzer=digest_analyzer,
+                        request_interval=rss_config.get("REQUEST_INTERVAL", 2000),
+                        timeout=rss_config.get("TIMEOUT", 15),
+                        use_proxy=rss_config.get("USE_PROXY", False),
+                        proxy_url=rss_config.get("PROXY_URL", ""),
+                        timezone=ctx.timezone,
+                    )
+                else:
+                    rss_data = fetcher.fetch_all()
 
                 if rss_data and rss_data.items:
                     total_rss_items = sum(len(items) for items in rss_data.items.values())
@@ -302,10 +465,18 @@ def main():
                                 crawl_time=rss_data.crawl_time,
                             )
                             rss_news_items.append(news_item)
+                            canonical_id = rss_item.get("_canonical_content_id")
+                            if canonical_id:
+                                news_item._canonical_content_id = canonical_id
 
                         log.info("翻译 RSS 数据", count=len(rss_news_items))
-                        rss_translated = translator.translate_news_items(
-                            rss_news_items, skip_existing=False
+                        rss_translated = translate_news_items_canonically(
+                            rss_news_items,
+                            lambda items: translator.translate_news_items(
+                                items,
+                                skip_existing=False,
+                            ),
+                            cache=canonical_translation_cache,
                         )
                         translated_count += rss_translated
                         log.success("RSS 翻译完成", translated=rss_translated, total=len(rss_news_items))
@@ -376,7 +547,20 @@ def main():
                 log.warning("RSS 未启用，跳过 RSS 抓取")
 
         # ================================================================
-        # C. 生成 HTML 报告 + 发送通知
+        # C. 安全情报（独立、增量、失败隔离）
+        # ================================================================
+        _run_security_best_effort(
+            intelligence_enabled=intelligence_enabled,
+            intelligence_storage=intelligence_storage,
+            security_config=intelligence_config.get("SECURITY", {}),
+            collected_at=ctx.get_time(),
+            nvd_api_key=settings.nvd_api_key,
+            wording_client=story_wording_client,
+            narrative_analyzer=security_narrative_analyzer,
+        )
+
+        # ================================================================
+        # D. 生成 HTML 报告 + 发送通知
         # ================================================================
         # incremental 模式优化：按源分组 + RSS 只显示新增
         if report_mode == "incremental" and not storage_manager.is_first_crawl_today():
@@ -459,22 +643,43 @@ def main():
 
         if notify_results:
             for channel, success in notify_results.items():
-                status = "✅" if success else "❌"
                 log.info("通知发送结果", channel=channel, success=success)
         else:
             log.warning("未配置通知渠道或无内容推送")
 
         # 清理资源
         ctx.cleanup()
+        if intelligence_storage is not None:
+            intelligence_storage.close()
+            intelligence_storage = None
 
         log.success("TrendRadar 运行完成！")
         log.info("运行统计", hot_titles=total_hot_titles, rss_items=len(rss_items_list), translated=translated_count, report_file=html_file or "未生成")
         return True
 
     except Exception as e:
+        if intelligence_storage is not None:
+            intelligence_storage.close()
         log.error("运行错误", error=str(e))
         import traceback
         traceback.print_exc()
+        return False
+
+
+def main():
+    """Run one main collection while holding the shared collector lock."""
+    settings = load_settings(fallback_to_empty=True)
+    if read_guard(settings.intelligence_database_path) is not None:
+        log.warning("TrendRadar collection blocked by persistent maintenance guard")
+        return False
+    try:
+        with runtime_locks(settings.intelligence_database_path, "collector"):
+            return _run_main()
+    except LockUnavailable as exc:
+        log.warning(
+            "TrendRadar collection skipped because another collector is active",
+            error=str(exc),
+        )
         return False
 
 

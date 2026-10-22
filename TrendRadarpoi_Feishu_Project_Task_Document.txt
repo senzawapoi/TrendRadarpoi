@@ -1,0 +1,403 @@
+TrendRadarpoi Feishu 项目任务文档 版本：v1.0 目标：将 TrendRadarpoi
+升级为个人 AI 情报助手，并以飞书作为主要交互入口。
+
+一、项目定位
+
+项目不再定位为单纯新闻热点推送工具，而升级为：
+
+“个人信息采集、分析、研究与对话助手”。
+
+核心能力：
+
+1.  每日自动采集：
+
+-   科技新闻
+-   AI 动态
+-   GitHub 趋势
+-   安全情报
+-   RSS 信息
+
+2.  AI 分析：
+
+-   Gemini 负责摘要、翻译、分析
+-   判断信息价值
+-   生成个人日报
+
+3.  对话能力：
+
+-   通过飞书 Bot 与助手聊天
+-   查询历史情报
+-   追问新闻背景
+-   触发互联网研究
+
+4.  外部研究能力：
+
+-   Agent-Reach 作为互联网信息能力层
+-   按需搜索 Web、GitHub、Reddit、YouTube 等资源
+
+二、整体架构目标
+
+最终架构：
+
+用户 | 飞书 Bot | Assistant Layer | Gemini | +—————-+ | | 本地情报库
+Agent-Reach | | TrendRadar 外部搜索 | SQLite
+
+三、部署规划
+
+当前 VPS：
+
+CPU: Intel Xeon E5-2698 v4 1 Core
+
+Memory: 1.87GB RAM
+
+建议：
+
+短期： GitHub Actions + VPS 混合
+
+GitHub Actions： - CI - 测试 - 定时任务迁移准备 - 备份
+
+VPS： - 飞书 Bot - Gemini Assistant - SQLite - Agent-Reach - 长连接服务
+
+长期：
+
+VPS 作为主要 Runtime。
+
+GitHub Actions 作为： - CI/CD - 备份 - 手动恢复
+
+四、飞书接入任务
+
+目标：
+
+实现：
+
+用户 -> 飞书 -> TrendRadar Assistant -> Gemini -> 回复
+
+任务：
+
+1.  创建飞书机器人应用
+
+2.  实现消息接收
+
+功能：
+
+-   接收用户问题
+-   判断意图
+-   查询本地数据库
+-   调用 Gemini
+-   返回结果
+
+3.  权限控制
+
+必须加入：
+
+allowed_users
+
+只允许个人账号使用。
+
+五、Gemini Assistant 重构任务
+
+当前：
+
+Gemini 主要用于翻译。
+
+升级：
+
+抽象：
+
+GeminiClient
+
+能力：
+
+1.  TranslationService
+
+2.  DailyDigestAnalyzer
+
+3.  SecurityAnalyzer
+
+4.  ChatAssistant
+
+5.  ResearchOrchestrator
+
+原则：
+
+MCP 不作为核心服务依赖。
+
+核心服务调用 Gemini。
+
+MCP 作为外部访问接口。
+
+六、Agent-Reach 集成任务
+
+定位：
+
+不是 crawler。
+
+不是数据采集 pipeline。
+
+定位：
+
+互联网研究能力层。
+
+设计：
+
+Gemini | ResearchGateway | Agent-Reach
+
+提供接口：
+
+search_web()
+
+search_github()
+
+search_reddit()
+
+read_webpage()
+
+get_video_transcript()
+
+禁止：
+
+直接开放 shell 执行。
+
+七、cybersecurity-daily 融合计划
+
+不直接合并代码。
+
+吸收：
+
+1.  安全日报生成逻辑
+
+2.  CVE 信息筛选
+
+3.  威胁情报总结
+
+新增：
+
+security domain
+
+包含：
+
+security collector
+
+security analyzer
+
+security report
+
+数据来源：
+
+-   CISA KEV
+-   NVD
+-   安全 RSS
+-   安全新闻
+
+八、架构优化任务
+
+当前问题：
+
+部分模块存在独立 pipeline。
+
+目标：
+
+统一：
+
+Source | Normalize | Deduplicate | Cluster | Ranking | Gemini | Storage
+| Notification
+
+建议目录：
+
+trendradar/
+
+core/
+
+sources/
+
+pipeline/
+
+intelligence/
+
+storage/
+
+notification/
+
+assistant/
+
+bot/
+
+九、数据模型升级
+
+统一：
+
+ContentItem
+
+字段：
+
+id
+
+source
+
+title
+
+url
+
+content
+
+domain
+
+tags
+
+timestamp
+
+metadata
+
+增加：
+
+Story
+
+用于：
+
+多来源新闻聚合。
+
+例如：
+
+同一个事件：
+
+-   GitHub
+-   Reddit
+-   新闻
+-   官方博客
+
+合并为一个 Story。
+
+十、数据库规划
+
+当前阶段：
+
+继续 SQLite。
+
+不引入：
+
+-   PostgreSQL
+-   Vector DB
+-   Kubernetes
+
+原因：
+
+个人使用。
+
+低维护优先。
+
+未来需要：
+
+语义搜索
+
+再增加：
+
+Vector Storage。
+
+十一、开发阶段规划
+
+Phase 1： 基础整理
+
+任务：
+
+-   修复依赖问题
+-   统一 Gemini Client
+-   清理重复 pipeline
+
+Phase 2： 统一情报流水线
+
+任务：
+
+-   ContentItem
+-   Source Adapter
+-   Deduplicate
+-   Ranking
+
+Phase 3： 安全情报
+
+任务：
+
+-   CVE
+-   CISA
+-   Security Digest
+
+Phase 4： Gemini Assistant
+
+任务：
+
+-   Chat
+-   Session
+-   Tool Calling
+
+Phase 5： 飞书机器人
+
+任务：
+
+-   消息接收
+-   自动回复
+-   日报推送
+
+Phase 6： Agent-Reach
+
+任务：
+
+-   Research Gateway
+-   外部搜索
+-   深度分析
+
+十二、安全要求
+
+禁止：
+
+API Key 提交 GitHub。
+
+敏感信息：
+
+使用：
+
+.env
+
+GitHub Secrets
+
+VPS Secret
+
+必须：
+
+-   用户白名单
+-   Token 隔离
+-   Agent 工具权限限制
+
+十三、最终目标
+
+TrendRadarpoi 最终形态：
+
+每天：
+
+自动收集信息
+
+↓
+
+AI 判断重要性
+
+↓
+
+发送个人日报
+
+需要时：
+
+用户通过飞书询问：
+
+“最近 AI 有什么重要变化？”
+
+系统：
+
+查询历史数据
+
+不足时调用 Agent-Reach
+
+Gemini 综合分析
+
+返回答案。
+
+项目目标：
+
+成为个人长期使用的 AI 情报助手。

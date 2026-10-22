@@ -1,0 +1,8 @@
+# Candidate starting values only. Measure the target VPS before installing.
+[Unit]
+Description=TrendRadar resource slice candidate
+
+[Slice]
+# MemoryHigh=1G
+# MemoryMax=1250M
+# TasksMax=128

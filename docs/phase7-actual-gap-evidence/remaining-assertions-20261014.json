@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-14",
+  "purpose": "Frozen remaining-assertion checkpoint; not full Phase 7 acceptance",
+  "source": {
+    "path": "tests/deployment/test_remaining_gap_assertions.py",
+    "sha256": "97b4349723d70317b6910275d50bb7ab9d0d6982030423709245702ec5b7fe1e",
+    "functions": 6,
+    "instances": 27
+  },
+  "agent": {
+    "id": "01a13924-b819-7550-b8d6-207121a4baf3",
+    "name": "Erdos",
+    "status": "completed and closed; source frozen; all reported sessions terminal"
+  },
+  "runs": [
+    {
+      "environment": "Linux root",
+      "provenance": "completed agent report; exact shell argv not retained",
+      "session": 63299,
+      "scope": "entire tests/deployment/test_remaining_gap_assertions.py",
+      "result": "26 passed, 1 failed in 30.90s",
+      "exit_code": 1
+    },
+    {
+      "environment": "Linux root",
+      "provenance": "completed agent report; earlier overlapping scope",
+      "session": 58614,
+      "scope": "earlier guard subset",
+      "result": "15 passed in 15.82s",
+      "exit_code": 0
+    },
+    {
+      "environment": "Windows parent",
+      "provenance": "direct tool output after final fixture alias change",
+      "command": "python -B -m pytest tests/deployment/test_remaining_gap_assertions.py -q -p no:cacheprovider --tb=short",
+      "result": "16 passed, 11 skipped in 9.14s",
+      "exit_code": 0,
+      "skip_reason": "Linux root, POSIX permissions and actual UID checks"
+    },
+    {
+      "environment": "Ubuntu WSL parent",
+      "provenance": "direct tool output after target-file existence assertion",
+      "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_ci_acceptance_scope.py -q -p no:cacheprovider --tb=short",
+      "result": "18 passed in 2.69s",
+      "exit_code": 0,
+      "proof_boundary": "Actual YAML/Bash argv and path existence; sudo and operations stubbed; no GitHub execution"
+    }
+  ],
+  "failure": {
+    "case": "ENV-03",
+    "node": "test_fixed_entry_rejects_actually_unreadable_config_before_migration",
+    "source_path": "scripts/deploy/load_environment.py",
+    "source_review": "parse_environment validates CONFIG_PATH.is_file() but does not read the YAML",
+    "input": "mode-000 YAML; root process with dac_override and dac_read_search removed via setpriv",
+    "observed": "independent read raises PermissionError; fixed entry reaches isolated real-migration helper and creates schema v6",
+    "expected": "reject unreadable configuration before invoking maintenance, without database creation or credential disclosure",
+    "current_status": "FAIL; regression stays enabled, production repair not performed during cleanup",
+    "boundary": "Full installer separately tests CONFIG_PATH readability as service identity; this isolated entry regression is not a proven target-VPS failure",
+    "confidence": "high for source review and agent-reported isolated behavior"
+  },
+  "mapping": [
+    {
+      "case": "ENV-02",
+      "node": "test_fixed_entry_uses_all_configured_paths_for_actual_operations",
+      "result": "PASS",
+      "assertions": "Six configured paths used by actual SQLite migrate/check, heartbeat, locks, health CLI, snapshots and restore preflight"
+    },
+    {
+      "case": "ENV-03",
+      "node": "test_fixed_entry_quoted_values_and_missing_required_keys",
+      "result": "PASS",
+      "assertions": "Quoted positive input and each of seven missing required keys"
+    },
+    {
+      "case": "ENV-03",
+      "node": "test_fixed_entry_rejects_actually_unreadable_config_before_migration",
+      "result": "FAIL",
+      "assertions": "Actual YAML read denied but maintenance helper invoked"
+    },
+    {
+      "case": "PERM-02",
+      "node": "test_first_install_service_uid_writes_both_databases_in_wal",
+      "result": "PASS",
+      "assertions": "UID/GID65534 commits both schemas and checks real WAL/SHM; pip/venv/systemctl simulated"
+    },
+    {
+      "case": "GUARD-01",
+      "node": "test_uncontrolled_valid_deployment_stages_block_every_business_entry",
+      "result": "PASS negative subset; positive mapping pending",
+      "assertions": "Twelve deployment states including rollback; all role entrypoints fenced, zero business calls, unchanged marker, no new DB"
+    },
+    {
+      "case": "GUARD-02",
+      "node": "test_pending_restore_clear_keeps_every_business_entry_protected",
+      "result": "PASS negative subset; completed recovery mapping pending",
+      "assertions": "Four unfinished or malformed journals; public clear refused; all role entrypoints fenced; journal and guard bytes unchanged"
+    }
+  ],
+  "pending": [
+    "ENV-03 actual-readability repair and affected Linux verification",
+    "PERM-01 legacy/date-partition mapping review",
+    "PERM-04 permission/I-O failure access and unrelated-directory invariants",
+    "GUARD-01/02 controlled resume, completion and verified-rollback positive mapping",
+    "GUARD-05/06/07 journal sets, schema/FK and post-confirmation data identity",
+    "Final full Windows/Linux/systemd regression",
+    "Clean production candidate, actual GitHub run and target V-01..06"
+  ],
+  "non_requirements": [
+    "HEALTH-04 multiple-pending combination is not required by the supplied plan",
+    "Extra installer metadata-fault integration is not required by the supplied plan"
+  ],
+  "constraints": [
+    "No commit, push, deployment or live provider calls",
+    "No cache deletion, reset or runtime cleanup",
+    "Scopes overlap; counts must not be added",
+    "No gate closure inferred from module totals"
+  ]
+}

@@ -40,8 +40,14 @@ async def _fetch_single_async(
     """
     url = feed.url
     try:
-        async with semaphore:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout), proxy=proxy_url) as response:
+        async with (
+            semaphore,
+            session.get(
+                url,
+                timeout=aiohttp.ClientTimeout(total=timeout),
+                proxy=proxy_url,
+            ) as response,
+        ):
                 response.raise_for_status()
                 text = await response.text()
 
@@ -66,6 +72,7 @@ async def _fetch_single_async(
                 first_time=crawl_time,
                 last_time=crawl_time,
                 count=1,
+                guid=parsed.guid or "",
             )
             items.append(item)
 
@@ -226,6 +233,7 @@ class RSSFetcher:
                         first_time=crawl_time,
                         last_time=crawl_time,
                         count=1,
+                        guid=parsed.guid or "",
                     )
                     items.append(item)
 

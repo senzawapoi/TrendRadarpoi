@@ -1,0 +1,10 @@
+[Unit]
+Description=TrendRadar service resource slice
+
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
+MemoryHigh=1G
+MemoryMax=1250M
+TasksMax=128

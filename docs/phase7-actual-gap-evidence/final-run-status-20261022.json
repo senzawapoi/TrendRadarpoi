@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "candidate": {
+    "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "dirty": true,
+    "source_manifest": "final-inputs-v3-20261022.json",
+    "manifest_sha256": "7f0a551afe2c62b36011f456e01c820394b694983314268ab9e94033fed3116f",
+    "source_inputs": 301,
+    "constraints_separate": 12
+  },
+  "windows": {
+    "provenance": "direct parent terminal output and JUnit",
+    "session": 40693,
+    "command": "<isolated-windows-python> -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --junitxml=docs/phase7-actual-gap-evidence/windows-final-v3-20261022.xml",
+    "python": "3.10.11",
+    "sqlite": "3.40.1",
+    "pytest": "8.4.2",
+    "tzdata": "2026.2",
+    "result": "683 passed, 342 skipped, 2 warnings in 48.20s",
+    "exit_code": 0,
+    "log": "windows-final-v3-20261022.txt",
+    "junit": "windows-final-v3-20261022.xml",
+    "post_run_source_hashes": "301 unchanged"
+  },
+  "linux": {
+    "session": 54930,
+    "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --basetemp=/var/lib/trendradar-p7-gap-20261022/full-v3 --junitxml=docs/phase7-actual-gap-evidence/linux-final-v3-20261022.xml",
+    "python": "3.10.22",
+    "sqlite": "3.53.1",
+    "uid": 0,
+    "pid1": "systemd",
+    "fixture": "/var/lib/trendradar-p7-gap-20261022/full-v3",
+    "log": "linux-final-v3-20261022.txt",
+    "junit": "linux-final-v3-20261022.xml",
+    "status": "terminal; superseded by v4 after removing temporary fixture telemetry",
+    "result": "1018 passed, 1 failed, 6 skipped, 2 warnings in 1079.34s",
+    "exit_code": 1,
+    "failed_node": "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+    "cause": "Temporary observed_alive telemetry attempted to create a log under the root-owned fixture parent as the service UID; PermissionError. Production authorization was not the failing boundary.",
+    "repair": "Remove the temporary diagnostic injection now that the UTC clock-step cause has been recorded; preserve all assertions and production behavior"
+  },
+  "focused": {
+    "h1": "22 passed in 123.23s; exit 0; h1-focused-20261022.json",
+    "lease_and_systemd": "118 passed in 375.00s; exit 0; lease-clock-focused-20261022.txt"
+  },
+  "checks": {
+    "scoped_ruff": "8 changed Python paths passed, exit 0; scoped-ruff-v3-20261022.txt",
+    "static": "252 Python ASTs, 4 Bash files, 3 workflows/17 run blocks passed; static-final-02-20261022.txt; changed maintenance/test ASTs and installer bash -n rechecked after lease repair",
+    "pip_check": "Both isolated Windows and Linux environments passed, exit 0; global Windows conflicts retained without package changes",
+    "whitespace": "Tracked diff --check passed; 188 untracked source text files passed equivalent trailing-space/conflict checks"
+  },
+  "dirty_artifact": "pending separate opt-in empty-venv installation",
+  "limits": "Superseded failed v3 candidate, not final acceptance. No commit, push, GitHub run, provider, remote restic, production deployment, cache deletion or runtime-data change."
+}

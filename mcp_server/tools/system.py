@@ -6,6 +6,8 @@
 
 from pathlib import Path
 
+from trendradar.core.settings import load_yaml_config
+
 from ..services.data_service import DataService
 from ..utils.errors import CrawlTaskError, MCPError
 from ..utils.validators import validate_platforms
@@ -14,7 +16,7 @@ from ..utils.validators import validate_platforms
 class SystemManagementTools:
     """系统管理工具类"""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None):
         """
         初始化系统管理工具
 
@@ -88,8 +90,6 @@ class SystemManagementTools:
         try:
             import time
 
-            import yaml
-
             from trendradar.crawler.fetcher import DataFetcher
             from trendradar.storage.base import convert_crawl_results_to_news_data
             from trendradar.storage.local import LocalStorageBackend
@@ -113,8 +113,7 @@ class SystemManagementTools:
                 )
 
             # 读取配置
-            with open(config_path, encoding="utf-8") as f:
-                config_data = yaml.safe_load(f)
+            config_data = load_yaml_config(config_path)
 
             # 获取平台配置
             all_platforms = config_data.get("platforms", [])

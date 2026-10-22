@@ -1,5 +1,8 @@
 # TrendRadar — Decisions & Fix Log
 
+> Historical pre-v5 snapshot. Current authority: `../docs/code-review.md`,
+> `../docs/intelligence.md`, and `../.planning/STATE.md`.
+
 Record of key decisions and resolved issues to prevent repeat mistakes.
 
 ---

@@ -22,19 +22,25 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
+import inspect
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
+from trendradar.ai import build_gemini_client
+from trendradar.ai.analyzer import DailyDigestAnalyzer, NarrativeLimits
 from trendradar.ai_frontier.detector import filter_new_for_push
 from trendradar.ai_frontier.fetcher import fetch_and_process
 from trendradar.ai_frontier.pusher import push_items_to_bark
 from trendradar.ai_frontier.renderer import save_html_report
 from trendradar.ai_frontier.storage import AIFrontierStorage
 from trendradar.ai_frontier.translator import translate_items
+from trendradar.core.locking import LockUnavailable, runtime_locks
+from trendradar.core.settings import RuntimeSettings, load_settings, load_yaml_config
+from trendradar.intelligence.gemini_wording import build_story_wording_client
+from trendradar.intelligence.integration import open_intelligence_storage
+from trendradar.ops.maintenance import read_guard
+from trendradar.services.translation_service import TranslationService
 from trendradar.utils.logging import log
 
 DEFAULT_CONFIG_PATH = "config/config.yaml"
@@ -48,7 +54,7 @@ def load_ai_frontier_config(config_path: str | Path = DEFAULT_CONFIG_PATH) -> di
         return _default_config()
 
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data = load_yaml_config(path)
     except Exception as e:
         log.warning(f"配置文件解析失败: {e}，使用默认配置")
         return _default_config()
@@ -130,9 +136,10 @@ def _deep_merge(base: dict, override: dict) -> None:
             base[k] = v
 
 
-def _resolve_bark_url(config: dict) -> str:
+def _resolve_bark_url(config: dict, settings: RuntimeSettings | None = None) -> str:
     """优先级：BARK_URL 环境变量 > ai_frontier.push.bark_url > notification.channels.bark.url"""
-    env_url = os.environ.get("BARK_URL", "").strip()
+    runtime_settings = settings or load_settings(DEFAULT_CONFIG_PATH, fallback_to_empty=True)
+    env_url = runtime_settings.get_str("BARK_URL")
     if env_url:
         return env_url
     push_url = (config.get("push") or {}).get("bark_url", "").strip()
@@ -145,14 +152,28 @@ def _resolve_bark_url(config: dict) -> str:
 def _resolve_main_bark_from_config(config_path: str | Path) -> str:
     """从主 config 的 notification.channels.bark.url 读取"""
     try:
-        data = yaml.safe_load(Path(config_path).read_text(encoding="utf-8")) or {}
+        data = load_yaml_config(config_path)
     except Exception:
         return ""
     channels = (data.get("notification") or {}).get("channels") or {}
     return ((channels.get("bark") or {}).get("url") or "").strip()
 
 
+def _open_frontier_storage(settings):
+    """Open the AI Frontier store with the deployment database policy."""
+    parameters = inspect.signature(AIFrontierStorage).parameters
+    kwargs = {}
+    if "synchronous" in parameters:
+        kwargs["synchronous"] = settings.intelligence_sqlite_synchronous
+    if "allow_create" in parameters:
+        kwargs["allow_create"] = not settings.intelligence_require_existing
+    if "allow_migrate" in parameters:
+        kwargs["allow_migrate"] = not settings.intelligence_require_existing
+    return AIFrontierStorage(settings.ai_frontier_database_path, **kwargs)
+
+
 async def _run(config_path: str) -> int:
+    settings = load_settings(config_path, fallback_to_empty=True)
     cfg = load_ai_frontier_config(config_path)
 
     if not cfg.get("enabled", True):
@@ -162,14 +183,67 @@ async def _run(config_path: str) -> int:
     log.start("AI 前沿聚合开始")
     run_start = datetime.now(tz=timezone.utc).isoformat()
 
+    gemini_client = build_gemini_client(settings)
+    translation_service = TranslationService(gemini_client=gemini_client)
+
+    intelligence_storage = open_intelligence_storage(
+        settings.intelligence_enabled,
+        settings.intelligence_database_path,
+        story_config=settings.intelligence_story_config,
+        require_existing=settings.intelligence_require_existing,
+        synchronous=settings.intelligence_sqlite_synchronous,
+    )
+    story_wording_client = (
+        build_story_wording_client(
+            settings,
+            story_config=settings.intelligence_story_config,
+            gemini_client=gemini_client,
+        )
+        if intelligence_storage is not None
+        else None
+    )
+    digest_analyzer = None
+    if gemini_client is not None and intelligence_storage is not None:
+        try:
+            story_config = settings.intelligence_story_config
+            report_config = story_config.get("report")
+            report_config = report_config if isinstance(report_config, dict) else {}
+            digest_config = report_config.get("digest")
+            digest_config = digest_config if isinstance(digest_config, dict) else {}
+            digest_analyzer = DailyDigestAnalyzer(
+                gemini_client,
+                limits=NarrativeLimits.from_mapping(digest_config),
+            )
+        except Exception as exc:
+            log.warning("Daily digest analyzer unavailable", error_type=type(exc).__name__)
+
     # 1. 抓取 + 去重 + 新鲜度
-    items = await fetch_and_process(cfg)
+    try:
+        parameters = inspect.signature(fetch_and_process).parameters
+        if "use_adapters" in parameters:
+            fetch_options = {
+                "use_adapters": settings.intelligence_enabled,
+                "intelligence_storage": intelligence_storage,
+                "story_wording_client": story_wording_client,
+                "digest_analyzer": digest_analyzer,
+            }
+            fetch_options = {
+                key: value
+                for key, value in fetch_options.items()
+                if key in parameters
+            }
+            items = await fetch_and_process(cfg, **fetch_options)
+        else:
+            items = await fetch_and_process(cfg)
+    finally:
+        if intelligence_storage is not None:
+            intelligence_storage.close()
     if not items:
         log.warning("本次无抓取结果")
         return 0
 
     # 2. 写入 SQLite，得到新增条目
-    with AIFrontierStorage("output/ai_frontier.db") as storage:
+    with _open_frontier_storage(settings) as storage:
         new_items, _ = storage.upsert_items(items)
         log.info(f"数据库新增 {len(new_items)} 条")
 
@@ -180,8 +254,12 @@ async def _run(config_path: str) -> int:
     # 4. 翻译
     translated = 0
     if cfg.get("translate", True):
-        gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
-        translated = translate_items(to_push, gemini_api_key=gemini_key)
+        translated = translate_items(
+            to_push,
+            gemini_api_key=None,
+            translation_service=translation_service,
+            gemini_client=gemini_client,
+        )
         log.info(f"翻译条目 {translated}")
 
     # 5. HTML 报告
@@ -191,7 +269,7 @@ async def _run(config_path: str) -> int:
         log.warning("保存 HTML 失败", error=str(e))
 
     # 6. Bark 推送
-    bark_url = _resolve_bark_url(cfg)
+    bark_url = _resolve_bark_url(cfg, settings)
     if not bark_url:
         bark_url = _resolve_main_bark_from_config(config_path)
 
@@ -220,7 +298,18 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        return asyncio.run(_run(args.config))
+        settings = load_settings(args.config, fallback_to_empty=True)
+        if read_guard(settings.intelligence_database_path) is not None:
+            log.warning("AI Frontier collection blocked by persistent maintenance guard")
+            return 0
+        with runtime_locks(settings.intelligence_database_path, "collector"):
+            return asyncio.run(_run(args.config))
+    except LockUnavailable as exc:
+        log.warning(
+            "AI Frontier collection skipped because another collector is active",
+            error=str(exc),
+        )
+        return 0
     except KeyboardInterrupt:
         log.warning("用户中断")
         return 130

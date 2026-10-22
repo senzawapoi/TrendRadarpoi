@@ -1,0 +1,10 @@
+[Unit]
+Description=Run TrendRadar AI Frontier collection every two hours
+
+[Timer]
+OnCalendar=*-*-* 00/2:00:00
+Persistent=false
+Unit=trendradar-collect-ai.service
+
+[Install]
+WantedBy=timers.target

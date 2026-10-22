@@ -1,5 +1,8 @@
 # TrendRadar — Product Definition
 
+> Historical pre-v5 snapshot. Current authority: `../docs/code-review.md`,
+> `../docs/intelligence.md`, and `../.planning/STATE.md`.
+
 > Hot news aggregation and analysis tool. Automatically crawls multi-platform trending lists and RSS feeds, filters by keyword matching, and pushes notifications through multiple channels.
 
 ## Basic Info

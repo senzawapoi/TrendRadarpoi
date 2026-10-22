@@ -1,0 +1,11 @@
+[Unit]
+Description=Inspect TrendRadar health every minute
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=60s
+Persistent=false
+Unit=trendradar-health.service
+
+[Install]
+WantedBy=timers.target

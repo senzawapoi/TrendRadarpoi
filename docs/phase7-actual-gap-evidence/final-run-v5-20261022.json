@@ -1,0 +1,54 @@
+﻿{
+    "date":  "2026-10-22",
+    "timezone":  "Asia/Shanghai",
+    "candidate":  {
+                      "head":  "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+                      "dirty":  true,
+                      "manifest":  "final-inputs-v5-20261022.json",
+                      "manifest_sha256":  "54a4ebac0a802e9562833d19d62d872820a9d83b9c79f2b92a77cc3065fc7b97",
+                      "source_inputs":  301,
+                      "constraints_separate":  12
+                  },
+    "windows":  {
+                    "session":  13684,
+                    "interpreter":  "%TEMP%/trendradar-p7-final-20261022/venv/Scripts/python.exe",
+                    "command":  "\u003cisolated-windows-python\u003e -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --junitxml=docs/phase7-actual-gap-evidence/windows-final-v5-20261022.xml",
+                    "python":  "3.10.11",
+                    "sqlite":  "3.40.1",
+                    "result":  "683 passed, 342 skipped, 2 warnings in 45.96s",
+                    "exit_code":  0,
+                    "log":  "windows-final-v5-20261022.txt",
+                    "junit":  "windows-final-v5-20261022.xml"
+                },
+    "linux":  {
+                  "session":  20828,
+                  "command":  "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests -q -ra -p no:cacheprovider --tb=short --durations=10 --basetemp=/var/lib/trendradar-p7-gap-20261022/full-v5 --junitxml=docs/phase7-actual-gap-evidence/linux-final-v5-20261022.xml",
+                  "python":  "3.10.22",
+                  "sqlite":  "3.53.1",
+                  "uid":  0,
+                  "pid1":  "systemd",
+                  "fixture":  "/var/lib/trendradar-p7-gap-20261022/full-v5",
+                  "log":  "linux-final-v5-20261022.txt",
+                  "junit":  "linux-final-v5-20261022.xml",
+                  "status": "terminated; retained failed run",
+                  "exit_code": 1,
+                  "result": "1 failed, 1018 passed, 6 skipped, 2 warnings in 1066.00s",
+                  "failure": "Authorized verify fixture omitted modern boottime lease; child read_guard was non-null. Failure-time UTC age was not captured."
+              },
+    "focused":  {
+                    "h1":  "22 passed in 123.23s; exit 0; h1-focused-20261022.json",
+                    "lease_rollback_systemd":  "118 passed in 375.00s; exit 0; lease-clock-focused-20261022.txt",
+                    "uid_and_original_timer_node":  "2 passed in 46.13s; exit 0; uid-telemetry-removal-20261022.txt",
+                    "heartbeat_archive_uid":  "50 passed in 35.04s; exit 0; heartbeat-fixture-focused-20261022.txt"
+                },
+    "fixture_diagnostic":  "Temporary authorization telemetry removed after diagnosis. Its v3 service-UID PermissionError is retained in final-run-status-20261022.json and linux-final-v3-20261022.txt; production guards and all acceptance assertions unchanged by removal.",
+    "checks":  {
+                   "ruff":  "8 affected paths passed, exit 0; scoped-ruff-v5-20261022.txt",
+                   "static":  "252 ASTs, 4 Bash files, 3 workflows/17 run blocks passed; changed lease paths and installer syntax rechecked after production repair",
+                   "dependencies":  "Both isolated pip checks passed; global Windows conflicts untouched",
+                   "whitespace":  "Tracked diff and 188 untracked source text files passed before narrative finalization"
+               },
+    "artifact":  "pending opt-in empty-venv install",
+    "limits":  "Direct parent execution only; running Linux suite is not acceptance. Dirty mechanics cannot establish a clean candidate. No commit, push, GitHub execution, provider, remote restic or VPS action.",
+    "preceding_failed_run":  "final-run-v4-20261022.json; retained failure reason remains generic; fixture timing revision is not a claimed production health fix"
+}

@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "checkpoint": "2026-10-14T08:04:10Z",
+  "purpose": "Retained run summaries for workspace handoff; cleanup did not rerun pytest.",
+  "branch": "main",
+  "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+  "ahead_of_origin_main": 42,
+  "worktree_dirty": true,
+  "linux": {
+    "environment": "Ubuntu WSL with real systemd and root access",
+    "python": "3.10.22",
+    "sqlite": "3.53.1",
+    "interpreter": "/var/lib/trendradar-p7-gap-20261014/venv310/bin/python",
+    "common_command_prefix": "python -B -m pytest",
+    "common_command_suffix": "-q -p no:cacheprovider --tb=short"
+  },
+  "results": [
+    {
+      "scope": "Pre-business snapshot rollback before API integration",
+      "environment": "Linux",
+      "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state",
+      "passed": 0,
+      "failed": 4,
+      "seconds": 54.7,
+      "provenance": "Retained parent terminal result"
+    },
+    {
+      "scope": "Same four scenarios after API integration",
+      "environment": "Linux",
+      "node": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state",
+      "passed": 4,
+      "failed": 0,
+      "seconds": 57.86,
+      "provenance": "Retained parent terminal result"
+    },
+    {
+      "scope": "Bash installer full module",
+      "environment": "Linux",
+      "paths": [
+        "tests/deployment/test_installer_behavior.py"
+      ],
+      "passed": 57,
+      "failed": 0,
+      "seconds": 583.88,
+      "session_id": 4088,
+      "provenance": "Retained parent terminal result",
+      "boundary": "Real Bash, SQLite migrations, health and UID; simulated pip/venv/systemctl"
+    },
+    {
+      "scope": "Restore and deployment rollback five-module scope",
+      "environment": "Linux",
+      "paths": [
+        "tests/deployment/test_deployment_rollback.py",
+        "tests/deployment/test_restore_durability.py",
+        "tests/deployment/test_restore_crash_recovery.py",
+        "tests/deployment/test_restore_recovery.py",
+        "tests/deployment/test_backup.py"
+      ],
+      "passed": 58,
+      "failed": 0,
+      "seconds": 10.13,
+      "provenance": "Retained parent terminal result",
+      "boundary": "Predates two additional deployment rollback cases; earlier fsync injection fixture was corrected"
+    },
+    {
+      "scope": "Expanded deployment rollback module",
+      "environment": "Linux",
+      "paths": [
+        "tests/deployment/test_deployment_rollback.py"
+      ],
+      "passed": 17,
+      "failed": 0,
+      "seconds": 1.21,
+      "provenance": "Retained parent terminal result"
+    },
+    {
+      "scope": "Environment, permissions, archive and systemd backup-unit scope",
+      "environment": "Linux",
+      "paths": [
+        "tests/deployment/test_environment_entry_linux.py",
+        "tests/deployment/test_environment_loading.py",
+        "tests/deployment/test_restore_permissions_linux.py",
+        "tests/deployment/test_release_inputs.py",
+        "tests/deployment/test_deployment_contracts.py",
+        "tests/deployment/test_systemd_contract_linux.py"
+      ],
+      "passed": 147,
+      "failed": 1,
+      "seconds": 57.96,
+      "provenance": "Retained parent terminal result",
+      "failure": "Test-owned ops log was root-only and prevented service UID append; harness permissions corrected"
+    },
+    {
+      "scope": "Affected permission module after fixture correction",
+      "environment": "Linux",
+      "paths": [
+        "tests/deployment/test_restore_permissions_linux.py"
+      ],
+      "passed": 3,
+      "failed": 0,
+      "seconds": 23.65,
+      "provenance": "Retained parent terminal result",
+      "boundary": "Combined 148-case scope was not rerun afterward"
+    },
+    {
+      "scope": "RG-03 actual systemd writer/timer quiesce",
+      "environment": "Linux/systemd",
+      "paths": [
+        "tests/deployment/test_systemd_quiesce_linux.py"
+      ],
+      "passed": 9,
+      "failed": 1,
+      "seconds": 292.55,
+      "session_id": 25213,
+      "provenance": "Retained parent terminal result",
+      "failure_node": "test_snapshot_backed_rollback_keeps_real_writers_stopped_and_restores_active_units",
+      "failure": "Databases restored; actual restored unit list empty instead of four formerly active units; guard retained",
+      "root_cause": "unknown",
+      "evidence_directory": "/var/lib/p7-quiesce-awgdsbgc",
+      "boundary": "Real systemd timers/services, UID/GID 65534, SQLite, PrivateTmp; simulated dependency setup",
+      "cleanup": "Agent confirmed exact 14 test units stopped with zero MainPID/ControlPID and unit files removed; parent subsequent inventory empty"
+    },
+    {
+      "scope": "Windows parent focused health/guard/environment/offsite/rollback",
+      "environment": "Windows",
+      "paths": [
+        "tests/deployment/test_health.py",
+        "tests/deployment/test_actual_gap_health.py",
+        "tests/deployment/test_runtime_guards.py",
+        "tests/deployment/test_environment_loading.py",
+        "tests/deployment/test_offsite_backup.py",
+        "tests/deployment/test_offsite_processes.py",
+        "tests/deployment/test_deployment_rollback.py"
+      ],
+      "passed": 95,
+      "skipped": 40,
+      "seconds": 9.65,
+      "provenance": "Retained parent terminal summary"
+    },
+    {
+      "scope": "Windows agent health/environment/guard focus",
+      "environment": "Windows",
+      "paths": [
+        "tests/deployment/test_actual_gap_health.py",
+        "tests/deployment/test_health.py",
+        "tests/deployment/test_environment_loading.py",
+        "tests/deployment/test_runtime_guards.py"
+      ],
+      "passed": 81,
+      "skipped": 25,
+      "provenance": "Erdos completed-agent report"
+    },
+    {
+      "scope": "Combined readiness",
+      "environment": "Windows",
+      "paths": [
+        "tests/deployment/test_combined_readiness.py"
+      ],
+      "passed": 19,
+      "failed": 0,
+      "seconds": 1.66,
+      "session_id": 72136,
+      "provenance": "Erdos completed-agent report",
+      "boundary": "Real SQLite/heartbeat/backup and controlled clock; healthy-fault-repaired transitions; external I/O fenced"
+    },
+    {
+      "scope": "Windows agent fake-restic/process/role focus",
+      "environment": "Windows",
+      "passed": 17,
+      "failed": 0,
+      "seconds": 13.22,
+      "provenance": "Erdos completed-agent report",
+      "boundary": "Exact command not retained in parent handoff; do not infer whole-module coverage"
+    },
+    {
+      "scope": "RG-04 real locked artifact installation",
+      "environment": "Linux",
+      "paths": [
+        "tests/deployment/test_release_install_linux.py"
+      ],
+      "passed": 1,
+      "failed": 0,
+      "seconds": 42.01,
+      "session_id": 17315,
+      "provenance": "Retained parent terminal result",
+      "required_environment": {
+        "TRENDRADAR_P7_ARTIFACT_INSTALL": "true",
+        "TRENDRADAR_P7_WHEELHOUSE": "/var/tmp/trendradar-p7-gap-20261014/wheels310"
+      },
+      "boundary": "Actual empty venv, build/runtime/project install, pip check, imports from venv and outside-checkout smoke; dirty fixture"
+    }
+  ],
+  "artifact_installation": {
+    "sha256": "1c61f44fdc665888c06f0c5cde335e748fca1b171f72c128965736180e9e641c",
+    "bytes": 11256939,
+    "git_dirty": true,
+    "clean_candidate": false,
+    "pip_check": "No broken requirements",
+    "imports_from_checkout": false,
+    "provenance": "Retained RG-04 terminal metadata; no archive rebuilt or rehashed by cleanup"
+  },
+  "declaration_hashes_rechecked_during_cleanup": {
+    "build-requirements.lock": "36f24a8e0cc554eb925c5e33dff2085e3e2ce3a817bd4916e8632b8ef4a124e5",
+    "pyproject.toml": "42c0f6fd133f1580883b4a3c544cd890cb7b7ee4f425f9debd760d452195c758",
+    "requirements.lock": "cd87f7428e3c8ce7493b13468ca5e4d131f38048935314b2aae4977c2d689925",
+    "requirements.txt": "80a584abed45816ac517399f749d432b536ff766ce76175f9ee2ca8f64de4afa"
+  },
+  "gates": {
+    "G1": "incomplete",
+    "G2": "incomplete",
+    "G3": "NOT_RUN",
+    "RG03": "FAIL",
+    "RG04_clean_candidate": "BLOCKED",
+    "RG06_final_regression": "NOT_RUN",
+    "privileged_GitHub_CI": "NOT_RUN"
+  },
+  "limits": [
+    "Scopes overlap and must not be summed",
+    "Final full regression has not run after the current repairs",
+    "28-case assertion mapping is a draft",
+    "No real Lark, Gemini, collector or remote restic calls",
+    "No commit, push or production deployment",
+    "Historical evidence and blocked caches retained"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-14",
+  "source": "uncommitted worktree; same HEAD as cleanup checkpoint",
+  "scope": "Restore durability and corruption validation follow-up",
+  "before_fix": {
+    "command": "Linux Python 3.10.22: pytest tests/deployment/test_restore_durability.py -q -p no:cacheprovider --tb=short",
+    "result": "8 failed, 6 passed in 2.30s",
+    "failed_contracts": [
+      "Journal directory fsync error was ignored",
+      "Old database rename followed by fsync failure was absent from rollback action list (two inputs)",
+      "Nested guarded database recovery rejected its declared wider runtime root",
+      "Non-string destination raised TypeError rather than validation error",
+      "Missing snapshot digest raised KeyError rather than validation error",
+      "Non-string and invalid timestamp recovery cutovers were accepted"
+    ]
+  },
+  "after_fix": [
+    {
+      "environment": "Linux Python 3.10.22",
+      "command": "pytest tests/deployment/test_restore_durability.py tests/deployment/test_restore_crash_recovery.py tests/deployment/test_restore_recovery.py tests/deployment/test_backup.py -q -p no:cacheprovider --tb=short",
+      "result": "37 passed in 12.70s",
+      "limit": "Before six additional validation/recovery cases were added"
+    },
+    {
+      "environment": "Linux Python 3.10.22",
+      "command": "pytest tests/deployment/test_restore_durability.py -q -p no:cacheprovider --tb=short",
+      "result": "20 passed in 2.25s"
+    },
+    {
+      "environment": "Windows Python 3.10.11",
+      "command": "pytest tests/deployment/test_restore_durability.py tests/deployment/test_restore_crash_recovery.py tests/deployment/test_restore_recovery.py tests/deployment/test_backup.py -q -p no:cacheprovider --tb=short",
+      "result": "38 passed, 5 skipped in 10.21s",
+      "limit": "Skips require POSIX directory fsync or metadata syscalls"
+    }
+  ],
+  "data_scope": "pytest temporary databases only",
+  "business_provider_calls": 0,
+  "power_loss_acceptance": "NOT_RUN",
+  "final_regression": "NOT_RUN"
+}

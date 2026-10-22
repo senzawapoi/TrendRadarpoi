@@ -51,7 +51,16 @@ class OfficialBlogSource(AISource):
         html_text = await resp.text()
         await resp.release()
 
-        return await asyncio.to_thread(self._parse_listing, site, html_text)
+        return await asyncio.to_thread(self._safe_parse_listing, site, html_text)
+
+    def _safe_parse_listing(self, site: dict, html_text: str) -> list[AIItem]:
+        """包裹 _parse_listing，单站 HTML 异常不影响整体抓取。"""
+        name = (site.get("name") or "Official Blog").strip()
+        try:
+            return self._parse_listing(site, html_text)
+        except Exception as exc:
+            log.warning("官方博客解析失败", site_name=name, error=str(exc))
+            return []
 
     def _parse_listing(self, site: dict, html_text: str) -> list[AIItem]:
         """从博客列表页提取文章链接。"""

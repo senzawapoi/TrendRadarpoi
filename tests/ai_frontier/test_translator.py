@@ -59,3 +59,54 @@ def test_translate_items_skips_already_translated():
     count = translate_items(items, gemini_api_key="fake-key")
     assert count == 0
     assert items[0].title_translated == "已有翻译"
+
+
+class _FakeTranslationService:
+    translation_tools = object()
+
+    def __init__(self, translations):
+        self.translations = translations
+        self.calls = []
+
+    def batch_translate_titles(self, titles, batch_size=15):
+        self.calls.append((list(titles), batch_size))
+        return list(self.translations)
+
+
+def test_translate_items_uses_injected_service_without_key_and_propagates_canonical_result():
+    first = AIItem(source="arxiv", source_name="ArXiv", title="Shared title", url="https://a")
+    duplicate = AIItem(source="blog", source_name="Blog", title="Shared title", url="https://b")
+    second = AIItem(source="reddit", source_name="Reddit", title="Second title", url="https://c")
+    first._canonical_content_id = "shared"
+    duplicate._canonical_content_id = "shared"
+    second._canonical_content_id = "second"
+    service = _FakeTranslationService(["共享标题", "第二标题"])
+
+    count = translate_items(
+        [first, duplicate, second],
+        gemini_api_key=None,
+        batch_size=7,
+        translation_service=service,
+    )
+
+    assert count == 2
+    assert service.calls == [(["Shared title", "Second title"], 7)]
+    assert first.title_translated == "共享标题"
+    assert duplicate.title_translated == "共享标题"
+    assert second.title_translated == "第二标题"
+
+
+def test_translate_items_does_not_introspect_mcp_default(monkeypatch):
+    captured = {}
+
+    class Service(_FakeTranslationService):
+        def __init__(self, gemini_api_key=None, gemini_client=None):
+            captured.update(key=gemini_api_key, client=gemini_client)
+            super().__init__(["标题"])
+
+    monkeypatch.setattr("trendradar.ai_frontier.translator.TranslationService", Service)
+    item = AIItem(source="arxiv", source_name="ArXiv", title="English", url="https://a")
+
+    assert translate_items([item], gemini_api_key=None) == 1
+    assert captured == {"key": None, "client": None}
+    assert item.title_translated == "标题"

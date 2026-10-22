@@ -1,0 +1,29 @@
+{
+  "release_id": "isolated-install",
+  "artifact": {
+    "name": "trendradar-isolated-install.tar.gz",
+    "sha256": "480430d8976ac499c7cd1e9dc35c0a37cab4ed4acf1fcdf7801c0f954a13c255",
+    "bytes": 11880521
+  },
+  "git_commit": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+  "git_dirty": true,
+  "dependencies": {
+    "pyproject.toml": "66a9c96f8df3bdad055aace8852b889c5741cfdf35fe2b80c60ca1fafca2256e",
+    "requirements.txt": "22d5a7430cbb798d066a1c83149da751ea3890aa5c3a60ab94ecb0cefcc853fe",
+    "requirements.lock": "4cbe0ddbdacf42ae1e28dc4e05afdec2147786c1651dd711e6231ec9f9a466be",
+    "build-requirements.lock": "36f24a8e0cc554eb925c5e33dff2085e3e2ce3a817bd4916e8632b8ef4a124e5"
+  },
+  "runtime": "{\"python\": \"3.10.22\", \"sqlite\": \"3.53.1\"}",
+  "pip_check": "No broken requirements found.",
+  "checkout_imports": false,
+  "clean_candidate": false,
+  "installation_evidence_path": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6/test_locked_artifact_installs_0/installation-evidence.json",
+  "archive_path": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6/test_locked_artifact_installs_0/artifacts/trendradar-isolated-install.tar.gz",
+  "source_verification": {
+    "manifest": "final-inputs-v6-20261022.json",
+    "manifest_sha256": "236de09722e23237d99aee0b1680ec020709ce61066e57ca85779e57d47ca4cf",
+    "matching_source_resource_files": 301,
+    "different": [],
+    "narrative_documents": "Packaged at build time; final status documents reconciled afterwards; source/resource hashes frozen"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-22",
+  "candidate": "final-inputs-20261022.json (superseded candidate)",
+  "provenance": "direct parent terminal output",
+  "session": 69921,
+  "command": "<retained-linux-python> -B -m pytest tests -q -ra -p no:cacheprovider --tb=short",
+  "result": "1 failed, 973 passed, 6 skipped, 2 warnings in 1151.24s",
+  "exit_code": 1,
+  "log": "linux-full-20261022.txt",
+  "failure": {
+    "node": "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration[False]",
+    "observed": "Installer exits 1 during resume: deployment guard clear; database migrations/checks reported schema6/schema1 and FULL/WAL",
+    "root_cause": "Not determined by this output; no claim of lease expiry or production defect",
+    "fixture_retention": "Original /tmp/pytest-of-root scope was inaccessible after suite termination; terminal failure log retained",
+    "next": "Use a new persistent isolated basetemp and fixture-only authorization telemetry to reproduce the node before final freeze"
+  },
+  "skips": [
+    "3 Windows Job Object cases supplied by Windows run",
+    "2 opt-in archived pre-fix cases have retained historical reproduction evidence",
+    "1 opt-in artifact install must execute separately"
+  ],
+  "warnings": "Two Authlib upstream deprecations imported by pinned FastMCP; not suppressed",
+  "limits": "Failed full regression, not final candidate acceptance; no production/provider calls"
+}

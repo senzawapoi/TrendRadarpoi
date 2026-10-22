@@ -1,0 +1,22 @@
+[Unit]
+Description=TrendRadar daily delivery tick
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Slice=trendradar.slice
+User=trendradar
+Group=trendradar
+WorkingDirectory=/var/lib/trendradar
+EnvironmentFile=-/etc/trendradar/common.env
+EnvironmentFile=-/etc/trendradar/scheduler.env
+EnvironmentFile=-/etc/trendradar/release.env
+Environment=TRENDRADAR_LOCK_DIR=/run/trendradar
+ExecStart=/opt/trendradar/current/venv/bin/python -m trendradar.integrations.lark --role scheduler-once --config /etc/trendradar/config.yaml
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/trendradar /run/trendradar
+UMask=0077

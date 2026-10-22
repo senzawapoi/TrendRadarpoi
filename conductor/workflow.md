@@ -1,5 +1,8 @@
 # TrendRadar — Development Workflow
 
+> Historical pre-v5 snapshot. Current authority: `../docs/code-review.md`,
+> `../docs/intelligence.md`, and `../.planning/STATE.md`.
+
 ## Git Workflow
 
 - **Local branch**: `main`

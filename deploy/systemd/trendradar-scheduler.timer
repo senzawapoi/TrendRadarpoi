@@ -1,0 +1,11 @@
+[Unit]
+Description=Run TrendRadar daily delivery tick every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=60s
+Persistent=false
+Unit=trendradar-scheduler.service
+
+[Install]
+WantedBy=timers.target

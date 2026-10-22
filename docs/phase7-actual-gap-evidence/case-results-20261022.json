@@ -1,0 +1,1394 @@
+{
+  "date": "2026-10-22",
+  "scope": "28 original W/L/S scenarios; final local evidence only",
+  "candidate": {
+    "head": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "dirty": true,
+    "input_manifest": "final-inputs-v6-20261022.json",
+    "manifest_sha256": "236de09722e23237d99aee0b1680ec020709ce61066e57ca85779e57d47ca4cf",
+    "source_hashes_unchanged": 301
+  },
+  "assertion_review": "reviewed-assertions-20261022.json",
+  "execution_logs": "final-run-v6-20261022.json",
+  "junit": {
+    "windows": "windows-final-v6-20261022.xml",
+    "linux": "linux-final-v6-20261022.xml",
+    "installation": "artifact-install-v6-20261022.xml"
+  },
+  "results": {
+    "PASS": 27,
+    "BLOCKED": 1
+  },
+  "gates": {
+    "G1": "PASS - scoped logic regression and all reviewed ENV/HEALTH/GUARD assertions pass",
+    "G2": "BLOCKED - RG-04 clean candidate absent",
+    "G3": "NOT_RUN/BLOCKED - V-01..06 target and duration evidence absent"
+  },
+  "artifact": {
+    "release_id": "isolated-install",
+    "artifact": {
+      "name": "trendradar-isolated-install.tar.gz",
+      "sha256": "480430d8976ac499c7cd1e9dc35c0a37cab4ed4acf1fcdf7801c0f954a13c255",
+      "bytes": 11880521
+    },
+    "git_commit": "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "git_dirty": true,
+    "dependencies": {
+      "pyproject.toml": "66a9c96f8df3bdad055aace8852b889c5741cfdf35fe2b80c60ca1fafca2256e",
+      "requirements.txt": "22d5a7430cbb798d066a1c83149da751ea3890aa5c3a60ab94ecb0cefcc853fe",
+      "requirements.lock": "4cbe0ddbdacf42ae1e28dc4e05afdec2147786c1651dd711e6231ec9f9a466be",
+      "build-requirements.lock": "36f24a8e0cc554eb925c5e33dff2085e3e2ce3a817bd4916e8632b8ef4a124e5"
+    },
+    "runtime": "{\"python\": \"3.10.22\", \"sqlite\": \"3.53.1\"}",
+    "pip_check": "No broken requirements found.",
+    "checkout_imports": false,
+    "clean_candidate": false,
+    "installation_evidence_path": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6/test_locked_artifact_installs_0/installation-evidence.json",
+    "archive_path": "/var/lib/trendradar-p7-gap-20261022/artifact-install-v6/test_locked_artifact_installs_0/artifacts/trendradar-isolated-install.tar.gz",
+    "source_verification": {
+      "manifest": "final-inputs-v6-20261022.json",
+      "manifest_sha256": "236de09722e23237d99aee0b1680ec020709ce61066e57ca85779e57d47ca4cf",
+      "matching_source_resource_files": 301,
+      "different": [],
+      "narrative_documents": "Packaged at build time; final status documents reconciled afterwards; source/resource hashes frozen"
+    }
+  },
+  "cases": [
+    {
+      "requirement_id": "ENV-01",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_installer_behavior.py::test_fixed_entry_loads_common_and_clears_caller_environment"
+      ],
+      "assertions": "Trusted common.env under sanitized caller; independent heartbeat directory; actual health CLI reaches finalize; no manual caller export.",
+      "limits": "Pip/venv/systemctl simulated; actual loader/installer/health/SQLite.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "用最小 sudo 环境启动固定入口；按参考配置把角色心跳放在独立 run/health，准备同 release 的健康角色。安装器调用真实 health。",
+        "required_assertions": "安装器与角色读取同一有效配置；心跳被找到；预期成功部署可达到 finalize，不依赖调用者手工 export。当前 F-01 应先被此用例暴露。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_fixed_entry_loads_common_and_clears_caller_environment",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "ENV-02",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_uses_all_configured_paths_for_actual_operations",
+        "tests/deployment/test_environment_entry_linux.py::test_all_runtime_paths_use_trusted_configuration"
+      ],
+      "assertions": "All six paths used by migrations, health, real locks, snapshot and restore preflight; no default path created.",
+      "limits": "Fixed-entry isolated trusted helper; not target deployment.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "将 database、AI database、control、health、lock、backup 路径全部改到非默认临时位置；执行部署检查、锁操作和恢复预检。",
+        "required_assertions": "所有操作命中配置路径；默认位置没有新增数据库、锁或心跳；不会检查 A 库却迁移 B 库。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_uses_all_configured_paths_for_actual_operations",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_environment_entry_linux.py::test_all_runtime_paths_use_trusted_configuration",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "ENV-03",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_rejects_actually_unreadable_config_before_migration"
+      ],
+      "assertions": "Missing keys, malformed quoting, directory/unreadable config, substitution and untrusted modes rejected before writes; quoted valid values succeed; errors sanitized.",
+      "limits": "Actual unreadable mode000 test removes root DAC bypass; common.env is data, never shell.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "缺少必需配置、格式错误、路径不可读，以及合法带引号的配置值分别输入入口。",
+        "required_assertions": "非法生产配置在停写、迁移或切换前明确失败；合法格式按声明解析。不能静默退回开发默认值，也不能把任意 EnvironmentFile 当可执行 shell。日志无凭证值。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance",
+          "matched_nodes": 5,
+          "results": {
+            "windows": {
+              "SKIP": 5
+            },
+            "linux": {
+              "PASS": 5
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys",
+          "matched_nodes": 8,
+          "results": {
+            "windows": {
+              "SKIP": 8
+            },
+            "linux": {
+              "PASS": 8
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_rejects_actually_unreadable_config_before_migration",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "ENV-04",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock"
+      ],
+      "assertions": "Four roles times migrate/activate contend for same actual flock; DB unchanged on conflict; operations succeed after release.",
+      "limits": "Isolated fixed entry and real POSIX locks.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "测试角色用真实文件锁持有 bot/worker/collector/scheduler 锁；维护进程从安装入口解析配置后尝试迁移或激活恢复。",
+        "required_assertions": "双方争用同一锁路径；冲突时有界失败且数据库不被改写；释放锁后同一路径操作成功。不能通过选用另一目录“解决”冲突。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock",
+          "matched_nodes": 8,
+          "results": {
+            "windows": {
+              "SKIP": 8
+            },
+            "linux": {
+              "PASS": 8
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "HEALTH-01",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_actual_gap_health.py::test_bot_readiness_requires_connected",
+        "tests/deployment/test_actual_gap_health.py::test_worker_uses_its_own_state_rules",
+        "tests/deployment/test_actual_gap_health.py::test_real_transport_state_written_to_heartbeat_then_health"
+      ],
+      "assertions": "Nine Bot states and five Worker states; only accepting state ready; real transport state writes heartbeat and actual health CLI reads it.",
+      "limits": "Transport connection is fake, no tenant connection.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "对 Bot 的 connected、connecting、retrying、cooldown、stopped、disabled、unknown、maintenance 以及 disconnected 参数化；保持 release、时间和其他指标健康。另测 Worker running 与非运行状态。",
+        "required_assertions": "Bot 仅真实可接受业务的连接状态通过；连接中、重试、冷却及未知状态均拒绝 ready。Worker 使用自己的角色规则。至少一项由实际 transport 状态写入 RoleHeartbeat，再通过真实 health CLI 读取，不能只手写 disconnected。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_bot_readiness_requires_connected",
+          "matched_nodes": 9,
+          "results": {
+            "windows": {
+              "PASS": 9
+            },
+            "linux": {
+              "PASS": 9
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_worker_uses_its_own_state_rules",
+          "matched_nodes": 5,
+          "results": {
+            "windows": {
+              "PASS": 5
+            },
+            "linux": {
+              "PASS": 5
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_real_transport_state_written_to_heartbeat_then_health",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "PASS": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "HEALTH-02",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_actual_gap_health.py::test_heartbeat_identity_and_exact_age_boundary",
+        "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups"
+      ],
+      "assertions": "Fresh matching release accepted; missing/unknown/old release, absent role, future/stale heartbeat rejected; exact boundary accepted; healthy/fault/repaired transitions.",
+      "limits": "Controlled clock avoids timing ambiguity.",
+      "requirement_row": {
+        "environment": "W",
+        "inputs": "分别提供匹配、新旧不一致、缺失、unknown 的 release；缺失角色心跳和超龄心跳；随后恢复全部健康值。",
+        "required_assertions": "匹配且新鲜时通过；错误 release、必需角色缺失或过期时拒绝。配置阈值等于和略超过边界分别验证，避免时间测量抖动。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_heartbeat_identity_and_exact_age_boundary",
+          "matched_nodes": 7,
+          "results": {
+            "windows": {
+              "PASS": 7
+            },
+            "linux": {
+              "PASS": 7
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups",
+          "matched_nodes": 19,
+          "results": {
+            "windows": {
+              "PASS": 19
+            },
+            "linux": {
+              "PASS": 19
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "HEALTH-03",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_actual_gap_health.py::test_required_sources_cannot_be_empty",
+        "tests/deployment/test_actual_gap_health.py::test_explicit_source_without_run_is_rejected",
+        "tests/deployment/test_actual_gap_health.py::test_source_runs_required_and_fresh",
+        "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups"
+      ],
+      "assertions": "Required empty/missing/unhealthy/unknown/stale sources rejected; valid fresh runs pass; disabled requirement preserves compatibility.",
+      "limits": "Real source_runs SQLite, no collection request.",
+      "requirement_row": {
+        "environment": "W",
+        "inputs": "require_source_runs=true 下测试：两个来源集合均空；明确来源但无记录；记录过期；真实失败状态；全部来源有新鲜成功记录。再测试 require_source_runs=false 的兼容行为。",
+        "required_assertions": "要求来源时，空集合不能被当作已经证明健康；缺失、过期或失败均拒绝。全部有效时通过。关闭来源要求时不因单纯无来源记录误拒绝。当前 F-03 必须被单独暴露。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_required_sources_cannot_be_empty",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "PASS": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_explicit_source_without_run_is_rejected",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "PASS": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_source_runs_required_and_fresh",
+          "matched_nodes": 7,
+          "results": {
+            "windows": {
+              "PASS": 7
+            },
+            "linux": {
+              "PASS": 7
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups",
+          "matched_nodes": 19,
+          "results": {
+            "windows": {
+              "PASS": 19
+            },
+            "linux": {
+              "PASS": 19
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "HEALTH-04",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_actual_gap_health.py::test_queue_age_survives_recent_retry",
+        "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups"
+      ],
+      "assertions": "Original received_at ages below/equal/above wait bound; recent retry does not reset age; completed/exhausted events excluded.",
+      "limits": "No invented multiple-pending gate.",
+      "requirement_row": {
+        "environment": "W",
+        "inputs": "构造真实可重试待处理事件，等待时间为阈值以下、等于、略高于；再构造已完成或已耗尽重试事件。",
+        "required_assertions": "超过 queue_wait_seconds 的可处理积压拒绝 ready；健康队列通过；终态不会被误计为待处理积压。明确等待时间使用的业务语义，并让断言独立于待测函数内部计算方式。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_queue_age_survives_recent_retry",
+          "matched_nodes": 5,
+          "results": {
+            "windows": {
+              "PASS": 5
+            },
+            "linux": {
+              "PASS": 5
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups",
+          "matched_nodes": 19,
+          "results": {
+            "windows": {
+              "PASS": 19
+            },
+            "linux": {
+              "PASS": 19
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "HEALTH-05",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_actual_gap_health.py::test_backup_gate_binds_receipt_and_data_age",
+        "tests/deployment/test_health.py::test_health_ignores_malformed_offsite_array_without_crashing",
+        "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups"
+      ],
+      "assertions": "Fresh local/offsite proof passes; stale data despite fresh upload, wrong digest/ID, missing/array receipt reject without crash; disabled requirement compatible.",
+      "limits": "Actual local snapshots and synthetic receipts; remote backup not proven.",
+      "requirement_row": {
+        "environment": "W",
+        "inputs": "构造新鲜/过期本地快照、新上传但数据已过期的 offsite 收据、错误 digest/backup_id、数组 JSON 收据，以及完整有效收据。",
+        "required_assertions": "require_backup=true 时按数据年龄拒绝过期备份；新上传不能刷新旧数据的 RPO。坏收据不崩溃、不算成功；完整有效正向夹具可通过。关闭备份要求保留兼容行为。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_backup_gate_binds_receipt_and_data_age",
+          "matched_nodes": 7,
+          "results": {
+            "windows": {
+              "PASS": 7
+            },
+            "linux": {
+              "PASS": 7
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_health.py::test_health_ignores_malformed_offsite_array_without_crashing",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "PASS": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_combined_readiness.py::test_actual_release_policy_requires_roles_sources_and_backups",
+          "matched_nodes": 19,
+          "results": {
+            "windows": {
+              "PASS": 19
+            },
+            "linux": {
+              "PASS": 19
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "HEALTH-06",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_actual_gap_health.py::test_health_and_readiness_preserve_readonly_exit_contract"
+      ],
+      "assertions": "Missing/schema/disabled/maintenance/healthy across ordinary and readiness exit contracts; read-only checks never create missing DB.",
+      "limits": "No service lifecycle claim.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "数据库缺失、schema 不符、intelligence disabled、maintenance，以及完整健康库分别走普通 health 和 --readiness。",
+        "required_assertions": "缺库不创建文件、不自动迁移；生产 readiness 拒绝 disabled 和 maintenance。普通 health 的既有 disabled/maintenance 退出语义保持兼容；完整正向夹具退出 0。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_actual_gap_health.py::test_health_and_readiness_preserve_readonly_exit_contract",
+          "matched_nodes": 5,
+          "results": {
+            "windows": {
+              "PASS": 5
+            },
+            "linux": {
+              "PASS": 5
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "PERM-01",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_restore_permissions_linux.py::test_restore_keeps_service_metadata_and_real_uid_can_write"
+      ],
+      "assertions": "Root restore/activate preserves UID/GID65534 and 0600/0660 on three databases; actual service SELECT/WAL write/commit succeeds; UID65533 denied.",
+      "limits": "Legacy DB covered; additional date-partition permutation not required.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "服务账号拥有既有 intelligence、ai_frontier 和 legacy 库；root 调用真实 backup restore/activate。覆盖服务账号独占 0600 和服务组可读写 0660 两种受控策略。",
+        "required_assertions": "发布后的每个数据库具有正确 owner/group/mode；服务 UID 实际 SELECT、写入并提交成功，WAL 模式工作正常；其他无权限账号无法读取。不能留下 root 独占的 0600 数据库。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_restore_permissions_linux.py::test_restore_keeps_service_metadata_and_real_uid_can_write",
+          "matched_nodes": 2,
+          "results": {
+            "windows": {
+              "SKIP": 2
+            },
+            "linux": {
+              "PASS": 2
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "PERM-02",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+        "tests/deployment/test_remaining_gap_assertions.py::test_first_install_service_uid_writes_both_databases_in_wal"
+      ],
+      "assertions": "First install creates both schemas and owned parent/DB/locks; service UID commits both databases and checks WAL/SHM.",
+      "limits": "Actual service identity/migration/readiness; simulated dependency setup.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "临时 runtime/output 中不存在数据库，通过首次安装路径创建和迁移两类库，然后使用服务 UID 打开。",
+        "required_assertions": "父目录、数据库和锁路径均符合服务账号运行需要；readiness 不依赖 root 的访问能力。root 侧 schema check 成功而服务启动 PermissionError 属于失败。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_first_install_service_uid_writes_both_databases_in_wal",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "PERM-03",
+      "environment": "L+S",
+      "nodes": [
+        "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+        "tests/deployment/test_systemd_contract_linux.py::test_real_backup_unit_environment_defaults_overrides_and_release"
+      ],
+      "assertions": "Installer and daily service-created complete snapshots readable by actual UID, no world-readable snapshot files, next snapshot/upload works; release identity readable.",
+      "limits": "Fake restic only; real unit execution separate from synthetic installer.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "分别由安装器创建发布前快照、由备份服务身份创建日常快照；fake restic 在规定账号下读取本次完整快照。",
+        "required_assertions": "每种快照能被其实际使用者完整读取；服务账号能继续创建下一次日常快照；无全局可读的数据库或凭证目录；不以 root 的 fake restic 成功替代服务身份。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_systemd_contract_linux.py::test_real_backup_unit_environment_defaults_overrides_and_release",
+          "matched_nodes": 2,
+          "results": {
+            "windows": {
+              "SKIP": 2
+            },
+            "linux": {
+              "PASS": 2
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "PERM-04",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata",
+        "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection"
+      ],
+      "assertions": "chown/chmod/copy/switch x present/absent targets; failure retains guard, rolled_back journal/no pending, old data and UID WAL access; unrelated owner/group/mode/sentinel unchanged.",
+      "limits": "No extra installer metadata-fault gate.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "在应用目标元数据、复制文件、切换前分别注入权限错误或 I/O 错误，覆盖新库和已有库。",
+        "required_assertions": "失败退出；旧数据保留或可按 journal 明确恢复；guard 保持；不会发布“complete”但服务无法访问的库；不得递归修改无关目录权限。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata",
+          "matched_nodes": 8,
+          "results": {
+            "windows": {
+              "SKIP": 8
+            },
+            "linux": {
+              "PASS": 8
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection",
+          "matched_nodes": 4,
+          "results": {
+            "windows": {
+              "SKIP": 4
+            },
+            "linux": {
+              "PASS": 4
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-01",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_remaining_gap_assertions.py::test_uncontrolled_valid_deployment_stages_block_every_business_entry",
+        "tests/deployment/test_runtime_guards.py::test_invalid_deployment_blocks_all_cli_roles_before_io",
+        "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller",
+        "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels",
+        "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths",
+        "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state"
+      ],
+      "assertions": "Uncontrolled valid stages and invalid records fence six main entrypoints without business/client I/O; live exact controller permits resume/verify/finalize; actual public completion/rollback reaches six sentinels.",
+      "limits": "All-role positive sentinels replace clients/loops; live rollback remains guarded.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "写入发布各阶段的真实格式事务；在没有 restore-guard 的情况下分别启动 Bot、Worker、Scheduler、collector 的入口或真实 guard 调用链；补充无效 JSON/未知状态。",
+        "required_assertions": "未受控的未完成事务仍阻止业务；无效记录按保护处理；外部调用为零。正常已完成状态及有效受控 resume 的正向路径可执行，不产生永久阻塞。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_uncontrolled_valid_deployment_stages_block_every_business_entry",
+          "matched_nodes": 12,
+          "results": {
+            "windows": {
+              "PASS": 12
+            },
+            "linux": {
+              "PASS": 12
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_runtime_guards.py::test_invalid_deployment_blocks_all_cli_roles_before_io",
+          "matched_nodes": 3,
+          "results": {
+            "windows": {
+              "PASS": 3
+            },
+            "linux": {
+              "PASS": 3
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_runtime_guards.py::test_controlled_resume_requires_live_exact_controller",
+          "matched_nodes": 60,
+          "results": {
+            "windows": {
+              "SKIP": 60
+            },
+            "linux": {
+              "PASS": 60
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels",
+          "matched_nodes": 4,
+          "results": {
+            "windows": {
+              "SKIP": 4
+            },
+            "linux": {
+              "PASS": 4
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_pre_boundary_rollback_restores_complete_previous_state",
+          "matched_nodes": 4,
+          "results": {
+            "windows": {
+              "SKIP": 4
+            },
+            "linux": {
+              "PASS": 4
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-02",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_remaining_gap_assertions.py::test_pending_restore_clear_keeps_every_business_entry_protected",
+        "tests/deployment/test_restore_recovery.py::test_restore_journal_contains_per_database_operations_and_pre_restore_mapping"
+      ],
+      "assertions": "Public clear rejects prepared/installing/malformed/list journals and preserves guard/journal bytes plus six-entry fences; successful activation terminal journal/no pending allows public clear.",
+      "limits": "No transaction file deleted to bypass protection.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "构造未完成的真实恢复事务，再调用公开 maintenance clear；覆盖 prepared/installing、损坏或非对象 journal。",
+        "required_assertions": "clear 非零失败并说明需恢复；guard 与事务证据保留；角色仍不能处理业务。完成或经验证已回滚后才能解除；不能仅检查 activate_restore 拒绝重试。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_remaining_gap_assertions.py::test_pending_restore_clear_keeps_every_business_entry_protected",
+          "matched_nodes": 4,
+          "results": {
+            "windows": {
+              "PASS": 4
+            },
+            "linux": {
+              "PASS": 4
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_restore_recovery.py::test_restore_journal_contains_per_database_operations_and_pre_restore_mapping",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "PASS": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-03",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection"
+      ],
+      "assertions": "Actual Bash exception/SIGTERM/SIGKILL before clear, after clear, first-start, verify and finalize; boundary/snapshot/release persisted; six-entry restart protection.",
+      "limits": "Only test-owned PID/group killed; not power-loss evidence.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "真实执行 installer，在清除 guard 前、清除后但启动前、首个角色启动后、readiness 验证期间分别强杀；重建进程，模拟自动服务重启。",
+        "required_assertions": "持久化的业务边界不落后于实际放行；中断被识别；角色重启继续受保护，不能因 guard 文件已删而直接工作。保留旧/新 release、快照和阶段证据。普通异常与 SIGTERM 另做对应参数。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection",
+          "matched_nodes": 15,
+          "results": {
+            "windows": {
+              "SKIP": 15
+            },
+            "linux": {
+              "PASS": 15
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-04",
+      "environment": "L+S",
+      "nodes": [
+        "tests/deployment/test_installer_behavior.py::test_installer_post_boundary_failure_stops_roles_and_retains_guard",
+        "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units",
+        "tests/deployment/test_systemd_quiesce_linux.py::test_real_service_or_health_failure_stops_resumed_roles_and_retains_guard"
+      ],
+      "assertions": "Worker-start/readiness/health-exception failures stop resumed roles and retain guard; post-boundary candidate data not overwritten; pre-boundary code/data/release/unit state restored.",
+      "limits": "Synthetic and actual systemd evidence distinguished.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "一个角色启动成功后，另一个启动失败；另测 readiness 一直失败、超时和健康命令异常退出。",
+        "required_assertions": "安装器非零退出；已启动的受管业务停止或按保护协议停止接收/处理；保护保留。越过业务边界后不自动覆盖数据库；边界前需要回退时恢复一致的代码、数据和 release 身份。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_installer_post_boundary_failure_stops_roles_and_retains_guard",
+          "matched_nodes": 3,
+          "results": {
+            "windows": {
+              "SKIP": 3
+            },
+            "linux": {
+              "PASS": 3
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_pre_boundary_failure_restores_code_data_identity_and_units",
+          "matched_nodes": 8,
+          "results": {
+            "windows": {
+              "SKIP": 8
+            },
+            "linux": {
+              "PASS": 8
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_systemd_quiesce_linux.py::test_real_service_or_health_failure_stops_resumed_roles_and_retains_guard",
+          "matched_nodes": 3,
+          "results": {
+            "windows": {
+              "SKIP": 3
+            },
+            "linux": {
+              "PASS": 3
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-05",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_restore_crash_recovery.py::test_abrupt_restore_death_and_idempotent_complete_rollback"
+      ],
+      "assertions": "Five real interruption points x present/absent second target; actual WAL/SHM, pending/journal/original/retained/installed locations; six-entry fences before recovery; no finally-dependent cleanup.",
+      "limits": "Linux SIGKILL; Windows os._exit evidence separate.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "多库真实 activate 子进程在“操作计划已持久化、旧库已移走、新库已放置、第一库完成而第二库未完成”等位置强杀；WAL/SHM 使用真实 SQLite 夹具。",
+        "required_assertions": "不依赖 except/finally；journal 足以定位原文件、保留文件、目标与已安装集合；pending 可见且角色被保护；不存在误报 complete 的混合数据状态。对声明支持的恢复路径执行完整重放或回退。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_restore_crash_recovery.py::test_abrupt_restore_death_and_idempotent_complete_rollback",
+          "matched_nodes": 10,
+          "results": {
+            "windows": {
+              "PASS": 10
+            },
+            "linux": {
+              "PASS": 10
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-06",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_restore_crash_recovery.py::test_abrupt_restore_death_and_idempotent_complete_rollback",
+        "tests/deployment/test_restore_crash_recovery.py::test_interrupted_recovery_can_be_repeated_from_consistent_snapshot",
+        "tests/deployment/test_restore_crash_recovery.py::test_recovery_refuses_corrupt_mapping_before_replacing_files"
+      ],
+      "assertions": "Actual interrupted journal recovery restores complete three-DB schemas/content/FKs/integrity; absent DB/WAL/SHM remains absent; repeated interrupted recovery safe; corrupt mapping/snapshot/metadata refused before mutation.",
+      "limits": "Runbook recover command checked against actual CLI implementation.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "对实际中断产生的 journal，按实现提供的恢复程序或精确运行手册执行；再对相同中断状态重复操作。使用 pre-restore 快照，并覆盖恢复前某个目标库不存在的情形。",
+        "required_assertions": "数据恢复为明确的一致集合；不存在的目标不能悄悄残留为新版本；所有映射、schema 和内容匹配；重复操作不再次破坏数据。解除保护前复核齐全。当前只有 recovery-status 不能自动视为已完成恢复。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_restore_crash_recovery.py::test_abrupt_restore_death_and_idempotent_complete_rollback",
+          "matched_nodes": 10,
+          "results": {
+            "windows": {
+              "PASS": 10
+            },
+            "linux": {
+              "PASS": 10
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_restore_crash_recovery.py::test_interrupted_recovery_can_be_repeated_from_consistent_snapshot",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "PASS": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_restore_crash_recovery.py::test_recovery_refuses_corrupt_mapping_before_replacing_files",
+          "matched_nodes": 4,
+          "results": {
+            "windows": {
+              "PASS": 4
+            },
+            "linux": {
+              "PASS": 4
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "GUARD-07",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths",
+        "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-finalize]",
+        "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker"
+      ],
+      "assertions": "Actual success and public finalize confirmation preserve both original DB probes/schema/integrity/FKs; current link/release.env stable; mismatched release/current/heartbeat/pending states refuse confirmation.",
+      "limits": "Dependency and systemctl setup simulated; not target deployment.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "正常部署完全通过；另在 finalize 持久化后、删除活动标记前终止，再按明确完成确认流程恢复。",
+        "required_assertions": "成功路径确实可 finalize，身份与数据不漂移；残留标记可以被安全核对和处理；不会把真正未完成事务误判成成功。禁止测试直接 rm 标记来制造通过。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection[sigkill-finalize]",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker",
+          "matched_nodes": 5,
+          "results": {
+            "windows": {
+              "SKIP": 5
+            },
+            "linux": {
+              "PASS": 5
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "RG-01",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_release_inputs.py"
+      ],
+      "assertions": "Execute actual workflow validators/fixed entry with path/release/host/user/port attack inputs; bad host key rejects before scp/remote mutation; fixed root-controlled installer cannot be replaced by archive.",
+      "limits": "SSH executable boundary simulated; real SSH path remains V-02.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "用受控输入执行 workflow 中实际校验片段及固定入口：合法部署路径/release_id；相对路径、目录穿越、空白、引号、分号、反斜杠、换行、非法 release 字符；host key 不匹配。",
+        "required_assertions": "非法输入在远端变更前拒绝；合法输入能到达预期步骤；校验不执行输入里的文本；固定入口保持 root 控制，部署包不能替换实际执行的 installer。真实 SSH host key 链路另由 V-02 验证。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_release_inputs.py",
+          "matched_nodes": 117,
+          "results": {
+            "windows": {
+              "SKIP": 117
+            },
+            "linux": {
+              "PASS": 117
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "RG-02",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch",
+        "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape",
+        "tests/deployment/test_release_inputs.py::test_legal_synthetic_archive_continues_through_real_migration_and_finalize"
+      ],
+      "assertions": "Real archive/manifest SHA/release/dirty/missing/malformed/traversal/absolute/wrong-root/link/FIFO reject before migration/switch; valid synthetic archive proceeds.",
+      "limits": "Synthetic archive/control-flow install does not prove release dependency install.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "用小型真实 archive/manifest 测试 SHA 不符、release 不符、dirty 候选、越界成员、符号链接和合法包。",
+        "required_assertions": "无效包在迁移与切换前拒绝；不能写出暂存边界；合法包可继续。生产默认拒绝 dirty；测试如需使用离线 dirty 包，必须独立标记，不能计入生产候选证据。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch",
+          "matched_nodes": 6,
+          "results": {
+            "windows": {
+              "SKIP": 6
+            },
+            "linux": {
+              "PASS": 6
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape",
+          "matched_nodes": 6,
+          "results": {
+            "windows": {
+              "SKIP": 6
+            },
+            "linux": {
+              "PASS": 6
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_release_inputs.py::test_legal_synthetic_archive_continues_through_real_migration_and_finalize",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "PASS": 1
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "RG-03",
+      "environment": "L+S",
+      "nodes": [
+        "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration",
+        "tests/deployment/test_systemd_quiesce_linux.py"
+      ],
+      "assertions": "Real writers/timers stop before snapshots/migrations; timer race suppressed; only active/configured initial units resume; inactive upgrade stays inactive; pre/post-boundary failures and expired rollback lease validated as service UID.",
+      "limits": "Real systemd/PrivateTmp/UID/SQLite; dependency setup simulated; historical failure retained.",
+      "requirement_row": {
+        "environment": "L+S",
+        "inputs": "同时模拟或实际运行 Bot/Worker，以及 scheduler、main/AI collector、health、backup 的 oneshot 与 timer；在停写过程中触发一个 timer 到期。",
+        "required_assertions": "快照/迁移前所有受管写入者停止；timer 不重新拉起写入者；只恢复事先 active 或明确配置的初始单位；原本 inactive 的单位不被意外启用。stub 顺序测试与真实 systemd 结果分别记录。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration",
+          "matched_nodes": 2,
+          "results": {
+            "windows": {
+              "SKIP": 2
+            },
+            "linux": {
+              "PASS": 2
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_systemd_quiesce_linux.py",
+          "matched_nodes": 11,
+          "results": {
+            "windows": {
+              "SKIP": 11
+            },
+            "linux": {
+              "PASS": 11
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "RG-04",
+      "environment": "L",
+      "nodes": [
+        "tests/deployment/test_release_install_linux.py::test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout"
+      ],
+      "assertions": "Actual empty Python3.10 venv, both dependency locks and project installation, pip check, outside-checkout imports/smoke; no DB/.env/cache in archive; missing DB not created.",
+      "limits": "Dirty installation can prove mechanism only. Entire clean-candidate requirement remains BLOCKED without authorized committed revision.",
+      "requirement_row": {
+        "environment": "L",
+        "inputs": "用干净候选打包；新建空 venv，按 requirements.lock 和项目安装步骤安装；离开 checkout，unset PYTHONPATH，用安装产物导入 trendradar/mcp_server、执行离线 CLI 和 release smoke。",
+        "required_assertions": "目标 Python 版本下真实依赖安装与 pip check 成功；包无运行数据库、真实 .env 或缓存；从独立工作目录可运行；负向 readiness 不创建数据库。Windows 安装或 --no-deps 的 dry-run 不能替代本项。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_release_install_linux.py::test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout",
+          "matched_nodes": 1,
+          "results": {
+            "windows": {
+              "SKIP": 1
+            },
+            "linux": {
+              "SKIP": 1
+            },
+            "installation": {
+              "PASS": 1
+            }
+          }
+        }
+      ],
+      "status": "BLOCKED",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance",
+      "blocking_reason": "Dirty artifact installation passes; clean authorized committed production candidate is absent"
+    },
+    {
+      "requirement_id": "RG-05",
+      "environment": "W+L",
+      "nodes": [
+        "tests/deployment/test_offsite_backup.py",
+        "tests/deployment/test_offsite_processes.py"
+      ],
+      "assertions": "Fake success/nonzero/timeout; inherited/detached child death and no leaked success receipt; manifest-bound redacted receipt; actual Windows Job attachment failures reap suspended processes.",
+      "limits": "No remote restic call; Windows-only nodes supplied by Windows full run.",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "fake restic 正常成功、非零退出、超时、派生子进程不退出；输出内放入合成 secret sentinel。",
+        "required_assertions": "失败和超时有界结束且无测试子进程残留；不生成成功收据；成功收据绑定 backup_id、manifest digest、远端 snapshot 标识与数据时间；日志中没有 sentinel。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_offsite_backup.py",
+          "matched_nodes": 3,
+          "results": {
+            "windows": {
+              "PASS": 3
+            },
+            "linux": {
+              "PASS": 3
+            },
+            "installation": {}
+          }
+        },
+        {
+          "reference": "tests/deployment/test_offsite_processes.py",
+          "matched_nodes": 9,
+          "results": {
+            "windows": {
+              "PASS": 9
+            },
+            "linux": {
+              "PASS": 6,
+              "SKIP": 3
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "RG-06",
+      "environment": "W+L",
+      "nodes": [
+        "tests",
+        "tests/integrations/feishu/test_phase7_roles.py"
+      ],
+      "assertions": "Complete tests, rollback compatibility, disabled switches, completed-event suppression, saved-reply retry, role isolation, reconnect bounds; scoped Ruff/AST/Bash/diff and dependency checks.",
+      "limits": "Frozen full Windows/Linux runs pass; two opt-in archived pre-fix cases retain separate historical evidence; dirty installation executed separately. Static and warning evidence in final-run-v6-20261022.json",
+      "requirement_row": {
+        "environment": "W+L",
+        "inputs": "修复完成后运行部署/角色重点测试，再运行完整 tests；按变更路径运行 Ruff、编译检查及 diff 检查。",
+        "required_assertions": "无新增失败或未解释 warning；保留 Intelligence-off、Lark-off、角色隔离、完成事件去重、保存回复后重试、重连界限等既有行为。全部业务 provider 均为 mock/fake。"
+      },
+      "execution": [
+        {
+          "reference": "tests",
+          "matched_nodes": 1025,
+          "results": {
+            "windows": {
+              "PASS": 683,
+              "SKIP": 342
+            },
+            "linux": {
+              "PASS": 1019,
+              "SKIP": 6
+            },
+            "installation": {
+              "PASS": 1
+            }
+          }
+        },
+        {
+          "reference": "tests/integrations/feishu/test_phase7_roles.py",
+          "matched_nodes": 5,
+          "results": {
+            "windows": {
+              "PASS": 5
+            },
+            "linux": {
+              "PASS": 5
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    },
+    {
+      "requirement_id": "RG-07",
+      "environment": "S",
+      "nodes": [
+        "tests/deployment/test_systemd_contract_linux.py::test_real_backup_unit_environment_defaults_overrides_and_release"
+      ],
+      "assertions": "Actual systemd unit under UID65534 and PrivateTmp; default timeout900/grace10 and overrides123/7; release.env group readability and service success.",
+      "limits": "Proves isolated backup unit, not VPS resource/remote backup acceptance.",
+      "requirement_row": {
+        "environment": "S",
+        "inputs": "在真实 systemd 的隔离环境校验 units；用受控 helper 接收备份 unit 参数，分别测试默认值与环境覆盖；验证 release.env 与实际服务身份读取。",
+        "required_assertions": "默认 timeout=900、kill-grace=10 正确传参，覆盖值生效；服务组读取 release 身份成功；unit 启停行为与退出结果正确。只做 YAML 解析或搜索字符串不算通过。"
+      },
+      "execution": [
+        {
+          "reference": "tests/deployment/test_systemd_contract_linux.py::test_real_backup_unit_environment_defaults_overrides_and_release",
+          "matched_nodes": 2,
+          "results": {
+            "windows": {
+              "SKIP": 2
+            },
+            "linux": {
+              "PASS": 2
+            },
+            "installation": {}
+          }
+        }
+      ],
+      "status": "PASS",
+      "provenance": "Parent source/assertion review retained in reviewed-assertions-20261022.json, associated with final direct-terminal JUnit results; counts alone are not acceptance"
+    }
+  ],
+  "not_currently_executed": {
+    "historical_pre_fix_nodes": [
+      "tests/deployment/test_pre_fix_linux.py::test_pre_fix_entry_drops_trusted_configuration_and_health_reads_wrong_database",
+      "tests/deployment/test_pre_fix_linux.py::test_pre_fix_root_restore_removes_service_ownership_and_readability"
+    ],
+    "evidence": "pre-fix-linux.json (retained immutable archived implementation); not used as final-source passing assertions"
+  },
+  "limits": [
+    "Not production acceptance",
+    "No GitHub, real provider, remote restic or VPS execution",
+    "Systemd/UID evidence is isolated WSL; installer dependency setup simulated; separate archive installation real"
+  ]
+}

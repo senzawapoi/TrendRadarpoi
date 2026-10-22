@@ -1,0 +1,205 @@
+{
+    "checkpoint_utc":  "2026-10-14T06:37:16.8535379Z",
+    "git_head":  "5a427aba5ded0c9c9c9e050413dcb41f17fa0e23",
+    "branch":  "main",
+    "worktree_dirty":  true,
+    "scope":  "Scoped source inputs at cleanup checkpoint; not a final release manifest or complete checkout digest",
+    "files":  [
+                  {
+                      "path":  ".github/workflows/phase7-ci.yml",
+                      "sha256":  "a9aedaa165253f7490c4098e2d115a8a8b5b3efdb560327f7fde2a3d8b99755f"
+                  },
+                  {
+                      "path":  ".github/workflows/phase7-deploy.yml",
+                      "sha256":  "7e71dff6f0a633358743875b9649a9deda53825a8e01ccf1103aefc0cc755980"
+                  },
+                  {
+                      "path":  ".github/workflows/phase7-release.yml",
+                      "sha256":  "dcb805f8206ed7e36abad7607bf40638fba120db9565adf0b6fef85d7fe2e9ed"
+                  },
+                  {
+                      "path":  "deploy/bin/trendradar-install-release",
+                      "sha256":  "21ceba6d198a9854668310858d6a487e41d4a7236617ec813a245ce2e83e0fb5"
+                  },
+                  {
+                      "path":  "deploy/config/backup.env.example",
+                      "sha256":  "a5007126fd793c5fcca81c0c381e3d6f140e058abd24bafe62b76b513cedab5f"
+                  },
+                  {
+                      "path":  "deploy/config/bot.env.example",
+                      "sha256":  "c06fa93f07e2da15f6de8b246344707b271cf064a8449ab1f3dd87b8a2f59daa"
+                  },
+                  {
+                      "path":  "deploy/config/collector.env.example",
+                      "sha256":  "657e28e263bdfe2439d1ae7e167eee077020f5dd023c5c44da965bc1b6c4a094"
+                  },
+                  {
+                      "path":  "deploy/config/common.env.example",
+                      "sha256":  "5e71d2a2dd851b65be27ab160f4072bfe58862b525f83b3083f723f848b36034"
+                  },
+                  {
+                      "path":  "deploy/config/scheduler.env.example",
+                      "sha256":  "c7825fe7b22d8873d981badf191f9d324f321cff3d4a327a9dc2c43fae093a58"
+                  },
+                  {
+                      "path":  "deploy/config/worker.env.example",
+                      "sha256":  "c92deac65f3214d40eff33c7774737bb079f3be0e47afeb342678aefbc7cae6c"
+                  },
+                  {
+                      "path":  "deploy/systemd/trendradar-backup.service",
+                      "sha256":  "084b8568e6c9275cf4fcfe94ad5f35192038cf1d304ace6decfb66f2d0cc1d5c"
+                  },
+                  {
+                      "path":  "pyproject.toml",
+                      "sha256":  "6eaaf5e166accbebbf1f303592329cd8709a41e022ec6d994587c1eb0c203ed8"
+                  },
+                  {
+                      "path":  "requirements.lock",
+                      "sha256":  "cd87f7428e3c8ce7493b13468ca5e4d131f38048935314b2aae4977c2d689925"
+                  },
+                  {
+                      "path":  "requirements.txt",
+                      "sha256":  "80a584abed45816ac517399f749d432b536ff766ce76175f9ee2ca8f64de4afa"
+                  },
+                  {
+                      "path":  "scripts/deploy/__init__.py",
+                      "sha256":  "1af79fbdaf8a10bc90055fd57cb982c19b2dd9f6b309016c9c41bd196ca26995"
+                  },
+                  {
+                      "path":  "scripts/deploy/build_release.py",
+                      "sha256":  "3901550a6d5141c5c6978bf83e583dac7ae3a4dc17950af8bcd8ddd5fd4ee0e0"
+                  },
+                  {
+                      "path":  "scripts/deploy/create_manifest.py",
+                      "sha256":  "fa16c1b19ffd3cbaaf30bdee7d856d6f8f3ed0e8848ffab9afe23fa732d0c8b9"
+                  },
+                  {
+                      "path":  "scripts/deploy/install_release.sh",
+                      "sha256":  "8221af71bcbb50c1ea06790661571d909e007d84e726d3cae91ef54f318f966a"
+                  },
+                  {
+                      "path":  "scripts/deploy/linux_smoke.sh",
+                      "sha256":  "3077463aaaf2fed05bfdeac868a76c763836c5f97b1226b9b6f7b9a818b32c52"
+                  },
+                  {
+                      "path":  "scripts/deploy/load_environment.py",
+                      "sha256":  "7e41177d56fcb74ff390e9b553c90e52fdef548776eb51c19e0bdf4be73ea4cf"
+                  },
+                  {
+                      "path":  "scripts/deploy/offsite_backup.py",
+                      "sha256":  "863d8783583fd5969354e3206f5752f1f01d57e288d447b1bc1a03741ab4510d"
+                  },
+                  {
+                      "path":  "scripts/deploy/preflight.py",
+                      "sha256":  "371aeb3a58ee96571525edc99da3f48db5d560caad01c915e442319f41700fce"
+                  },
+                  {
+                      "path":  "scripts/deploy/process_tree.py",
+                      "sha256":  "4d6c46ea69e79c1f1e9a412bd310fbdb3e18d8979678181685f7c8f3505199eb"
+                  },
+                  {
+                      "path":  "scripts/deploy/release_smoke.sh",
+                      "sha256":  "ffed91620d9c4cc6b2bba1b0e0be443041e93d236032accbeab2f98f9d411f8c"
+                  },
+                  {
+                      "path":  "tests/deployment/__init__.py",
+                      "sha256":  "cf43e3ea11024158dee3a32b9039846754667c87ccab54295616c40e8b205b08"
+                  },
+                  {
+                      "path":  "tests/deployment/installer_harness.py",
+                      "sha256":  "b94939c52c90bfb13c787a61277a0ce199b1285ff1d47e0b5280e9082ae5dcc3"
+                  },
+                  {
+                      "path":  "tests/deployment/test_actual_gap_health.py",
+                      "sha256":  "09668e29922e39a3363758648ac5b08d9b823349c846943ccc3c0a7a926e5222"
+                  },
+                  {
+                      "path":  "tests/deployment/test_backup.py",
+                      "sha256":  "b75d4bc38712c5735ece80357a992cac2f5796e3215be25e1fafa02a58c91867"
+                  },
+                  {
+                      "path":  "tests/deployment/test_deployment_contracts.py",
+                      "sha256":  "2e1807524815236d3ac0067b32e4c2c5e50e093b063ee575b21df9704da2cbc7"
+                  },
+                  {
+                      "path":  "tests/deployment/test_environment_entry_linux.py",
+                      "sha256":  "d1d7fce0af88ddb69d85a52bd280181eea464a60b0654c980e6c0f31d3811188"
+                  },
+                  {
+                      "path":  "tests/deployment/test_environment_loading.py",
+                      "sha256":  "af76c95d437ec90233a106b2e4e7fbc07b27d1f567315a22142e006faf73aeb0"
+                  },
+                  {
+                      "path":  "tests/deployment/test_health.py",
+                      "sha256":  "d1e87205ed6237eb9b895d444734f90e53a6a9addc32628714d32f2e1122b5e6"
+                  },
+                  {
+                      "path":  "tests/deployment/test_installer_behavior.py",
+                      "sha256":  "a35058e5eab4fb9d8f8fc243fd874f7f07eb291c606c440ed4984d13cdf87f3f"
+                  },
+                  {
+                      "path":  "tests/deployment/test_offsite_backup.py",
+                      "sha256":  "e912d5b2c70af6df2d2ef87aba0ff84c4e7d9b71f1c3bb73f05ffad972dab361"
+                  },
+                  {
+                      "path":  "tests/deployment/test_offsite_processes.py",
+                      "sha256":  "960dc2c2d089aac0a0222a8ce061a011ba42beaaf05fea6cb3f99030a53f9ad9"
+                  },
+                  {
+                      "path":  "tests/deployment/test_restore_crash_recovery.py",
+                      "sha256":  "9f7f24cfc8ab7ff4dd57b27fd3af6098cb48f054474033d96d40db5c7de736ca"
+                  },
+                  {
+                      "path":  "tests/deployment/test_restore_permissions_linux.py",
+                      "sha256":  "6f0f68cc654030f5174d96d371dde2affd4dca7d0009f681b8f0df23ad5455ef"
+                  },
+                  {
+                      "path":  "tests/deployment/test_restore_recovery.py",
+                      "sha256":  "71677c0528dccd7b49a858d09c919a115e39171dce2074d9da7e7e8e86caa204"
+                  },
+                  {
+                      "path":  "tests/deployment/test_runtime_guards.py",
+                      "sha256":  "e4a19bf962f407d2b324b99845811db21b316423b629f8c133e43fd9404cf6a7"
+                  },
+                  {
+                      "path":  "tests/deployment/test_systemd_contract_linux.py",
+                      "sha256":  "6d5b76f6e11419da0e13f447c6cdf5c1dcb4e4f7f30ebd9cb71ed328bb282173"
+                  },
+                  {
+                      "path":  "trendradar/core/heartbeat.py",
+                      "sha256":  "dec016be149867c9ec6e3b2edd12c882963f53fdc9bff98da8d703b75c4d82ef"
+                  },
+                  {
+                      "path":  "trendradar/core/locking.py",
+                      "sha256":  "a2dc7b982c81182cf8e627b4f46fed6cd810d1dd2fc06c22af232cb7656242ad"
+                  },
+                  {
+                      "path":  "trendradar/integrations/feishu/__main__.py",
+                      "sha256":  "eda3301f55d1c9e35f89ede74f409fbea9f4edf9cc8e6fcd5d1e9bcb813cff5d"
+                  },
+                  {
+                      "path":  "trendradar/ops/__init__.py",
+                      "sha256":  "d4da8e810a927d4b574a87071984ca1f4a9db6718e80512ea6977567f9ba3aef"
+                  },
+                  {
+                      "path":  "trendradar/ops/__main__.py",
+                      "sha256":  "3d84dd8df8bf6de9601906f0c64aab66484d2339465c311a4b9b705f93e88e41"
+                  },
+                  {
+                      "path":  "trendradar/ops/backup.py",
+                      "sha256":  "2e0db56173f301935abbb529dfa1fdd50817c97b1ecab9adad2503356d980c8b"
+                  },
+                  {
+                      "path":  "trendradar/ops/database.py",
+                      "sha256":  "e949514e9ced4616f16a5798c1cc78046bd4ff3e10d35d3f67a43c8afdf572e7"
+                  },
+                  {
+                      "path":  "trendradar/ops/health.py",
+                      "sha256":  "44b401e1baac2bd0e1e7896c540832aa0c8dca82be0fe69f63d2250c8f70f690"
+                  },
+                  {
+                      "path":  "trendradar/ops/maintenance.py",
+                      "sha256":  "3550053baaed097f881dfcbfa95a781f841015e47454872bbac041ae907c5137"
+                  }
+              ]
+}

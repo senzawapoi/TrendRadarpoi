@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-22",
+  "scope": "Investigate the initial Linux full-suite maintenance-clear failure without weakening controller authorization",
+  "initial_result": {
+    "log": "linux-full-20261022.txt",
+    "session": 69921,
+    "exit_code": 1,
+    "result": "973 passed, 1 failed, 6 skipped, 2 warnings in 1151.24s",
+    "node": "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration[False]",
+    "failure": "deployment failed during resume: deployment guard clear",
+    "root_cause": "unknown; original temporary fixture no longer accessible after terminal completion",
+    "production_fix_claimed": false
+  },
+  "diagnostic_attempts": [
+    {
+      "log": "linux-guard-diagnostic-20261022.txt",
+      "exit_code": 1,
+      "result": "1 setup error; new basetemp parent did not exist; no scenario executed"
+    },
+    {
+      "log": "linux-guard-diagnostic-02-20261022.txt",
+      "session": 84615,
+      "exit_code": 1,
+      "result": "1 failed in 21.68s",
+      "failure": "Installer completed, then diagnostic record without args triggered existing test log reader KeyError",
+      "interpretation": "Original maintenance-clear failure not reproduced; diagnostic fixture format defect",
+      "fixture": "/var/lib/trendradar-p7-gap-20261022/guard-diagnostic",
+      "repair": "Authorization observations moved to a separate test-owned operations.jsonl.authorization.jsonl file"
+    }
+  ],
+  "telemetry": "Wrapper calls the real _controller_alive once, preserves its return value, and logs only synthetic test payload plus check time. No lease, guard, role or production behavior changed.",
+  "expanded_run": {
+    "log": "linux-installer-diagnostic-20261022.txt",
+    "session": 99511,
+    "fixture": "/var/lib/trendradar-p7-gap-20261022/installer-diagnostic",
+    "status": "terminal",
+    "exit_code": 1,
+    "result": "59 passed, 1 failed in 578.06s",
+    "observed_rejection": {
+      "node": "test_all_timers_stop_before_writers_and_snapshot_migration[False]",
+      "controller_pid": 2653,
+      "updated_at": "2026-10-22T06:59:05.271487+00:00",
+      "checked_at": "2026-10-22T06:59:03.564690+00:00",
+      "utc_age_seconds": -1.706797,
+      "accepted": false,
+      "cause": "Wall-clock order reversed across fresh record and check; old authorization rejects negative UTC age",
+      "clock_adjustment_actor": "not established"
+    }
+  },
+  "minimal_repair": {
+    "production": ["trendradar/ops/maintenance.py", "scripts/deploy/install_release.sh"],
+    "behavior": "New records carry same-boot CLOCK_BOOTTIME nanoseconds for the unchanged 15-second lease; clock includes suspend. PID/start/boot/release/boundary checks retained. Legacy records retain strict UTC-age checks. Invalid or future boottime fails closed without UTC fallback.",
+    "tests": ["tests/deployment/test_runtime_guards.py", "tests/deployment/test_systemd_quiesce_linux.py"],
+    "pre_fix_log": "lease-clock-prefx-20261022.txt",
+    "pre_fix_result": "6 failed, 81 deselected in 0.80s; exit 1; deterministic wall-forward/backward cases with valid boottime proofs",
+    "focused_log": "lease-clock-focused-20261022.txt",
+    "focused_session": 76416,
+    "focused_status": "terminal",
+    "focused_result": "118 passed in 375.00s; exit 0"
+  },
+  "limits": "A later pass does not establish the cause of the historical failure or prove power-loss durability. Preserve all logs and fault directories."
+}

@@ -43,6 +43,9 @@ Deploy in <strong>30 seconds</strong> — Say goodbye to endless scrolling, only
 
 > This project is designed to be lightweight and easy to deploy
 
+> Start with the [documentation guide](docs/README.md). See [intelligence.md](docs/intelligence.md)
+> for unified intelligence, Story, security, Assistant, Feishu, rollback, and historical backfill.
+
 <br>
 
 ## 📑 Quick Navigation

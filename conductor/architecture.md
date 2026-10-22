@@ -1,5 +1,8 @@
 # TrendRadar — Architecture & Data Flow
 
+> Historical pre-v5 snapshot. Current authority: `../docs/code-review.md`,
+> `../docs/intelligence.md`, and `../.planning/STATE.md`.
+
 ## Module Responsibilities
 
 ```

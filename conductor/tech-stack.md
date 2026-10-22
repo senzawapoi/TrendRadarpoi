@@ -1,5 +1,8 @@
 # TrendRadar — Tech Stack
 
+> Historical pre-v5 snapshot. Current authority: `../docs/code-review.md`,
+> `../docs/intelligence.md`, and `../.planning/STATE.md`.
+
 ## Language & Runtime
 
 - **Python** >=3.10

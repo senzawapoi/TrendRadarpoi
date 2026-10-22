@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-14",
+  "scope": "ENV-03 fixed-entry CONFIG_PATH readability",
+  "before": {
+    "provenance": "completed Linux agent report recorded in remaining-assertions-20261014.json",
+    "session": 63299,
+    "result": "26 passed, 1 failed in 30.90s",
+    "node": "test_fixed_entry_rejects_actually_unreadable_config_before_migration",
+    "observed": "mode-000 YAML unreadable without DAC bypass, yet fixed entry executed isolated migration helper"
+  },
+  "change": {
+    "path": "scripts/deploy/load_environment.py",
+    "behavior": "Open CONFIG_PATH in binary mode and read one byte before executing the trusted maintenance helper; existing sanitized OSError response remains",
+    "scope": "No YAML execution, credential logging or runtime database access added"
+  },
+  "after": {
+    "provenance": "direct parent tool output",
+    "session": 4503,
+    "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_remaining_gap_assertions.py tests/deployment/test_environment_loading.py tests/deployment/test_environment_entry_linux.py -q -p no:cacheprovider --tb=short",
+    "result": "48 passed in 49.06s",
+    "exit_code": 0,
+    "proof": "Actual unreadable input rejects before migration; valid quoted input, required keys, six-path operations, real lock contention and guard fences pass"
+  },
+  "checks": {
+    "scoped_ruff": "scripts/deploy/load_environment.py --no-cache passed"
+  },
+  "limits": [
+    "Full regression not represented by this scope",
+    "Full installer service-readability check remains separate",
+    "No provider, production runtime, commit, push or deployment"
+  ]
+}

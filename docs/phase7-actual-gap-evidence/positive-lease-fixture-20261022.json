@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-22",
+  "candidate": "final-inputs-v6-20261022.json",
+  "classification": "test-fixture alignment; no production authorization change",
+  "retained_failure": {
+    "run": "final-run-v5-20261022.json",
+    "log": "linux-final-v5-20261022.txt",
+    "node": "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels[verify]",
+    "observed": "The sentinel child failed assert read_guard(database) is None. Retained transaction is valid-looking legacy UTC format and omits controller_lease_boottime_ns.",
+    "fixture": "/var/lib/trendradar-p7-gap-20261022/full-v5/test_controlled_or_completed_d2/transactions/deploy-in-progress.json",
+    "failure_time_age": "not captured; do not assert an exact UTC-age cause for this node"
+  },
+  "change": "Add time import and current same-boot controller_lease_boottime_ns to the authorized positive fixture, matching install_release.sh write_state. Keep UTC audit field, 15-second bound, all identity and negative assertions.",
+  "focused": {
+    "command": "wsl -d Ubuntu --cd /mnt/c/Users/DELL/Desktop/TrendRadarpoi-master --exec /usr/bin/env PYTHONDONTWRITEBYTECODE=1 /var/lib/trendradar-p7-gap-20261014/venv310/bin/python -B -m pytest tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels tests/deployment/test_runtime_guards.py -q -ra -p no:cacheprovider --tb=short --junitxml=docs/phase7-actual-gap-evidence/positive-lease-focused-20261022.xml",
+    "result": "91 passed in 5.51s",
+    "exit_code": 0,
+    "log": "positive-lease-focused-20261022.txt",
+    "junit": "positive-lease-focused-20261022.xml"
+  },
+  "unchanged": "Dedicated legacy UTC allowed/denied cases, invalid/future/expired boottime values, strict type and exact 15-second boundary, PID/start/boot/release/stage/business-boundary checks. No marker manually deleted or skip expanded."
+}
