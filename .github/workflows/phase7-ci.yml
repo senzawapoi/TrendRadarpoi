@@ -74,10 +74,15 @@ jobs:
               assert not any(directory == resolved or directory in resolved.parents
                              for directory in (Path('/tmp'), Path('/var/tmp'))), resolved
           PY
+          # Service UIDs cannot traverse the runner's private home directory.
+          # Clone the exact revision outside /home; retain all service hardening.
+          sudo git -c safe.directory="$GITHUB_WORKSPACE" clone --no-hardlinks \
+            "$GITHUB_WORKSPACE" /var/lib/trendradar-p7-ci/source
+          sudo git -C /var/lib/trendradar-p7-ci/source checkout --detach "$GITHUB_SHA"
           sudo runuser -u nobody -- /var/lib/trendradar-p7-ci/venv/bin/python -B -c \
-            'import os,sys; assert os.getuid() == 65534; assert sys.version_info[:2] == (3, 10)'
-          sudo git config --global --add safe.directory "$GITHUB_WORKSPACE"
+            'import os,sys; from pathlib import Path; assert os.getuid() == 65534; assert sys.version_info[:2] == (3, 10); root=Path("/var/lib/trendradar-p7-ci/source"); assert (root/"tests/deployment/test_systemd_quiesce_linux.py").read_bytes(); sys.path.insert(0,str(root)); import trendradar.ops; assert Path(trendradar.ops.__file__).is_relative_to(root)'
       - name: Real UID, controller, lock, installer and systemd checks
+        working-directory: /var/lib/trendradar-p7-ci/source
         run: |
           sudo env PYTHONDONTWRITEBYTECODE=1 \
             /var/lib/trendradar-p7-ci/venv/bin/python -B -m pytest \
@@ -105,6 +110,7 @@ jobs:
             tests/integrations/feishu/test_phase7_roles.py \
             -q -p no:cacheprovider --tb=short
       - name: Actual empty-venv artifact installation outside checkout
+        working-directory: /var/lib/trendradar-p7-ci/source
         run: |
           sudo env PYTHONDONTWRITEBYTECODE=1 TRENDRADAR_P7_ARTIFACT_INSTALL=true \
             /var/lib/trendradar-p7-ci/venv/bin/python -B -m pytest \

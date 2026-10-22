@@ -43,3 +43,12 @@ C3/C4、远端取回恢复、至少 48 小时和两个日报窗口仍属现场�
 运行 39789256245 的 offline 作业在 Ruff 0.17.1 的 RUF021 规则处失败。
 为 build_release.py 的环境文件排除条件补上括号，保留原有布尔优先级与行为。
 精确差异已纳入候选哈希表；后续 CI 结果以对应提交和运行链接为准。
+
+## 特权 CI 读取边界修正
+
+首轮特权作业为 501 passed / 3 skipped / 15 failed；失败集中在非特权服务
+无法读取 runner 主目录中的源码（ModuleNotFoundError / PermissionError）。
+CI 改为把同一 GITHUB_SHA 克隆到 /var/lib/trendradar-p7-ci/source，先验证实际
+UID 65534 能读取夹具并导入项目，再从该目录执行原有完整验收。
+不修改服务 PrivateTmp/ProtectHome，不扩大 runner 主目录权限，不跳过失败用例。
+对应工作流接线测试与候选哈希表一并更新。

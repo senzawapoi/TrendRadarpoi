@@ -80,6 +80,7 @@ raise SystemExit(19 if operation == os.environ.get('CI_TEST_FAILURE') else 0)
             cwd=tmp_path,
             env={"PATH": str(binary), "LANG": "C.UTF-8", "PYTHONDONTWRITEBYTECODE": "1",
                  "GITHUB_WORKSPACE": str(tmp_path / "checkout with spaces"),
+                 "GITHUB_SHA": "0123456789abcdef0123456789abcdef01234567",
                  "CI_TEST_LOG": str(log), "CI_TEST_PID1": pid1, "CI_TEST_FAILURE": failure},
             capture_output=True, text=True, timeout=10,
         )
@@ -184,6 +185,22 @@ def test_toolchain_uses_python310_locked_dependencies_and_service_uid(workflow, 
     assert service_check[4] == dependency_check[0]
     assert commands.index(service_check) < next(index for index, args in enumerate(commands)
                                               if args[1:4] == ["-B", "-m", "pytest"])
+
+
+def test_privileged_acceptance_uses_same_revision_outside_runner_home(privileged_trace):
+    commands = [_command(record)[1] for _, record in privileged_trace if record["tool"] == "sudo"]
+    clone, = (args for args in commands if args[0] == "git" and "clone" in args)
+    checkout, = (args for args in commands if args[0] == "git" and "checkout" in args)
+    source = Path(clone[-1])
+    assert source.is_absolute() and Path("/var/lib") in source.parents
+    assert "--no-hardlinks" in clone
+    assert checkout == ["git", "-C", str(source), "checkout", "--detach",
+                        "0123456789abcdef0123456789abcdef01234567"]
+    service_check, = (args for args in commands if args[:1] == ["runuser"])
+    assert commands.index(checkout) < commands.index(service_check)
+    assert str(source) in service_check[-1]
+    for step, _, _ in _pytest_calls(privileged_trace):
+        assert Path(step["working-directory"]) == source
 
 
 @pytest.mark.parametrize("failure", ["venv", "pip-install", "pip-check", "preflight", "runuser"])
