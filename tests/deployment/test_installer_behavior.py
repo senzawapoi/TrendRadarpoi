@@ -556,7 +556,7 @@ def test_installer_requires_build_lock_and_uses_both_locks_without_build_isolati
         assert "build-requirements.lock" in result.stderr
         assert probe(database) == (6, "before-deploy")
         assert (tmp_path / "current").resolve() == tmp_path / "releases/previous"
-        assert not (tmp_path / "systemctl.jsonl").exists()
+        assert all(entry[0] == "is-active" for entry in unit_commands(tmp_path))
         return
     assert result.returncode == 0, result.stdout + result.stderr
     events = [json.loads(line) for line in (tmp_path / "operations.jsonl").read_text().splitlines()]

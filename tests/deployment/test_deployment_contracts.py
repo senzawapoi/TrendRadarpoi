@@ -1,3 +1,4 @@
+import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +23,41 @@ def test_release_excludes_private_agent_workspace():
 
     assert _excluded(ROOT / ".superpowers/sdd/private.json")
     assert not _excluded(ROOT / "trendradar/ops/health.py")
+
+
+def test_release_normalizes_shell_script_line_endings(tmp_path):
+    from scripts.deploy.build_release import build_release
+
+    artifact = build_release(tmp_path, "line-endings")
+    with tarfile.open(artifact, "r:gz") as stream:
+        member = stream.getmember("trendradar-line-endings/scripts/deploy/release_smoke.sh")
+        payload = stream.extractfile(member).read()
+
+    assert b"\r" not in payload
+    assert payload.startswith(b"#!/usr/bin/env bash\nset -Eeuo pipefail\n")
+
+
+def test_release_preserves_other_bytes_and_normalizes_extensionless_shell(tmp_path, monkeypatch):
+    from scripts.deploy import build_release as builder
+
+    source = tmp_path / "source"
+    source.mkdir()
+    shell = b"#!/usr/bin/env bash\r\nset -Eeuo pipefail\r\nprintf 'ok'\r\n"
+    fixtures = {"run.sh": shell, "installer": shell, "data.bin": b"\x00\r\n\xff",
+                "notes.txt": b"keep\r\ntext\r\n"}
+    for name, payload in fixtures.items():
+        (source / name).write_bytes(payload)
+    monkeypatch.setattr(builder, "ROOT", source)
+
+    artifact = builder.build_release(tmp_path / "artifacts", "crlf")
+    with tarfile.open(artifact, "r:gz") as stream:
+        for name, original in fixtures.items():
+            member = stream.getmember(f"trendradar-crlf/{name}")
+            payload = stream.extractfile(member).read()
+            expected = original.replace(b"\r\n", b"\n") if name in {"run.sh", "installer"} else original
+            assert payload == expected
+            assert member.size == len(expected)
+            assert (source / name).read_bytes() == original
 
 
 def test_release_manifest_agrees_with_current_runtime_schema():

@@ -107,6 +107,7 @@ jobs:
             tests/deployment/test_environment_loading.py \
             tests/deployment/test_health.py \
             tests/deployment/test_installer_behavior.py \
+            tests/deployment/test_installer_role_capture.py \
             tests/deployment/test_offsite_backup.py \
             tests/deployment/test_offsite_processes.py \
             tests/deployment/test_release_inputs.py \
