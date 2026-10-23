@@ -160,10 +160,13 @@ def _read_only(path: Path, *, instant_target: str = "") -> tuple[dict[str, Any],
         if "source_runs" in tables:
             for row in connection.execute(
                 """SELECT r.adapter_id, r.status, r.finished_at, r.fetched_count,
-                          r.normalized_count, r.error_count
+                          r.normalized_count, r.error_count, latest.last_success_at
                    FROM source_runs AS r
                    JOIN (
-                       SELECT adapter_id, MAX(finished_at) AS finished_at
+                       SELECT adapter_id, MAX(finished_at) AS finished_at,
+                              MAX(CASE WHEN status IN ('healthy', 'degraded')
+                                            AND error_count = 0
+                                       THEN finished_at END) AS last_success_at
                        FROM source_runs GROUP BY adapter_id
                    ) AS latest
                    ON latest.adapter_id = r.adapter_id AND latest.finished_at = r.finished_at
@@ -175,6 +178,7 @@ def _read_only(path: Path, *, instant_target: str = "") -> tuple[dict[str, Any],
                     "fetched_count": int(row["fetched_count"]),
                     "normalized_count": int(row["normalized_count"]),
                     "error_count": int(row["error_count"]),
+                    "last_success_at": row["last_success_at"],
                 }
         pending_oldest = None
         if "feishu_events" in tables:
@@ -526,8 +530,9 @@ def collect_health(
                 if health_config["require_source_runs"]:
                     report["status"] = "unhealthy"
                 continue
-            finished = _parse_time(run.get("finished_at"))
-            if str(run.get("status")) not in {"healthy", "degraded"}:
+            finished = _parse_time(run.get("last_success_at"))
+            if (str(run.get("status")) not in {"healthy", "degraded"}
+                    or run.get("error_count", 0) > 0):
                 warnings.append(f"source_unhealthy:{source}")
             if finished is None or (now - finished).total_seconds() > source_age:
                 warnings.append(f"stale_source:{source}")

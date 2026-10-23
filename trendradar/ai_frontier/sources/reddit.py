@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 
 import aiohttp
 
-from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
-from trendradar.ai_frontier.sources.base import AIItem, AISource
+from trendradar.ai_frontier._http import make_session, request_with_retry
+from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
 USER_AGENT = "TrendRadar-AIFrontier/1.0 (by u/trendradar_bot)"
@@ -38,17 +38,21 @@ class RedditSource(AISource):
             max_attempts=2, timeout=self.timeout,
         )
         if resp is None:
-            return []
+            raise SourceFetchError("request_failed")
         if resp.status != 200:
             log.warning(f"Reddit r/{sub} 状态码异常", status=resp.status)
-            await resp.release()
-            return []
+            resp.release()
+            raise SourceFetchError(f"http_{resp.status}")
         try:
             data = await resp.json()
         except Exception as e:
             log.warning(f"Reddit r/{sub} JSON 解析失败", error=str(e))
-            return []
-
+            raise SourceFetchError("invalid_json") from e
+        finally:
+            resp.release()
+        listing = data.get("data") if isinstance(data, dict) else None
+        if not isinstance(listing, dict) or not isinstance(listing.get("children"), list):
+            raise SourceFetchError("invalid_listing")
         return self._parse_sub(sub, data)
 
     def _parse_sub(self, sub: str, data: dict) -> list[AIItem]:
@@ -105,6 +109,7 @@ class RedditSource(AISource):
         return items
 
     async def fetch(self) -> list[AIItem]:
+        self._fetch_errors.clear()
         if not self.enabled or not self.subreddits:
             return []
 
@@ -115,7 +120,7 @@ class RedditSource(AISource):
             max_per_host=3,
         ) as session:
             coros = [self._fetch_one(session, sub) for sub in self.subreddits]
-            results = await run_with_concurrency(coros, limit=4)
+            results = await self._gather(coros, self.subreddits, limit=4)
 
         merged: list[AIItem] = []
         for r in results:

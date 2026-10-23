@@ -10,9 +10,9 @@ It supersedes the older model, notification, resource and offsite requirements.
 Use Python 3.12 on the VPS. This release uses instant Lark delivery and local
 backups only; offsite recovery and 48-hour observation remain separate open gates.
 
-The [current handoff](phase7-release-20261023/HANDOFF.md) separates recorded
-release `p7-20261023-8fc8f82` from the uncommitted title-translation repair and
-lists remaining acceptance gates. The [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md)
+The [current handoff](phase7-release-20261023/HANDOFF.md) records the latest
+deployment `p7-20261023-28e7283` and distinguishes it from the owner-approved,
+undeployed handoff commits/stacked PR. The [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md)
 preserves earlier installer/restore evidence; its pre-deployment status is historical.
 
 ## Layout and secrets
@@ -106,12 +106,13 @@ or a successful model probe alone does not prove translated delivery. Pending
 translation metadata blocks publication; a recorded failure permits original text.
 See the [pipeline contract](intelligence.md#title-translation-before-publication).
 
-For the first release of this repair, keep the Scheduler stopped while inspecting
-unregistered historical Stories and completing the first collection. Records outside
-the current feed window are not automatically repaired. Do not clear delivery ledgers,
-edit frozen payloads or requeue previously delivered English posts. Resume sending only
-after reviewing the backlog, then verify a new Story's actual Chinese-title receipt.
-The repair adds no schema migration; the existing strict v7 checks still apply.
+The first production rollout of this repair was `p7-20261023-28e7283`; see the
+[Phase 7 handoff](phase7-release-20261023/HANDOFF.md) for the recorded deployment
+and owner-confirmed Chinese-title receipt. For any future translation release, hold
+the Scheduler while reviewing unregistered historical Stories and completing the
+first collection. Records outside the current feed window are not automatically
+repaired. Do not clear delivery ledgers, edit frozen payloads or requeue previously
+delivered English posts. The repair added no schema migration; strict v7 checks remain.
 
 ```bash
 systemctl status trendradar-bot trendradar-worker

@@ -21,6 +21,10 @@ class AIFrontierAdapter(SourceAdapter[AIItem]):
     async def fetch(self) -> list[AIItem]:
         return await self.source.fetch()
 
+    @property
+    def fetch_errors(self) -> tuple[str, ...]:
+        return self.source.fetch_errors
+
     def normalize(self, raw: AIItem, *, collected_at: datetime) -> ContentItem:
         return content_from_ai_item(raw, collected_at=collected_at)
 

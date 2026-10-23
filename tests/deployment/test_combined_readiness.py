@@ -150,7 +150,7 @@ def test_local_only_readiness_still_requires_local_backup(release_policy, monkey
     ("heartbeat-boundary", set()),
     ("stale-heartbeat", {"stale_heartbeat:bot"}),
     ("future-heartbeat", {"future_heartbeat:bot"}),
-    ("source", {"source_unhealthy:rss:second-required"}),
+    ("source", {"source_unhealthy:rss:second-required", "stale_source:rss:second-required"}),
     ("missing-source", {"missing_source_run:rss:second-required"}),
     ("source-boundary", set()),
     ("source-age", {"stale_source:rss:second-required"}),

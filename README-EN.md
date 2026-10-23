@@ -48,7 +48,7 @@ python -m ruff check <changed-python-paths>
 python -m trendradar.ops health --readiness --json
 ```
 
-Track implementation in [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md). The [current handoff](docs/phase7-release-20261023/HANDOFF.md) separates the recorded deployed release from the uncommitted translation repair. Local Windows/Linux full regression and Python 3.12 archive installation pass. Releasing the repair, Chinese-title receipt and at least 48 healthy hours remain open gates.
+Track implementation in [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md). GitHub run `39921046202` deployed `p7-20261023-28e7283`, with an owner-confirmed Chinese-title receipt. The later 10-23 19:41 Yahoo Finance/other English-title report remains undiagnosed. The handoff branch's source-health and deployment-guard changes passed full WSL regression; the owner approved split commits and a stacked PR, without deployment. Source stability, at least 48 healthy hours, and offsite backup/restore remain open gates. See the [Phase 7 handoff](docs/phase7-release-20261023/HANDOFF.md) and [repository handoff](docs/repository-handoff-20261023.md).
 
 ## Attribution
 

@@ -1,45 +1,58 @@
 # Phase 7 Current Handoff
 
-Reconciled 2026-10-23 from code and final local validation. This document separates
-the recorded VPS release from the uncommitted repair; this follow-up did not query
-or change production. The [candidate record](README.md) preserves pre-release observations.
+Reconciled 2026-10-24. The latest recorded VPS deployment is `28e7283`; the
+13:41 translation issue below has a deployed repair and an owner-confirmed receipt.
+The later 19:41 Yahoo Finance/other English-title report remains open.
+The owner-approved handoff branch contains separate source-health, installer and
+repository-maintenance commits that are not deployed. Historical checks are preserved
+in the [candidate record](README.md) and [translation follow-up](TRANSLATION-FOLLOWUP.md).
 
 ## Workspace And Release
 
 - Worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`.
-- Branch: `fix/phase7-lark-routing-20261023`.
-- HEAD: `8fc8f82d377c86b8d904c17dc7fb8cdb6421835a`.
-- Recorded deployed release: `p7-20261023-8fc8f82`, from owner-approved
-  [GitHub run 39905435713](https://github.com/senzawapoi/TrendRadarpoi/actions/runs/39905435713).
-  Run success was recorded at 05:38:21 UTC; finalize at 05:38:14 UTC.
-- That release includes Gemini 3.1 Flash Lite translation, compact native Lark
-  posts and three RSS source repairs. It does **not** include the repair below.
-- PR #7 was rechecked read-only as OPEN with the same HEAD and base `master`.
-  Recheck branch, PR and live release identity before publishing; no commit, push,
-  merge or deployment occurred during this follow-up.
+- Handoff branch: `work/trendradar-handoff`, based on `28e7283162b58213aee474b02cb492efebbc7fc6`.
+  The owner approved four scoped commits and a stacked PR on 2026-10-24. Inspect
+  branch HEAD/PR for the published revision; the deployment baseline is unchanged.
+- Latest recorded deployed release: `p7-20261023-28e7283`, from
+  [GitHub run 39921046202](https://github.com/senzawapoi/TrendRadarpoi/actions/runs/39921046202).
+  The artifact validation and deploy jobs succeeded, and the owner confirmed Chinese
+  Story titles and links arrived in the TrendRadar Daily UAT group.
+- PR #7 remains OPEN on `fix/phase7-lark-routing-20261023` at the same `28e7283`
+  head, base `master`. The handoff PR stacks against its head branch, as approved,
+  so only the four follow-up commits enter its diff. Neither PR may be merged by
+  this task. Reassess the stack base if #7 merges later.
+- No current deployment or VPS health check was performed for this handoff review.
 
-## Translation Defect And Local Repair
+## Translation Defect And Deployed Repair
 
 The five English headlines reported by the owner matched completed batch
 `24919e617da1985b94338dfacbe393d0`. The post was sent at 05:41:58.939 UTC;
 RSS translation finished at 05:42:44.290 UTC. Chinese HTML did not establish
 Chinese Story delivery: canonical records, Stories and the frozen post lacked
-translated titles. Live Chinese-title acceptance remains FAILED/OPEN.
+translated titles at that time. This was the pre-fix production failure, not the
+current status.
 
-The uncommitted repair resolves canonical titles before Story publication.
+Commit `28e7283` resolves canonical titles before Story publication.
 `pending` items cannot enter clustering context; atomic metadata updates preserve
 raw evidence and observation counts. Successful results survive restart, and
 legacy reports reuse the same result. AI Frontier resolves all fresh Story
 candidates, including those beyond the HTML limit. Story display uses localized
 titles while original ranking input and identities remain stable.
 
-Translation stays on `gemini-3.1-flash-lite`; failures retain original text.
+The owner later confirmed that newly generated Chinese titles and links arrived in
+Lark after deployment run `39921046202`. Translation stays on
+`gemini-3.1-flash-lite`; failures retain original text.
+At 19:41 on 10-23, the owner reported further untranslated Yahoo Finance and other
+headlines. Their canonical metadata, translation outcome, Story and saved batch
+have not been inspected in this handoff task. The cause is unknown: do not assume
+it is either the old publication race or an expected provider fallback. Preserve
+the already sent payload and investigate a read-only evidence chain first.
 The median/average regression guard is narrow, not a general semantic guarantee.
 Schema remains v7, with no new dependency or changes to saved delivery snapshots.
 See [translation contract](../intelligence.md#title-translation-before-publication)
 and [deployment procedure](../deployment.md#title-translation-release).
 
-## Verification Of The Local Repair
+## Historical Verification Of The Repair
 
 | Scope | Recorded result |
 | --- | --- |
@@ -69,17 +82,16 @@ logic were unchanged. See [follow-up evidence](TRANSLATION-FOLLOWUP.md).
 
 ## Resume Order
 
-1. Preserve the locally validated repair and obtain a new exact-commit artifact
-   through the protected release flow. Do not reuse the deployed commit's evidence
-   or treat the dirty installation archive as a releasable candidate.
-2. During deployment, hold the Scheduler while inspecting unregistered historical
-   Stories and completing the first collection. Old Stories outside the feed window
-   need separately scoped repair. Never rewrite saved batches or resend delivered posts.
-3. Confirm newly collected Chinese titles in canonical metadata, Story and the
-   saved native post, then obtain actual recipient confirmation.
-4. Keep AI fan-out health reporting, Podcast/Blog recovery, resource observation
-   and at least 48 healthy hours as separate open work. Backups are local-only;
-   offsite backup/recovery remains incomplete. Preserve the accepted B6 skip.
+1. Continue from the owner-reviewed `work/trendradar-handoff` commits and PR;
+   source-health and installer changes are not deployed in `28e7283`.
+2. Check exact-commit installation/CI attached to the stacked PR. Before any future
+   release, resolve the PR #7 base and obtain separate deployment authorization.
+   Never treat a dirty-tree test record as clean release evidence.
+3. For the open 19:41 regression, inspect canonical metadata, Story state and
+   saved native payload together. Never rewrite a saved batch or resend a delivered Story.
+4. Keep source stability, Podcast/Blog recovery, resource observation and at least
+   48 healthy hours as separate open work. Backups are local-only; offsite
+   backup/recovery remains incomplete. Preserve the accepted B6 skip.
 
 Earlier records include VPS text/image replies, Story receipt, reconnect and local
 restore checks. Those observations do not close the translated-title gate or prove

@@ -571,14 +571,18 @@ ai_frontier:
       feeds:
         - name: "Latent Space"
           url: "https://www.youtube.com/@LatentSpacePod"
+          channel_id: "UCxBcwypKK-W3GHd_RZ9FZrQ"  # canonical metadata verified 2026-10-23
         - name: "Training Data"
           url: "https://www.youtube.com/playlist?list=PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8"
         - name: "No Priors"
           url: "https://www.youtube.com/@NoPriorsPodcast"
+          channel_id: "UCSI7h9hydQ40K5MJHnCrQvw"
         - name: "Unsupervised Learning"
           url: "https://www.youtube.com/@RedpointAI"
+          channel_id: "UCUl-s_Vp-Kkk_XVyDylNwLA"
         - name: "The MAD Podcast with Matt Turck"
           url: "https://www.youtube.com/@DataDrivenNYC"
+          channel_id: "UCQID78IY6EOojr5RUdD47MQ"
         - name: "AI & I by Every"
           url: "https://www.youtube.com/playlist?list=PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL"
       max_items_per_feed: 5
@@ -589,10 +593,12 @@ ai_frontier:
       sites:
         - name: "Anthropic Engineering"
           url: "https://www.anthropic.com/engineering"
-          include_patterns: ["anthropic.com/engineering"]
+          include_patterns: ["anthropic.com/engineering/", "anthropic.com/research/"]
+          article_selector: "article"
         - name: "Claude Blog"
-          url: "https://claude.com/blog"
-          include_patterns: ["claude.com/blog"]
+          url: "https://claude.com/resources/articles"
+          include_patterns: ["claude.com/resources/articles/"]
+          article_selector: 'a[class*="ResourceCard"][href]'
       max_items_per_site: 10
 
     # X / Twitter 账号（通过 Nitter 镜像 RSS）
