@@ -6,7 +6,7 @@ TrendRadarpoi 是面向个人长期使用的信息采集、分析、研究与对
 
 当前 v5.0 按文档规划为 Phase 0-8：基线稳定、统一数据层、Story Intelligence、安全情报、Gemini、飞书、Agent-Reach、VPS 部署和测试。每个阶段都必须保持项目可运行，并通过增量接口逐步迁移现有实现。
 
-Phase 0-6 已实现并完成离线验证：统一 ContentItem、Story、Importance、安全情报、Gemini、Assistant 和受控 ResearchGateway 已接入。Phase 5 提供默认关闭的 SDK 长连接、身份白名单、单聊/群聊 @、文本/图片和持久化恢复。Phase 7 当前执行 07-06：记录中的 VPS 版本为 `p7-20261023-8fc8f82`，通过已批准的 GitHub 发布流程部署；后续标题翻译与 Story 发布顺序修复仍在本地，尚未提交或部署。本地 Windows/Linux 全量验证和 Python 3.12 归档安装已通过；修复发布、中文标题 Lark 验收、来源健康及 48 小时观察仍开放。仅启用本机备份，异地恢复不计为通过。接续以[当前交接](../docs/phase7-release-20261023/HANDOFF.md)为准，保留历史验收和失败现场。旧采集、报告、MCP 和数据库保持兼容；按用户新决策，通知仅保留 Lark。
+Phase 0-6 已实现并完成离线验证：统一 ContentItem、Story、Importance、安全情报、Gemini、Assistant 和受控 ResearchGateway 已接入。Phase 5 提供默认关闭的 SDK 长连接、身份白名单、单聊/群聊 @、文本/图片和持久化恢复。Phase 7 的 `p7-20261023-28e7283` 已由 GitHub run `39921046202` 部署，用户确认 Lark 收到中文 Story 标题和链接。当前 `work/trendradar-handoff` 基于该 release，包含通过 WSL 全量回归的来源健康、部署保护及仓库维护改动；用户已批准四组提交及叠加 PR，本轮不部署。提交前空虚拟环境归档安装通过，最终提交验证以 PR 中的精确版本证据为准。10-23 19:41 未翻译报告、旧树 Lark 补丁移植、来源稳定性、48 小时观察和异地备份/恢复仍开放；本机备份不等于异地恢复通过。接续以[Phase 7 交接](../docs/phase7-release-20261023/HANDOFF.md)和[仓库交接](../docs/repository-handoff-20261023.md)为准，保留历史验收和失败现场。旧采集、报告、MCP 和数据库保持兼容；通知仅保留 Lark。
 
 ## Core Value
 
@@ -38,7 +38,10 @@ Phase 0-6 已实现并完成离线验证：统一 ContentItem、Story、Importan
 
 ### Active
 
-- [ ] 完成中文标题即时 Story 的真实收件验收，保留已记录的文本、图片问答证据
+- [ ] 诊断 10-23 19:41 雅虎财经等英文标题未翻译的报告；此前中文收件不代表后续批次稳定
+- [ ] 审查旧树工具/引用上下文补丁的目标树移植；当前只保留参考源码，不算已交付
+
+- [x] `28e7283` 的中文标题和链接已由用户确认 Lark 收件；后续批次语言与来源稳定性继续观察
 - [ ] 完成 VPS 服务的来源健康与连续观察验收；Agent-Reach 仍按需启用
 - [ ] 保持现有 CLI、SQLite 历史和 AI Frontier 兼容；Lark 为唯一通知渠道，迁移可回滚
 - [ ] 为统一模型、迁移、Story、Gemini、飞书、Agent-Reach 和部署链路建立单元及集成验证
@@ -83,11 +86,11 @@ Phase 0-6 已实现并完成离线验证：统一 ContentItem、Story、Importan
 | Phase 2 交付 Cluster、Story、Ranking、Importance | Story 是从新闻推送器升级为情报助手的核心，不延期 | ✓ Validated in Phase 2 |
 | Phase 3 交付安全采集、Security Story、可行动排序和新鲜度报告 | 复用统一数据和 Story 合约，同时隔离高波动外部来源 | ✓ Validated in Phase 3 |
 | Phase 4 交付统一 Gemini 服务和有界本地 Assistant | 复用同一推理边界，限制 Session、引用、工具和故障影响范围 | ✓ Validated in Phase 4 |
-| 保持现有入口和 SQLite 兼容，通知统一为 Lark | 用户在 Phase 7 明确删除旧通知实现 | — Implemented; live localized delivery open |
+| 保持现有入口和 SQLite 兼容，通知统一为 Lark | 用户在 Phase 7 明确删除旧通知实现 | — Implemented; localized receipt confirmed for `28e7283` |
 | 飞书使用 WebSocket 长连接和 deny-by-default 白名单 | 减少公网暴露并限制为个人使用 | ✓ Validated offline in Phase 5 |
-| Lark 即时推送新增 Story，默认时区 Asia/Shanghai | Phase 7 取代正式定时日报，已登记 Story 不重推 | — Recorded deployed; translation repair local |
+| Lark 即时推送新增 Story，默认时区 Asia/Shanghai | Phase 7 取代正式定时日报，已登记 Story 不重推 | — Deployed; localized title receipt confirmed; stability gates open |
 | Phase 6 通过 ResearchGateway 接入 Agent-Reach | 保持研究层独立于 crawler，并隔离权限和故障 | — Offline verified |
-| Phase 7 使用 systemd 管理 VPS 运行服务 | 适配个人服务器的低维护部署方式 | — 07-06 recorded deployed; acceptance incomplete |
+| Phase 7 使用 systemd 管理 VPS 运行服务 | 适配个人服务器的低维护部署方式 | — 07-06 deployed; acceptance incomplete |
 | Phase 8 完成跨模块单元和集成测试 | 验证飞书到 Gemini 的完整主链路 | — Pending |
 | v1 不引入 PostgreSQL、Vector DB 或 Kubernetes | 当前规模下维护成本大于收益 | — Pending |
 
@@ -109,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-23 after workspace reconciliation; live state not rechecked during cleanup*
+*Last updated: 2026-10-24 after handoff validation; live VPS state was not rechecked*

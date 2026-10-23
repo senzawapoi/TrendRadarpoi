@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-09-12
+**Analysis Date:** 2026-09-12 (execution guidance reconciled 2026-10-24)
 
 ## Test Framework
 
@@ -12,7 +12,11 @@
 - Native Python `assert` statements and `pytest.raises`.
 
 **Run Commands:**
-```powershell
+Use Ubuntu WSL/Linux and a native filesystem checkout for routine regression.
+Production targets Python 3.12; retain Python 3.10 compatibility in CI. Existing
+Windows UAT evidence is historical, not a requirement to repeat native Windows tests.
+
+```bash
 python -m pytest tests -q
 python -m pytest tests/ai -q
 python -m pytest tests/ai_frontier -v
@@ -21,6 +25,12 @@ python -m pytest tests/integrations/feishu -q
 python -m pytest tests/baseline -q
 python -m ruff check <changed-python-paths>
 ```
+
+The current handoff run passed 1212 tests with 6 skips under WSL Python 3.12;
+separate empty-venv archive installation passed after CRLF packaging repair.
+See the [validation record](../../docs/handoff-validation-20261024.json) for scope,
+source fingerprints and remaining gates. The old-tree tool/quote patch is
+[preserved separately](../../docs/handoff/deferred-lark-repair.md), not part of that run.
 
 ## Test File Organization
 

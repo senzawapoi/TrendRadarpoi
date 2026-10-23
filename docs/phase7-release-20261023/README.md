@@ -1,8 +1,12 @@
 # Phase 7 Candidate: 2026-10-23
 
-Historical pre-freeze record. Resume from the [current handoff](HANDOFF.md) for
-the recorded deployment, uncommitted translation repair and remaining gates.
-Statements below describe the candidate at the time of these checks.
+Historical pre-freeze record. The candidate's translation repair was later
+deployed as `p7-20261023-28e7283` (run `39921046202`), and the owner confirmed
+Chinese Story titles and links in Lark. Use [HANDOFF.md](HANDOFF.md) for current
+deployment and worktree state; the candidate status below is not current.
+
+Statements below describe the candidate at the time of these checks. Current
+handoff commits do not change that historical deployment/acceptance record.
 
 This record belongs to the new candidate branch, not the earlier frozen v6 audit.
 Base master: `d5e50ac105165bc009e6fc8304cd8298fc9fbb8c`, merged PR #6.

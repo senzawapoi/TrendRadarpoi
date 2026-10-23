@@ -2,7 +2,7 @@
 
 个人情报助手：聚合热点、RSS、AI 与安全资讯，将来源证据归并为 Story，保留本地历史与 HTML 报告，通过 Lark 接收新增情报并进行文本、图片问答。
 
-[English](README-EN.md) · [文档导航](docs/README.md) · [部署手册](docs/deployment.md)
+[English](README-EN.md) · [文档导航](docs/README.md) · [仓库交接](docs/repository-handoff-20261023.md) · [部署手册](docs/deployment.md)
 
 [配置与关键词规则](docs/configuration.md) · [MCP 客户端配置](docs/mcp-setup.md)（均为中英对照）
 
@@ -58,7 +58,7 @@ python -m ruff check <changed-python-paths>
 python -m trendradar.ops health --readiness --json
 ```
 
-当前计划见 [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md)。[当前交接](docs/phase7-release-20261023/HANDOFF.md)区分已部署版本与本地未发布的翻译修复；本地 Windows/Linux 全量验证和 Python 3.12 归档安装已通过，修复发布、中文标题真实收件及至少 48 小时观察仍待完成。
+当前计划见 [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md)。GitHub run `39921046202` 已部署 `p7-20261023-28e7283`，用户曾确认中文标题和链接收件；之后 10-23 19:41 的雅虎财经等未翻译报告仍待诊断。交接分支的来源健康与部署保护修改已通过 WSL 全量回归，用户已批准分组提交及叠加 PR，尚未部署；来源稳定性、至少 48 小时观察及异地备份/恢复仍未验收。查看[Phase 7 交接](docs/phase7-release-20261023/HANDOFF.md)和[仓库交接](docs/repository-handoff-20261023.md)。
 
 ## 来源与许可证
 

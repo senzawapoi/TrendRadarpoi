@@ -23,6 +23,9 @@ TrendRadarpoi 是兼容优先的个人情报项目，提供主抓取、AI Fronti
 
 ## 运行与验证
 
+日常自动化测试使用 WSL/Linux；installer/systemd 测试在原生 Linux 文件系统执行。
+生产采用 Python 3.12，CI 保留 3.10 兼容检查。旧 Windows UAT 证据保留，不新增原生 Windows 验收要求。
+
 ```powershell
 python -m pip install -r requirements.txt
 python -m trendradar
@@ -77,5 +80,7 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 
 - [文档导航](docs/README.md)：运行契约、Lark 配置、数据库表与验收证据。
 - [本地测试沙箱](test/README.md)：入口、诊断、单实例核对及清理规则。
-- [Phase 7 当前交接](docs/phase7-release-20261023/HANDOFF.md)：区分已部署版本、本地翻译修复、验证失败与接续顺序。
+- [Phase 7 当前交接](docs/phase7-release-20261023/HANDOFF.md)：区分最新已部署版本、待验证的交接分支改动、历史翻译验收与接续顺序。
+- [仓库交接](docs/repository-handoff-20261023.md)：记录双工作区核对、保留/迁移/排除清单、待提交改动和 PR 前门槛。
+- [待移植 Lark 补丁](docs/handoff/deferred-lark-repair.md)：保留旧树的工具错误修复与引用上下文源码；未移植、未部署，不能按已交付能力使用。
 - [.planning/STATE.md](.planning/STATE.md)：当前进度与待办；原始需求和 `conductor/` 历史快照不代表已交付状态。

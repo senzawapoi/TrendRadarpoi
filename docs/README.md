@@ -19,22 +19,25 @@
 | Configure the seven AI source types | [AI Frontier guide](../trendradar/ai_frontier/README.md) |
 | Deploy on Linux VPS and restore safely | [Deployment runbook](deployment.md) and [Phase 7 acceptance](phase7-acceptance.md) |
 | Resume Phase 7 deployment and translation repair | [Current handoff](phase7-release-20261023/HANDOFF.md) and [07-06 plan](../.planning/phases/07-deployment/07-06-PLAN.md) |
+| Reconcile worktrees and prepare a maintainer PR | [Repository handoff](repository-handoff-20261023.md) |
 | Inspect earlier Phase 7 repairs and tests | [Historical handoff](phase7-actual-gap-evidence/HANDOFF.md) and [07-05 plan](../.planning/phases/07-deployment/07-05-PLAN.md) |
 
 ## Delivery Status
 
-Phase 0-6 implementation is offline-verified. Recorded Phase 7 release
-`p7-20261023-8fc8f82` was deployed through approved GitHub run 39905435713.
-Translation uses Gemini 3.1 Flash Lite; Lark is the only notification transport.
-The subsequent canonical-title repair is local and uncommitted: it is not part of
-that release. Chinese-title Lark acceptance remains open despite successful
-legacy HTML translation. Final local Windows/Linux regression and Python 3.12 archive
-installation now pass; the process-helper race is fixed. See the
-[current handoff](phase7-release-20261023/HANDOFF.md) and
-[follow-up evidence](phase7-release-20261023/TRANSLATION-FOLLOWUP.md) for results,
-retained failed runs, evidence locations and resume order.
+Phase 0-6 implementation is offline-verified. GitHub run `39921046202` deployed
+`p7-20261023-28e7283`; its validated-artifact and deploy jobs succeeded, and the
+owner confirmed Chinese Story titles and links arrived in Lark. Translation uses
+Gemini 3.1 Flash Lite; Lark is the only notification transport. This does not
+close source stability, 48-hour operation, or offsite recovery. See the
+[current handoff](phase7-release-20261023/HANDOFF.md),
+[follow-up evidence](phase7-release-20261023/TRANSLATION-FOLLOWUP.md) and
+[repository reconciliation](repository-handoff-20261023.md) for scope and resume order.
 
 Source-health issues, Podcast/Blog recovery and 48-hour observation remain open.
+The later 10-23 19:41 Yahoo Finance/English-title report is still undiagnosed;
+the earlier translated receipt does not close it. The old-tree
+[Lark quote/tool patch](handoff/deferred-lark-repair.md) is preserved for port review,
+not active implementation.
 This release uses local backups only; offsite recovery is not accepted. Preserve
 the Phase 5 B6 accepted skip. Windows UAT and VPS observations have separate evidence;
 neither substitutes for a new release's checks. Lark and external research remain
@@ -48,8 +51,9 @@ state and phase verification files above for implementation progress and unresol
 
 ## Local Verification
 
-Run from the repository root with Python 3.10+. Install runtime dependencies with
-`python -m pip install -r requirements.txt`; install the currently undeclared test/lint tools with
+Run from the repository root in WSL/Linux (production Python 3.12, compatibility 3.10+).
+Use a native Linux filesystem for installer/systemd tests. Install runtime dependencies with
+`python -m pip install -r requirements.lock`; install the currently undeclared test/lint tools with
 `python -m pip install pytest ruff`. Run `python -m pytest tests -q` and
 `python -m ruff check <changed-python-paths>`. Full-tree Ruff has existing debt; do not mix a
 repository-wide formatting sweep into feature work.

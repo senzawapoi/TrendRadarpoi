@@ -1,4 +1,11 @@
-# Translation Repair Validation Follow-up
+# Historical Translation Repair Validation Follow-up
+
+Historical record for the local repair based on `8fc8f82`. The repair was later
+included in deployed commit `28e7283` (GitHub run `39921046202`), and the owner
+confirmed Chinese titles and links arrived in Lark. Do not treat the failure/open
+gate statements below as the current translation status; they describe the
+pre-deployment state. Source-health work, 48-hour observation and offsite recovery
+remain separate open items.
 
 Date: 2026-10-23. Worktree: `TrendRadarpoi-phase7-fix-20261023`, branch
 `fix/phase7-lark-routing-20261023`, base commit `8fc8f82d377c86b8d904c17dc7fb8cdb6421835a`.

@@ -19,7 +19,7 @@ python -m pytest tests -q                      # Run all tests
 python -m ruff check <changed-python-paths>     # Lint changed Python files
 ```
 
-Install undeclared dev tools with `python -m pip install pytest ruff`. Keep changed files clean; full-tree Ruff has legacy debt.
+Use WSL/Linux for routine tests, with source on its native filesystem for installer/systemd cases. Production uses Python 3.12; CI retains 3.10 compatibility. Install exact runtime dependencies with `python -m pip install -r requirements.lock`, and dev tools with `python -m pip install pytest ruff`. Full-tree Ruff has legacy debt.
 
 ## Coding Style & Naming Conventions
 
@@ -41,7 +41,7 @@ Never commit credentials, webhook URLs, `.env`, or databases. Gemini and Lark ap
 
 Read `.planning/PROJECT.md`, relevant `.planning/codebase/` files, and `docs/intelligence.md` before architectural work. [Documentation navigation](docs/README.md) and `.planning/STATE.md` guide handoff. Preserve user changes; never commit or deploy without explicit instruction.
 
-For Phase 7, resume from the [current handoff](docs/phase7-release-20261023/HANDOFF.md) and [07-06 plan](.planning/phases/07-deployment/07-06-PLAN.md). Keep audit archives and the isolated Linux toolchain until verification closes. Use the fixed installer and trusted `common.env`; never remove pending transaction records to bypass maintenance. Preserve `PrivateTmp` and place service interpreters outside temporary directories.
+For Phase 7, resume from the [current handoff](docs/phase7-release-20261023/HANDOFF.md), the [repository handoff](docs/repository-handoff-20261023.md), and [07-06 plan](.planning/phases/07-deployment/07-06-PLAN.md). Keep audit archives and the isolated Linux toolchain until verification closes. Use the fixed installer and trusted `common.env`; never remove pending transaction records to bypass maintenance. Preserve `PrivateTmp` and place service interpreters outside temporary directories.
 
 Resolve canonical titles before publishing Stories; pending translation must not enter clustering context. Preserve raw evidence and ranking inputs. Never rewrite saved delivery payloads or requeue delivered Stories to fix their language. Follow the [translation contract](docs/intelligence.md#title-translation-before-publication).
 
