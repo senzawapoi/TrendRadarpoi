@@ -19,12 +19,16 @@ from .client import (
     build_gemini_client,
 )
 from .errors import (
+    GeminiAuthenticationError,
     GeminiConfigurationError,
+    GeminiCooldownError,
     GeminiError,
     GeminiInvalidResponseError,
+    GeminiModelUnavailableError,
     GeminiRateLimitError,
     GeminiRequestError,
     GeminiResponseError,
+    GeminiServerError,
     GeminiTimeoutError,
     GeminiUnavailableError,
 )
@@ -86,6 +90,10 @@ __all__ = [
     "AssistantUnavailableError",
     "Citation",
     "GeminiClient",
+    "GeminiAuthenticationError",
+    "GeminiCooldownError",
+    "GeminiModelUnavailableError",
+    "GeminiServerError",
     "GeminiConfig",
     "build_gemini_client",
     "GeminiConfigurationError",

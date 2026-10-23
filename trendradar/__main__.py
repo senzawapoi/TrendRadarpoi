@@ -166,6 +166,7 @@ def _run_main():
             NarrativeLimits,
             SecurityNarrativeAnalyzer,
         )
+        from trendradar.ai.translator import build_translation_client
         from trendradar.context import AppContext
         from trendradar.core import load_config
         from trendradar.core.settings import load_settings
@@ -195,7 +196,9 @@ def _run_main():
         # 初始化翻译服务
         settings = load_settings(fallback_to_empty=True)
         gemini_client = build_gemini_client(settings)
-        translator = TranslationService(gemini_client=gemini_client)
+        translator = TranslationService(
+            gemini_api_key="", gemini_client=build_translation_client(settings)
+        )
         if translator.translation_tools:
             log.success("Gemini 双语翻译服务就绪")
         else:
@@ -608,44 +611,6 @@ def _run_main():
         if html_file:
             log.success("HTML 报告已生成", file=html_file)
 
-        # 发送通知
-        log.info("发送通知")
-        # 增量模式：如果没有新增标题且非首次抓取，跳过通知
-        skip_notification = False
-        if report_mode == "incremental":
-            has_hot_new = bool(new_titles and any(new_titles.values()))
-            has_rss_new = bool(rss_new_stats)
-            is_first = storage_manager.is_first_crawl_today()
-            if not is_first and not has_hot_new and not has_rss_new:
-                skip_notification = True
-                log.info("增量模式：无新增内容，跳过通知")
-
-        report_data = ctx.prepare_report(
-            stats=hot_stats,
-            failed_ids=all_failed,
-            new_titles=new_titles,
-            id_to_name=all_id_to_name,
-            mode=report_mode,
-        )
-        dispatcher = ctx.create_notification_dispatcher()
-
-        if skip_notification:
-            notify_results = {}
-        else:
-            notify_results = dispatcher.dispatch_all(
-                report_data=report_data,
-                report_type="热点新闻分析",
-                mode=report_mode,
-                html_file_path=html_file,
-                rss_items=rss_stats,
-                rss_new_items=rss_new_stats,
-            )
-
-        if notify_results:
-            for channel, success in notify_results.items():
-                log.info("通知发送结果", channel=channel, success=success)
-        else:
-            log.warning("未配置通知渠道或无内容推送")
 
         # 清理资源
         ctx.cleanup()

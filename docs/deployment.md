@@ -5,7 +5,12 @@ and offline tests do not prove that a VPS is installed, reachable, or stable.
 Fill the host-specific values from `python scripts/deploy/preflight.py --json`
 before enabling any service.
 
-Current acceptance status and remaining external gates are in the
+The active implementation plan is [07-06](../.planning/phases/07-deployment/07-06-PLAN.md).
+It supersedes the older model, notification, resource and offsite requirements.
+Use Python 3.12 on the VPS. This release uses instant Lark delivery and local
+backups only; offsite recovery and 48-hour observation remain separate open gates.
+
+Historical acceptance status and remaining external gates are in the
 [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md). The current worktree
 is not an accepted production candidate. The guarded
 `backup activate --deployment-rollback` API and Bash installer tests now pass,
@@ -34,7 +39,7 @@ Worker, Scheduler, main collection, and AI Frontier.
 
 Production templates set `INTELLIGENCE_REQUIRE_EXISTING=true` and
 `INTELLIGENCE_SQLITE_SYNCHRONOUS=FULL`. Prepare both compatibility stores before
-starting a role; role constructors only open an existing schema-v6
+starting a role; role constructors only open an existing current-schema
 `intelligence.db` and schema-v1 `ai_frontier.db` in this mode:
 
 Run database preparation and snapshots as the service user with the same trusted
@@ -76,9 +81,16 @@ same production scope on VPS. The templates do not perform that cutover.
 ## Roles and operations
 
 Bot owns the Lark WebSocket and durably records authorized events. Worker polls
-the existing schema-v6 `EventLedger`, claims work, sends replies, and reuses
+the existing `EventLedger`, claims work, sends replies, and reuses
 saved replies after failures. Scheduler runs one `DeliveryScheduler.tick()` and
 exits. The no-role command remains combined mode for local compatibility.
+
+Set `LARK_DELIVERY_MODE=instant` with the authorized target. The scheduler timer
+checks every 60 seconds without changing collector frequency. At most 20 new
+Stories are registered per batch; overflow remains eligible for subsequent ticks.
+Delivery uses persisted payloads and chunk checkpoints. Do not run daily delivery
+as a second sender. Configure the ordered `GEMINI_MODELS` list from `.env.example`;
+translation always uses a separate fixed `gemma-4-31b-it` profile and the same key.
 
 ```bash
 systemctl status trendradar-bot trendradar-worker
@@ -120,6 +132,13 @@ Each database is copied through SQLite Online Backup API and validated before
 the manifest becomes complete. If `TRENDRADAR_OFFSITE_ENABLED=true`, the
 backup unit runs `scripts/deploy/offsite_backup.py` after the local snapshot;
 configure `RESTIC_REPOSITORY` and `RESTIC_PASSWORD_FILE` in `backup.env`.
+
+For this deployment set `TRENDRADAR_OFFSITE_ENABLED=false` in `common.env` and
+`backup.env`. Readiness still requires a fresh local snapshot, but does not
+require an offsite receipt. The hourly backup unit applies managed retention:
+24 hourly, 7 daily and 4 weekly snapshots in Asia/Shanghai. Only snapshots
+explicitly marked retention-managed are pruned; manual snapshots and historical
+recovery evidence are preserved. Local backups do not protect against host loss.
 
 The backup tool uses SQLite Online Backup API, validates each snapshot, and
 writes a manifest only after every requested database succeeds. It does not
@@ -312,10 +331,11 @@ timestamp or remove records to manufacture authorization.
 ## Limits and open evidence
 
 `deploy/systemd/trendradar.slice` puts Bot, Worker, Scheduler, collectors,
-health and backup in one cgroup with initial `MemoryHigh=1G`,
-`MemoryMax=1250M`, and `TasksMax=128`. Measure CPU, memory, tasks, file
+health and backup in one cgroup with initial `MemoryHigh=512M`,
+`MemoryMax=768M`, `CPUQuota=50%`, and `TasksMax=128`. Measure CPU, memory, tasks, file
 descriptors, disk and inode peaks on the target and adjust through a reviewed
-release. The `.example` file remains a reference for hosts that need different
+release. If these limits cannot support the measured workload, pause activation.
+Do not automatically expand the budget or alter unrelated services. The `.example` file remains a reference for hosts that need different
 limits. Keep release interpreters outside `/tmp` and `/var/tmp`: `PrivateTmp=yes`
 can hide them from service execution. Research and Lark are disabled in the
 example configuration. Isolated systemd backup-unit defaults/overrides and

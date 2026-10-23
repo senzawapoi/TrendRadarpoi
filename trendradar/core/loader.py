@@ -6,7 +6,6 @@
 
 from typing import Any
 
-from .config import parse_multi_account_config, validate_paired_configs
 from .settings import RuntimeSettings, load_settings
 
 
@@ -60,59 +59,6 @@ def _load_report_config(config_data: dict, settings: RuntimeSettings) -> dict:
     }
 
 
-def _load_notification_config(config_data: dict, settings: RuntimeSettings) -> dict:
-    """加载通知配置"""
-    advanced = config_data.get("advanced", {})
-    batch_size = advanced.get("batch_size", {})
-
-    return {
-        "ENABLE_NOTIFICATION": settings.get_bool(
-            "ENABLE_NOTIFICATION",
-            "notification.enabled",
-            True,
-        ),
-        "MESSAGE_BATCH_SIZE": batch_size.get("default", 4000),
-        "DINGTALK_BATCH_SIZE": batch_size.get("dingtalk", 20000),
-        "FEISHU_BATCH_SIZE": batch_size.get("feishu", 29000),
-        "BARK_BATCH_SIZE": batch_size.get("bark", 3600),
-        "SLACK_BATCH_SIZE": batch_size.get("slack", 4000),
-        "BATCH_SEND_INTERVAL": advanced.get("batch_send_interval", 1.0),
-        "FEISHU_MESSAGE_SEPARATOR": advanced.get("feishu_message_separator", "---"),
-        "MAX_ACCOUNTS_PER_CHANNEL": settings.get_int(
-            "MAX_ACCOUNTS_PER_CHANNEL",
-            "advanced.max_accounts_per_channel",
-            3,
-        ),
-    }
-
-
-def _load_push_window_config(_config_data: dict, settings: RuntimeSettings) -> dict:
-    """加载推送窗口配置"""
-    return {
-        "ENABLED": settings.get_bool(
-            "PUSH_WINDOW_ENABLED",
-            "notification.push_window.enabled",
-        ),
-        "TIME_RANGE": {
-            "START": settings.get_str(
-                "PUSH_WINDOW_START",
-                "notification.push_window.start",
-                "08:00",
-            ),
-            "END": settings.get_str(
-                "PUSH_WINDOW_END",
-                "notification.push_window.end",
-                "22:00",
-            ),
-        },
-        "ONCE_PER_DAY": settings.get_bool(
-            "PUSH_WINDOW_ONCE_PER_DAY",
-            "notification.push_window.once_per_day",
-            True,
-        ),
-    }
-
-
 def _load_weight_config(config_data: dict) -> dict:
     """加载权重配置"""
     advanced = config_data.get("advanced", {})
@@ -159,9 +105,6 @@ def _load_rss_config(config_data: dict) -> dict:
         "FRESHNESS_FILTER": {
             "ENABLED": freshness_filter.get("enabled", True),  # 默认启用
             "MAX_AGE_DAYS": max_age_days,
-        },
-        "NOTIFICATION": {
-            "ENABLED": advanced_rss.get("notification_enabled", False),
         },
     }
 
@@ -231,155 +174,6 @@ def _load_ai_config(settings: RuntimeSettings) -> dict:
     return {"GEMINI": settings.gemini_config}
 
 
-def _load_webhook_config(_config_data: dict, settings: RuntimeSettings) -> dict:
-    """加载 Webhook 配置"""
-    return {
-        # 飞书
-        "FEISHU_WEBHOOK_URL": settings.get_str(
-            "FEISHU_WEBHOOK_URL",
-            "notification.channels.feishu.webhook_url",
-        ),
-        # 钉钉
-        "DINGTALK_WEBHOOK_URL": settings.get_str(
-            "DINGTALK_WEBHOOK_URL",
-            "notification.channels.dingtalk.webhook_url",
-        ),
-        # 企业微信
-        "WEWORK_WEBHOOK_URL": settings.get_str(
-            "WEWORK_WEBHOOK_URL",
-            "notification.channels.wework.webhook_url",
-        ),
-        "WEWORK_MSG_TYPE": settings.get_str(
-            "WEWORK_MSG_TYPE",
-            "notification.channels.wework.msg_type",
-            "markdown",
-        ),
-        # Telegram
-        "TELEGRAM_BOT_TOKEN": settings.get_str(
-            "TELEGRAM_BOT_TOKEN",
-            "notification.channels.telegram.bot_token",
-        ),
-        "TELEGRAM_CHAT_ID": settings.get_str(
-            "TELEGRAM_CHAT_ID",
-            "notification.channels.telegram.chat_id",
-        ),
-        # 邮件
-        "EMAIL_FROM": settings.get_str("EMAIL_FROM", "notification.channels.email.from"),
-        "EMAIL_PASSWORD": settings.get_str(
-            "EMAIL_PASSWORD",
-            "notification.channels.email.password",
-        ),
-        "EMAIL_TO": settings.get_str("EMAIL_TO", "notification.channels.email.to"),
-        "EMAIL_SMTP_SERVER": settings.get_str(
-            "EMAIL_SMTP_SERVER",
-            "notification.channels.email.smtp_server",
-        ),
-        "EMAIL_SMTP_PORT": settings.get_str(
-            "EMAIL_SMTP_PORT",
-            "notification.channels.email.smtp_port",
-        ),
-        # ntfy
-        "NTFY_SERVER_URL": settings.get_str(
-            "NTFY_SERVER_URL",
-            "notification.channels.ntfy.server_url",
-            "https://ntfy.sh",
-        ),
-        "NTFY_TOPIC": settings.get_str("NTFY_TOPIC", "notification.channels.ntfy.topic"),
-        "NTFY_TOKEN": settings.get_str("NTFY_TOKEN", "notification.channels.ntfy.token"),
-        # Bark
-        "BARK_URL": settings.get_str("BARK_URL", "notification.channels.bark.url"),
-        # Slack
-        "SLACK_WEBHOOK_URL": settings.get_str(
-            "SLACK_WEBHOOK_URL",
-            "notification.channels.slack.webhook_url",
-        ),
-    }
-
-
-def _print_notification_sources(config: dict, settings: RuntimeSettings) -> None:
-    """打印通知渠道配置来源信息"""
-    notification_sources = []
-    max_accounts = config["MAX_ACCOUNTS_PER_CHANNEL"]
-
-    if config["FEISHU_WEBHOOK_URL"]:
-        accounts = parse_multi_account_config(config["FEISHU_WEBHOOK_URL"])
-        count = min(len(accounts), max_accounts)
-        source = "环境变量" if settings.has_environment("FEISHU_WEBHOOK_URL") else "配置文件"
-        notification_sources.append(f"飞书({source}, {count}个账号)")
-
-    if config["DINGTALK_WEBHOOK_URL"]:
-        accounts = parse_multi_account_config(config["DINGTALK_WEBHOOK_URL"])
-        count = min(len(accounts), max_accounts)
-        source = "环境变量" if settings.has_environment("DINGTALK_WEBHOOK_URL") else "配置文件"
-        notification_sources.append(f"钉钉({source}, {count}个账号)")
-
-    if config["WEWORK_WEBHOOK_URL"]:
-        accounts = parse_multi_account_config(config["WEWORK_WEBHOOK_URL"])
-        count = min(len(accounts), max_accounts)
-        source = "环境变量" if settings.has_environment("WEWORK_WEBHOOK_URL") else "配置文件"
-        notification_sources.append(f"企业微信({source}, {count}个账号)")
-
-    if config["TELEGRAM_BOT_TOKEN"] and config["TELEGRAM_CHAT_ID"]:
-        tokens = parse_multi_account_config(config["TELEGRAM_BOT_TOKEN"])
-        chat_ids = parse_multi_account_config(config["TELEGRAM_CHAT_ID"])
-        valid, count = validate_paired_configs(
-            {"bot_token": tokens, "chat_id": chat_ids},
-            "Telegram",
-            required_keys=["bot_token", "chat_id"]
-        )
-        if valid and count > 0:
-            count = min(count, max_accounts)
-            token_source = (
-                "环境变量" if settings.has_environment("TELEGRAM_BOT_TOKEN") else "配置文件"
-            )
-            notification_sources.append(f"Telegram({token_source}, {count}个账号)")
-
-    if config["EMAIL_FROM"] and config["EMAIL_PASSWORD"] and config["EMAIL_TO"]:
-        from_source = "环境变量" if settings.has_environment("EMAIL_FROM") else "配置文件"
-        notification_sources.append(f"邮件({from_source})")
-
-    if config["NTFY_SERVER_URL"] and config["NTFY_TOPIC"]:
-        topics = parse_multi_account_config(config["NTFY_TOPIC"])
-        tokens = parse_multi_account_config(config["NTFY_TOKEN"])
-        if tokens:
-            valid, count = validate_paired_configs(
-                {"topic": topics, "token": tokens},
-                "ntfy"
-            )
-            if valid and count > 0:
-                count = min(count, max_accounts)
-                server_source = (
-                    "环境变量" if settings.has_environment("NTFY_SERVER_URL") else "配置文件"
-                )
-                notification_sources.append(f"ntfy({server_source}, {count}个账号)")
-        else:
-            count = min(len(topics), max_accounts)
-            server_source = (
-                "环境变量" if settings.has_environment("NTFY_SERVER_URL") else "配置文件"
-            )
-            notification_sources.append(f"ntfy({server_source}, {count}个账号)")
-
-    if config["BARK_URL"]:
-        accounts = parse_multi_account_config(config["BARK_URL"])
-        count = min(len(accounts), max_accounts)
-        bark_source = "环境变量" if settings.has_environment("BARK_URL") else "配置文件"
-        notification_sources.append(f"Bark({bark_source}, {count}个账号)")
-
-    if config["SLACK_WEBHOOK_URL"]:
-        accounts = parse_multi_account_config(config["SLACK_WEBHOOK_URL"])
-        count = min(len(accounts), max_accounts)
-        slack_source = (
-            "环境变量" if settings.has_environment("SLACK_WEBHOOK_URL") else "配置文件"
-        )
-        notification_sources.append(f"Slack({slack_source}, {count}个账号)")
-
-    if notification_sources:
-        print(f"通知渠道配置来源: {', '.join(notification_sources)}")
-        print(f"每个渠道最大账号数: {max_accounts}")
-    else:
-        print("未配置任何通知渠道")
-
-
 def load_config(config_path: str | None = None) -> dict[str, Any]:
     """
     加载配置文件
@@ -410,12 +204,6 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
     # 报告配置
     config.update(_load_report_config(config_data, settings))
 
-    # 通知配置
-    config.update(_load_notification_config(config_data, settings))
-
-    # 推送窗口配置
-    config["PUSH_WINDOW"] = _load_push_window_config(config_data, settings)
-
     # 权重配置
     config["WEIGHT_CONFIG"] = _load_weight_config(config_data)
 
@@ -435,10 +223,6 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
     config["AI"] = _load_ai_config(settings)
     config["FEISHU"] = settings.feishu_config
 
-    # Webhook 配置
-    config.update(_load_webhook_config(config_data, settings))
-
-    # 打印通知渠道配置来源
-    _print_notification_sources(config, settings)
+    config["LARK"] = settings.lark_config
 
     return config

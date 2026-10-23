@@ -2,7 +2,7 @@
 
 ## 项目定位
 
-TrendRadarpoi 是兼容优先的个人情报项目，提供主抓取、AI Frontier、FastMCP 和默认关闭的 Lark Assistant 四个运行面。统一 `ContentItem`、Story、Security、Gemini 与 Assistant 使用 schema v6 的 `intelligence.db`；旧 SQLite、报告、通知与 MCP 保持兼容。
+TrendRadarpoi 是兼容优先的个人情报项目，提供主抓取、AI Frontier、FastMCP 和默认关闭的 Lark Assistant 四个运行面。统一 `ContentItem`、Story、Security、Gemini 与 Assistant 使用版本化的 `intelligence.db`；旧 SQLite、报告与 MCP 保持兼容；通知仅保留 Lark。
 
 ## 关键结构
 
@@ -13,11 +13,11 @@ TrendRadarpoi 是兼容优先的个人情报项目，提供主抓取、AI Fronti
 | `trendradar/sources/` | NewsNow、RSS、AI Frontier 的统一 Adapter |
 | `trendradar/intelligence/` | Adapter、去重、Story、统一 SQLite、投影与回填 |
 | `trendradar/ai/` | 核心 Gemini、翻译/分析、Assistant、Session、检索与静态工具 |
-| `trendradar/integrations/lark/`, `feishu/` | Lark 国际入口与内部兼容实现：SDK、身份校验、媒体、事件去重、失败投递重试和日报 |
+| `trendradar/integrations/lark/`, `feishu/` | Lark 国际入口与内部兼容实现：SDK、身份校验、媒体、事件去重、失败投递重试与 Story 即时投递 |
 | `trendradar/domains/security/` | CISA/NVD/RSS 安全采集、分析与报告 |
 | `trendradar/storage/` | 旧 news/RSS 本地与 S3 存储 |
-| `trendradar/ai_frontier/` | 七类 AI 来源、独立 SQLite、报告与推送 |
-| `trendradar/report/`, `trendradar/notification/` | 报告渲染与多渠道通知 |
+| `trendradar/ai_frontier/` | 七类 AI 来源、独立 SQLite 与报告 |
+| `trendradar/report/` | 报告渲染；Lark 投递由 integrations 的 Scheduler 统一负责 |
 | `mcp_server/` | FastMCP 服务与工具 |
 | `tests/{ai,baseline,intelligence,ai_frontier,integrations}/` | 核心服务、兼容、情报、来源与飞书测试 |
 
@@ -41,7 +41,7 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 
 ## 配置与数据
 
-- `config/config.yaml`：平台、RSS feeds、AI Frontier、通知、存储和统一情报层配置。
+- `config/config.yaml`：平台、RSS feeds、AI Frontier、Lark、存储和统一情报层配置。
 - `config/frequency_words.txt`：关键词规则。
 - `.env.example`：无凭据的环境变量模板。
 - 值优先级：非空环境变量 > YAML > 默认值；配置路径优先级：显式参数 > `CONFIG_PATH` > `config/config.yaml`。
@@ -62,6 +62,14 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 7. 飞书和 MCP 只能向内调用核心服务；身份授权必须先于内容解析、媒体下载和 Assistant。保留有界队列、重连冷却；已送达的重复 `event_id` 不再发送，失败投递只重试已保存回复，不声称外部投递严格 exactly-once。
 8. Windows UAT 与 Linux VPS 部署分开；真实测试期间保留 `test/runtime/` 的库、WAL/SHM、图片与日志。核实实例描述文件与进程，不启动第二个 bot，不执行 `-Reset`。
 9. Phase 7 安装只走固定受控入口与可信 `common.env`；不删事务记录绕过维护保护。保留 `PrivateTmp`，服务解释器不得放在 `/tmp` 或 `/var/tmp`；未完成复现时保留旧审计包和隔离 Linux 工具链。
+
+## 当前部署约定
+
+- 执行 [07-06 计划](.planning/phases/07-deployment/07-06-PLAN.md)，新 PR 不自动合并。
+- Gemini 共用一个环境密钥，默认按 3.8 Flash、3.5 Flash Lite、3.1 Flash Lite 顺序切换；翻译固定为 Gemma 4 31B。
+- 正式配置使用 Lark 即时模式，Scheduler 每 60 秒检查；不增加上游采集频率。
+- VPS 使用 Python 3.12 独立虚拟环境，共享资源上限 512M/768M/50% CPU。
+- 本轮只做每小时本机备份，保留 24 小时、7 日、4 周；异地备份与 48 小时连续观察分别验收。
 
 ## 深入文档
 

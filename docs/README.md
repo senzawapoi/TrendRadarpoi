@@ -4,6 +4,8 @@
 
 | Task | Read |
 |------|------|
+| Configure keyword matching, aliases, filtering and HTML report modes | [Configuration / 配置与关键词](configuration.md) (中文 / English) |
+| Connect a local MCP client over stdio | [MCP client setup / MCP 客户端配置](mcp-setup.md) (中文 / English) |
 | Understand ingestion, Story, Security, storage and rollback | [Intelligence guide](intelligence.md) |
 | Configure or run the opt-in Lark Assistant | [Lark setup and limits](intelligence.md#lark-assistant) |
 | Execute Phase 5 live acceptance and troubleshoot failures | [Live acceptance runbook](phase5-live-acceptance.md) and [result record](../.planning/phases/05-feishu-assistant/05-LIVE-UAT.md) |
@@ -16,11 +18,17 @@
 | Contribute code or use an agent | [Repository guidelines](../AGENTS.md) and [Chinese agent guide](../CLAUDE.md) |
 | Configure the seven AI source types | [AI Frontier guide](../trendradar/ai_frontier/README.md) |
 | Deploy on Linux VPS and restore safely | [Deployment runbook](deployment.md) and [Phase 7 acceptance](phase7-acceptance.md) |
-| Resume Phase 7 actual-gap repairs and tests | [Current handoff](phase7-actual-gap-evidence/HANDOFF.md) and [07-05 plan](../.planning/phases/07-deployment/07-05-PLAN.md) |
+| Resume the current Phase 7 candidate | [07-06 plan](../.planning/phases/07-deployment/07-06-PLAN.md) and [new candidate evidence](phase7-release-20261023/README.md) |
+| Inspect earlier Phase 7 repairs and tests | [Historical handoff](phase7-actual-gap-evidence/HANDOFF.md) and [07-05 plan](../.planning/phases/07-deployment/07-05-PLAN.md) |
 
 ## Delivery Status
 
-Phase 0-6 implementation is offline-verified. Phase 7 authorized local work is
+Phase 7 07-06 is in implementation: ordered model failover, fixed Gemma translation,
+Lark instant Story delivery and local-only VPS backups. Full candidate verification,
+deployment and live observation are still open. The earlier results below apply to
+the preserved v6 input set, not the current branch.
+
+Phase 0-6 implementation is offline-verified. Earlier Phase 7 authorized local work is
 complete: frozen v6 Windows full 683 passed/342 skipped, Linux full 1019 passed/
 6 skipped, two explained upstream warnings each, all exit 0. Real systemd
 quiesce has 11 passing cases and backup units 2 within Linux full. Separate

@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`trendradar/` is the main package. `core/models/` defines canonical content; `sources/` wraps collectors; `intelligence/` owns adapters, Stories, SQLite, and backfill. `ai/` owns Gemini/Assistant; `domains/security/` owns security intelligence; `integrations/feishu/` owns the opt-in bot. Legacy output remains in `storage/`, `report/`, and `notification/`. `ai_frontier/` provides seven-source collection; `mcp_server/` exposes FastMCP. Tests mirror subsystems under `tests/`, including `baseline/`, `deployment/` and `integrations/feishu/`. Configuration lives in `config/`; VPS deployment files in `deploy/`, `scripts/deploy/` and `.github/workflows/`, with legacy containers in `docker/`. Preserve `output/` as runtime state.
+`trendradar/` is the main package. `core/models/` defines canonical content; `sources/` wraps collectors; `intelligence/` owns adapters, Stories, SQLite, and backfill. `ai/` owns Gemini/Assistant; `domains/security/` owns security intelligence; `integrations/feishu/` owns the opt-in bot. Legacy output remains in `storage/` and `report/`; Lark is the only notification transport. `ai_frontier/` provides seven-source collection; `mcp_server/` exposes FastMCP. Tests mirror subsystems under `tests/`, including `baseline/`, `deployment/` and `integrations/feishu/`. Configuration lives in `config/`; VPS deployment files in `deploy/`, `scripts/deploy/` and `.github/workflows/`, with legacy containers in `docker/`. Preserve `output/` as runtime state.
 
 ## Build, Test, and Development Commands
 
@@ -41,6 +41,6 @@ Never commit credentials, webhook URLs, `.env`, or databases. Gemini and Lark ap
 
 Read `.planning/PROJECT.md`, relevant `.planning/codebase/` files, and `docs/intelligence.md` before architectural work. [Documentation navigation](docs/README.md) and `.planning/STATE.md` guide handoff. Preserve user changes; never commit or deploy without explicit instruction.
 
-For Phase 7, resume from [actual-gap handoff](docs/phase7-actual-gap-evidence/HANDOFF.md). Keep audit archives and the isolated Linux toolchain until verification closes. Use the fixed installer and trusted `common.env`; never remove pending transaction records to bypass maintenance. Preserve `PrivateTmp` and place service interpreters outside temporary directories.
+For Phase 7, follow [07-06 plan](.planning/phases/07-deployment/07-06-PLAN.md); the [actual-gap handoff](docs/phase7-actual-gap-evidence/HANDOFF.md) preserves earlier evidence. Keep audit archives and the isolated Linux toolchain until verification closes. Use the fixed installer and trusted `common.env`; never remove pending transaction records to bypass maintenance. Preserve `PrivateTmp` and place service interpreters outside temporary directories.
 
-During Windows UAT, follow [test/README.md](test/README.md). Preserve `test/runtime/`, including SQLite WAL/SHM, fixtures and logs. Verify `lark-live.json` against the live process; never start a second bot or reset the sandbox while testing. Local acceptance is not Linux VPS deployment.
+During Windows UAT, follow [test/README.md](test/README.md). Preserve `test/runtime/`, including SQLite WAL/SHM, fixtures and logs. Verify `lark-live.json` against the live process; never start a second bot or reset the sandbox while testing. Local acceptance is not Linux VPS deployment. This release uses Python 3.12, instant Lark delivery and local backups only; offsite recovery and 48-hour observation remain separate gates.

@@ -53,7 +53,7 @@ def create_manifest(artifact: Path | None = None, release_id: str | None = None)
         "platform": platform.platform(),
         "architecture": platform.machine(),
         "sqlite": sqlite3.sqlite_version,
-        "schema_supported": 6,
+        "schema_supported": 7,
         "dependency_files": {
             name: _sha256(ROOT / name)
             for name in ("pyproject.toml", "requirements.txt", "requirements.lock", "build-requirements.lock")
@@ -73,9 +73,9 @@ def create_manifest(artifact: Path | None = None, release_id: str | None = None)
             "entrypoints": ["trendradar", "trendradar-mcp"],
         },
         "database_contract": {
-            "intelligence_schema": 6,
+            "intelligence_schema": 7,
             "ai_frontier_schema": 1,
-            "minimum_readable_intelligence_schema": 6,
+            "minimum_readable_intelligence_schema": 7,
             "minimum_readable_ai_frontier_schema": 1,
             "synchronous": "FULL",
             "rollback": "schema-aware-maintenance-guard",

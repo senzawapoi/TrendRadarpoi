@@ -409,8 +409,14 @@ while (( $(date +%s) < deadline )); do
   if [[ -z "${TRENDRADAR_SKIP_READINESS:-}" ]] && TRENDRADAR_RELEASE_ID="$release_id" as_service "$release_dir/venv/bin/python" -m trendradar.ops health \
       --config "${CONFIG_PATH:-/etc/trendradar/config.yaml}" --readiness --json >/dev/null 2>&1; then
     write_state finalize
-    as_service "$release_dir/venv/bin/python" -m trendradar.ops maintenance finalize-deployment \
-      --database "$database" >/dev/null || fail "finalize confirmation"
+    if finalize_output=$(as_service "$release_dir/venv/bin/python" -m trendradar.ops maintenance finalize-deployment \
+        --database "$database"); then
+      :
+    else
+      finalize_status=$?
+      printf 'finalize exit=%s diagnostic=%s\n' "$finalize_status" "$finalize_output" >&2
+      fail "finalize confirmation"
+    fi
     rm -f "$in_progress_file"
     echo "release activated and readiness verified: $release_id"
     exit 0

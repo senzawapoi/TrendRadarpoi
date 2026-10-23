@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Phase 7 07-05 authorized local work complete; G1 PASS; G2 blocked by clean candidate; G3 target pending
-last_updated: "2026-10-22T08:30:00Z"
-last_activity: 2026-10-22 -- v6 Windows 683 passed/342 skipped; Linux 1019 passed/6 skipped; dirty install passed; matrix 27 PASS/1 BLOCKED
+stopped_at: Phase 7 07-06 implementation and review; exact-commit VPS release authorized after verification
+last_updated: "2026-10-23T02:00:00Z"
+last_activity: 2026-10-23 -- model and instant reviews passed; Linux regression exposed UTC rollback in heartbeat health; boot-clock repair under validation
 progress:
   total_phases: 9
   completed_phases: 7
@@ -21,14 +21,19 @@ progress:
 See: `.planning/PROJECT.md` (status reconciled 2026-10-22)
 
 **Core value:** 把多个来源关于同一事件的内容聚合成可解释、可排序、可追问的 Story，并通过飞书持续交付真正重要的个人情报。
-**Current focus:** Phase 7 actual-gap remediation 07-05; resume from `docs/phase7-actual-gap-evidence/HANDOFF.md`. VPS acceptance and Phase 5 live gaps remain open; B6 non-whitelisted testing is an accepted skip, not a pass.
+**Current focus:** [07-06](phases/07-deployment/07-06-PLAN.md): model routing, Gemma translation, Lark instant delivery and a verified VPS candidate. The earlier handoff remains historical evidence. B6 non-whitelisted testing remains an accepted skip, not a pass.
 
 ## Current Position
 
 Phase: 7 (Deployment), in the Phase 0-8 roadmap
-Plan: 07-01..04 delivered; 07-05 actual-gap remediation in progress (4 of 5)
-Status: Authorized local work complete; H1-A..D and final 28-case audit complete; 27 PASS/1 BLOCKED (RG-04 clean candidate). G1 PASS; G2 BLOCKED; G3/VPS and GitHub evidence remain open
-Last activity: 2026-10-22 -- v6 freezes 301 unchanged source/resource inputs; Windows 683 passed/342 skipped/2 warnings, Linux 1019 passed/6 skipped/2 warnings, actual dirty install 1 passed; all exit 0 and all sessions terminated
+Plan: 07-06 authorized; earlier 07-05 evidence retained
+Status: All scoped and final integration reviews passed. The four Linux failures have reviewed heartbeat/test-fixture fixes under synchronized validation. Windows rerun783 passed356 skipped. New PR and exact-commit deployment pending. Do not merge the PR automatically.
+Last activity: 2026-10-23 -- isolated Linux observed two UTC backward jumps over one second; same-boot CLOCK_BOOTTIME heartbeat age now under regression. Gemini failover and successful Gemma translation verified live. GitHub production review and dedicated credentials configured. No production application installed or activated yet.
+
+Current workspace: `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`.
+Base: `d5e50ac105165bc009e6fc8304cd8298fc9fbb8c` (merged PR #6).
+Keep original worktree and UAT untouched. This deployment uses local backups only;
+offsite backup/recovery and >=48-hour observation remain unaccepted.
 
 Progress: [#########-] 88% (28 of 32 roadmap plans; Phase 7 target deployment is not claimed)
 
@@ -89,6 +94,12 @@ Decisions are logged in `.planning/PROJECT.md`.
 - Provider acceptance and a crash before local persistence cannot form an atomic exactly-once transaction; saved replies/confirmed windows are durable and tested.
 
 ### Pending Todos
+
+- Current execution is 07-06 and supersedes the older authorization/setup statements below.
+  Windows full run771 passed355 skipped before the latest clock repair; Linux full1117 passed,
+  4 failed,5 skipped. Finish current repair validation, exact committed archive install and PR.
+  Retain both old and new failure scenes. Live VPS activation and48-hour observation remain open;
+  offsite work is explicitly excluded from this release, not marked accepted.
 
 - Local 07-05 work is complete: see `docs/phase7-actual-gap-evidence/verification-20261022.md` and final-run-v6. Matrix: 27 PASS/1 BLOCKED; G1 PASS, G2 blocked by clean candidate. No active test session. Next needs authorization for a committed candidate and real GitHub run; V-01..06 need target configuration/authorization. Preserve B6 accepted skip and C3/C4 live gaps. Do not repeat completed tests without relevant changes.
 - RG-03 root-owned guard caused service confirmation PermissionError; restore/activate now use the service identity, renew leases and require explicit false boundary. Repaired real-systemd restart passed; combined rollback/confirmation passed 29 and restore/crash scope passed 43. CI wiring passed 18 local checks; no GitHub run is recorded. These scopes overlap, while historical installer/systemd/dirty-install results remain retained. Both agents are frozen and closed. Cleanup and current source inputs are recorded in `docs/phase7-actual-gap-evidence/workspace-cleanup-20261014-post-rollback.md`; earlier hashes/checkpoints are historical.

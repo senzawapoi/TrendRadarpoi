@@ -3,6 +3,37 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_collector_resource_loads_outside_checkout(tmp_path, monkeypatch):
+    from trendradar.core.frequency import load_frequency_words
+
+    environment = (ROOT / "deploy/config/collector.env.example").read_text(encoding="utf-8")
+    resource = next(line.split("=", 1)[1] for line in environment.splitlines()
+                    if line.startswith("FREQUENCY_WORDS_PATH="))
+    assert resource == "/opt/trendradar/current/config/frequency_words.txt"
+    installed_resource = ROOT / Path(resource).relative_to("/opt/trendradar/current")
+    expected = load_frequency_words(str(installed_resource))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("FREQUENCY_WORDS_PATH", str(installed_resource))
+    assert load_frequency_words() == expected
+
+
+def test_release_excludes_private_agent_workspace():
+    from scripts.deploy.build_release import _excluded
+
+    assert _excluded(ROOT / ".superpowers/sdd/private.json")
+    assert not _excluded(ROOT / "trendradar/ops/health.py")
+
+
+def test_release_manifest_agrees_with_current_runtime_schema():
+    from scripts.deploy.create_manifest import create_manifest
+    from trendradar.intelligence.storage import SCHEMA_VERSION
+
+    manifest = create_manifest()
+    assert manifest["schema_supported"] == SCHEMA_VERSION
+    assert manifest["database_contract"]["intelligence_schema"] == SCHEMA_VERSION
+    assert manifest["database_contract"]["minimum_readable_intelligence_schema"] == SCHEMA_VERSION
+
+
 def test_ci_targets_repository_default_branch_and_templates_are_tracked():
     workflow = (ROOT / ".github/workflows/phase7-ci.yml").read_text(encoding="utf-8")
     assert "branches: [master, main]" in workflow
@@ -22,7 +53,9 @@ def test_ci_targets_repository_default_branch_and_templates_are_tracked():
 
 def test_systemd_roles_share_resource_slice_and_production_defaults_are_strict():
     slice_unit = (ROOT / "deploy/systemd/trendradar.slice").read_text(encoding="utf-8")
-    assert "MemoryMax=1250M" in slice_unit
+    assert "MemoryHigh=512M" in slice_unit
+    assert "MemoryMax=768M" in slice_unit
+    assert "CPUQuota=50%" in slice_unit
     assert "TasksMax=128" in slice_unit
     for path in (ROOT / "deploy/systemd").glob("trendradar-*.service"):
         assert "Slice=trendradar.slice" in path.read_text(encoding="utf-8")
@@ -37,6 +70,8 @@ def test_release_and_offsite_workflows_have_explicit_control_boundaries():
     offsite = (ROOT / "scripts/deploy/offsite_backup.py").read_text(encoding="utf-8")
     installer = (ROOT / "scripts/deploy/install_release.sh").read_text(encoding="utf-8")
     assert "type: environment" in deploy
+    assert "TRENDRADAR_P7_ARTIFACT_PATH: dist/trendradar-${{ inputs.release_id }}.tar.gz" in deploy
+    assert "TRENDRADAR_P7_ARTIFACT_MANIFEST: dist/RELEASE-MANIFEST.json" in deploy
     assert "sha256" in installer and "release checksum mismatch" in installer
     assert "gh release create" in release
     assert "release_id must contain only" in release

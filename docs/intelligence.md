@@ -6,7 +6,7 @@ MCP readers, and legacy SQLite schemas remain unchanged; Story and security repo
 views. Phase 4 centralizes Gemini and adds a bounded local Assistant with schema-v3 sessions,
 server-built citations, and static local-read tools. Phase 5 adds opt-in Lark transport,
 bounded image input, event deduplication, saved-reply delivery retry and daily delivery with
-additive ledgers, now at schema v6 with durable prepared events. Phase 6 adds
+additive ledgers, now at schema v7 with durable prepared events and instant Story delivery. Phase 6 adds
 optional bounded external research; Phase 7 operations are documented separately
 in [deployment.md](deployment.md), with current acceptance still unfinished.
 
@@ -98,7 +98,7 @@ across sources, exact normalized title within the same source and 24 hours, then
 title matching for titles of at least 12 characters at a `0.92` ratio. Fuzzy matching never crosses
 sources. Every input remains an observation even when it shares a canonical item.
 
-`output/intelligence.db` uses SQLite schema version 6, WAL, foreign keys, and a five-second busy
+`output/intelligence.db` uses SQLite schema version 7, WAL, foreign keys, and a five-second busy
 timeout:
 
 | Table | Purpose |
@@ -113,6 +113,15 @@ timeout:
 | `assistant_messages` | Complete, idempotent user/assistant turns |
 | `feishu_events` | Event claims, leases, duplicate suppression and saved-reply delivery retry |
 | `feishu_deliveries` | Daily delivery claims and confirmed chunk checkpoints |
+| `lark_instant_batches` | Frozen instant payloads, leases, retry state and chunk checkpoints |
+| `lark_story_deliveries` | Persistent target/Story registration, sent state and restore quarantine |
+
+Production uses explicit v6-to-v7 migration and `LARK_DELIVERY_MODE=instant`.
+`stories.created_at` determines first persistence; event time and later updates do not
+reset delivery identity. Each tick retries saved work or registers up to 20 Stories.
+Existing unregistered Stories remain eligible after migration, so a fresh production
+database avoids importing a historical backlog. Daily delivery is available only when
+explicitly selected; the production configuration runs one delivery mode.
 
 The date-partitioned databases in `output/news/` and `output/rss/`, plus
 `output/ai_frontier.db`, remain the compatibility authority for current reports and MCP. Unified
@@ -259,8 +268,8 @@ dynamic imports, crawler triggers, MCP dispatch or unregistered network tools.
 `INTELLIGENCE_ASSISTANT_*` variables in `.env.example` override bounded operational limits. Set
 `GEMINI_ENABLED=false` or omit `GEMINI_API_KEY` to retain deterministic local answers without model
 synthesis. `INTELLIGENCE_ENABLED=false` remains the complete rollback for unified storage, Story,
-Security, and Assistant processing; legacy databases, reports, MCP, and notifications remain
-available.
+Security, and Assistant processing; legacy databases, reports and MCP remain available.
+Lark Story delivery requires unified storage; retired notification channels are not restored.
 
 ## Lark Assistant
 
@@ -269,8 +278,8 @@ record outcomes separately from the existing offline verification.
 
 Phase 5 adds an opt-in official-SDK WebSocket transport for Lark international under the
 compatibility package `trendradar/integrations/feishu/`, with a public entrypoint at
-`trendradar/integrations/lark/`. Existing crawler, AI Frontier, MCP and webhook
-notifications do not start it. Install dependencies from `requirements.txt`; the
+`trendradar/integrations/lark/`. Existing crawler, AI Frontier and MCP do not start
+the bot. Lark is the sole notification transport. Install dependencies from `requirements.lock`; the
 SDK is pinned to `lark-oapi==1.7.3` because the isolated lifecycle bridge uses its
 internal connect/disconnect hooks. No inbound public HTTP port is required.
 

@@ -29,8 +29,13 @@ lark:
   identity_fields: {}
   delivery:
     enabled: false
-    time: "08:00"
-    end: "08:30"
+    mode: instant
+
+ai:
+  gemini:
+    enabled: true
+    models: [gemini-3.8-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite]
+    model_cooldown_seconds: 60
 
 ai_frontier:
   enabled: true

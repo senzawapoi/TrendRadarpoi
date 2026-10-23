@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from trendradar.core.models import Story
 from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.intelligence.story_report import prepare_story_report
 
@@ -53,8 +54,19 @@ class StoryDelivery:
         )
         if not stories:
             return ()
+        return self._render(stories, local, daily=True)
+
+    def prepare_stories(self, now: datetime, stories: list[Story]) -> tuple[str, ...]:
+        """Render an explicit instant batch locally, without date filtering or a provider."""
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise ValueError("delivery time must be aware")
+        if not 1 <= len(stories) <= 20:
+            raise ValueError("instant batch must contain 1 to 20 Stories")
+        return self._render(stories, now.astimezone(ZoneInfo("Asia/Shanghai")), daily=False)
+
+    def _render(self, stories: list[Story], local: datetime, *, daily: bool) -> tuple[str, ...]:
         lines = [f"Story Intelligence | {local:%Y-%m-%d %H:%M} Asia/Shanghai"]
-        if self.digest_analyzer is not None:
+        if daily and self.digest_analyzer is not None:
             try:
                 digest = self.digest_analyzer.analyze(stories)
             except Exception:
@@ -65,23 +77,25 @@ class StoryDelivery:
             prepare_story_report(stories, self.storage, evidence_limit=16), 1
         ):
             story = entry["story"]
-            lines.extend(
-                [
-                    "---",
-                    f"{index}. {safe_text(story.title[:1000])}",
-                    f"Importance: {story.importance.score:.1f}",
-                    safe_text(story.summary[:2000]),
-                ]
-            )
-            lines.extend(safe_text(reason[:500]) for reason in story.importance.reasons[:5])
+            entry_lines = [
+                "---",
+                f"{index}. {safe_text(story.title[:1000])}",
+                f"Importance: {story.importance.score:.1f}",
+                safe_text(story.summary[:2000]),
+            ]
+            entry_lines.extend(safe_text(reason[:500]) for reason in story.importance.reasons[:5])
             seen = set()
             for evidence in entry["evidence"]:
                 url = evidence["url"]
                 if url and url not in seen:
-                    lines.append(
+                    entry_lines.append(
                         f"{safe_text(str(evidence['source_name'])[:120])}: {safe_text(url[:2000])}"
                     )
                     seen.add(url)
                     if len(seen) == 8:
                         break
-        return text_chunks("\n\n".join(lines)[:100_000])
+            # Bound each instant entry so all registered Stories survive chunking.
+            entry_text = "\n\n".join(entry_lines)
+            lines.append(entry_text if daily else entry_text[:8000])
+        text = "\n\n".join(lines)
+        return text_chunks(text[:100_000] if daily else text)

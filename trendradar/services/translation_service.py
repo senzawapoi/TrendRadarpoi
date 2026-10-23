@@ -33,7 +33,7 @@ class TranslationService:
         gemini_client: GeminiClient | None = None,
         translation_engine: TranslationEngine | None = None,
     ) -> None:
-        """Initialize the core engine; anonymous providers remain usable without a key."""
+        """Initialize the fixed-model translator; missing credentials retain original text."""
         try:
             client = optional_gemini_client(
                 gemini_client=gemini_client,
@@ -56,7 +56,7 @@ class TranslationService:
         target_lang: str,
     ) -> tuple[bool, str]:
         if self.translation_tools is None:
-            return False, ""
+            return False, text
         result = self.translation_tools.translate_text(
             text,
             source=source_lang,
@@ -71,7 +71,7 @@ class TranslationService:
             else "TRANSLATION_FAILED"
         )
         log.warning("Translation failed", error_code=error_code)
-        return False, ""
+        return False, text
 
     def translate_title(self, title: str, target_lang: str = "zh") -> tuple[bool, str]:
         source_lang = "en" if self.is_english_title(title) else "zh"

@@ -18,12 +18,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from trendradar.core.heartbeat import heartbeat_directory
+from trendradar.core.heartbeat import boot_clock, heartbeat_directory
 from trendradar.core.settings import load_settings
 from trendradar.ops.backup import pending_restore_transactions
-from trendradar.ops.maintenance import read_guard
+from trendradar.ops.maintenance import read_guard, read_recovery_cutover
 
-EXPECTED_SCHEMA = 6
+EXPECTED_SCHEMA = 7
 EXPECTED_AI_FRONTIER_SCHEMA = 1
 HEARTBEAT_STALE_SECONDS = 60
 ACCEPTING_ROLE_STATES = {
@@ -56,7 +56,73 @@ def _manifest_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _read_only(path: Path) -> tuple[dict[str, Any], str | None]:
+def _instant_health(
+    connection: sqlite3.Connection, target: str, cutoff: datetime | None,
+) -> dict[str, Any]:
+    target_key = hashlib.sha256(target.strip().encode()).hexdigest()[:32] if target else None
+    cutoff_stamp = cutoff.astimezone(timezone.utc).isoformat() if cutoff else None
+    state_rows = connection.execute(
+        "SELECT status, COUNT(*) AS count, "
+        "SUM(CASE WHEN (? IS NULL OR first_persisted_at>?) THEN 1 ELSE 0 END) AS eligible "
+        "FROM lark_instant_batches WHERE (? IS NULL OR target_key=?) GROUP BY status",
+        (cutoff_stamp, cutoff_stamp, target_key, target_key),
+    ).fetchall()
+    states = {str(row["status"]): int(row["count"]) for row in state_rows}
+    eligible_states = {str(row["status"]): int(row["eligible"]) for row in state_rows}
+    pending = connection.execute(
+        """SELECT COUNT(*) AS count, MIN(d.first_persisted_at) AS oldest
+           FROM lark_story_deliveries AS d
+           JOIN lark_instant_batches AS b ON b.delivery_key=d.delivery_key
+           WHERE b.status IN ('processing', 'failed') AND (? IS NULL OR d.target_key=?)
+             AND (? IS NULL OR b.first_persisted_at>?)""",
+        (target_key, target_key, cutoff_stamp, cutoff_stamp),
+    ).fetchone()
+    unregistered = connection.execute(
+        """SELECT COUNT(*) AS count, MIN(s.created_at) AS oldest FROM stories AS s
+           WHERE ? IS NOT NULL AND NOT EXISTS (
+               SELECT 1 FROM lark_story_deliveries AS d WHERE d.target_key=? AND d.story_id=s.id
+           ) AND (? IS NULL OR s.created_at>?)""",
+        (target_key, target_key, cutoff_stamp, cutoff_stamp),
+    ).fetchone()
+    quarantined = connection.execute(
+        "SELECT COUNT(*) FROM lark_story_deliveries WHERE status='quarantined' "
+        "AND (? IS NULL OR target_key=?)", (target_key, target_key),
+    ).fetchone()[0]
+    expired = connection.execute(
+        "SELECT COUNT(*) FROM lark_instant_batches WHERE status='processing' AND lease_until<=? "
+        "AND (? IS NULL OR target_key=?) AND (? IS NULL OR first_persisted_at>?)",
+        (_utc_now().isoformat(), target_key, target_key, cutoff_stamp, cutoff_stamp),
+    ).fetchone()[0]
+    # Restore confirmation is read-only and may run while the send guard is still set.
+    # Excluded work remains visible until the scheduler records its durable quarantine.
+    held = connection.execute(
+        """SELECT (
+               SELECT COUNT(*) FROM lark_story_deliveries AS d
+               JOIN lark_instant_batches AS b ON b.delivery_key=d.delivery_key
+               WHERE b.status IN ('processing', 'failed') AND b.first_persisted_at<=?
+                 AND (? IS NULL OR d.target_key=?)
+           ) + (
+               SELECT COUNT(*) FROM stories AS s WHERE s.created_at<=? AND ? IS NOT NULL
+                 AND NOT EXISTS (SELECT 1 FROM lark_story_deliveries AS d
+                                 WHERE d.target_key=? AND d.story_id=s.id)
+           )""",
+        (cutoff_stamp, target_key, target_key, cutoff_stamp, target_key, target_key),
+    ).fetchone()[0]
+    oldest = [row["oldest"] for row in (pending, unregistered) if row["oldest"]]
+    return {
+        "batches": states,
+        "backlog": int(pending["count"]) + int(unregistered["count"]),
+        "unregistered_stories": int(unregistered["count"]),
+        "pending_stories": int(pending["count"]),
+        "oldest_at": min(oldest) if oldest else None,
+        "failed_batches": eligible_states.get("failed", 0),
+        "expired_leases": int(expired),
+        "quarantined_stories": int(quarantined),
+        "restore_held_stories": int(held),
+    }
+
+
+def _read_only(path: Path, *, instant_target: str = "") -> tuple[dict[str, Any], str | None]:
     if not path.is_file():
         return {}, "database_missing"
     connection = None
@@ -140,8 +206,11 @@ def _read_only(path: Path) -> tuple[dict[str, Any], str | None]:
             "deliveries": deliveries,
             "source_runs": source_runs,
             "pending_oldest_at": pending_oldest,
+            "instant_delivery": _instant_health(
+                connection, instant_target, read_recovery_cutover(path)
+            ),
         }, None
-    except (OSError, sqlite3.Error, ValueError) as exc:
+    except (OSError, sqlite3.Error, ValueError, RuntimeError) as exc:
         return {}, f"database_read_failed:{type(exc).__name__}"
     finally:
         if connection is not None:
@@ -183,19 +252,33 @@ def _heartbeats(
     if not directory.is_dir():
         errors.extend(f"missing_heartbeat:{role}" for role in expected_roles)
         return result, warnings, errors
-    now = _utc_now()
     for path in sorted(directory.glob("*.json")):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(payload, dict):
                 raise ValueError("heartbeat is not an object")
             updated = _parse_time(payload.get("updated_at"))
-            age = (now - updated).total_seconds() if updated else None
+            # A writer may publish between directory enumeration and this read.
+            sampled_at = _utc_now()
+            age = (sampled_at - updated).total_seconds() if updated else None
+            wall_age = age
+            clock_basis = "utc"
+            if "updated_boottime_ns" in payload or "boot_id" in payload:
+                sample = boot_clock()
+                stamp = payload.get("updated_boottime_ns")
+                if (sample is None or payload.get("boot_id") != sample[0]
+                        or type(stamp) is not int or not 0 <= stamp <= 2**63 - 1):
+                    raise ValueError("invalid heartbeat boot clock")
+                age = (sample[1] - stamp) / 1_000_000_000
+                clock_basis = "boottime"
             item = {
                 "state": str(payload.get("state", "unknown")),
                 "pid": payload.get("pid"),
                 "updated_at": payload.get("updated_at"),
+                "sampled_at": sampled_at.isoformat(),
                 "age_seconds": round(age, 3) if age is not None else None,
+                "wall_age_seconds": round(wall_age, 3) if wall_age is not None else None,
+                "clock_basis": clock_basis,
                 "sqlite_synchronous": payload.get("sqlite_synchronous"),
                 "release_id": str(payload.get("release_id", "unknown"))[:128],
             }
@@ -343,6 +426,7 @@ def collect_health(
             "lark_delivery_enabled": bool(
                 settings.lark_config.get("delivery_enabled")
             ),
+            "lark_delivery_mode": settings.lark_config.get("delivery_mode"),
             "gemini_enabled": settings.gemini_enabled,
             "research_enabled": bool(settings.intelligence_research_config.get("enabled")),
         },
@@ -361,7 +445,9 @@ def collect_health(
         report["restore_transactions"] = pending_restore
         report.setdefault("errors", []).append("incomplete_restore_transaction")
         report["status"] = "unhealthy"
-    database, database_error = _read_only(database_path)
+    database, database_error = _read_only(
+        database_path, instant_target=str(settings.lark_config.get("delivery_target") or "")
+    )
     report["database"] = database
     if database_error:
         report["status"] = "unhealthy"
@@ -402,6 +488,23 @@ def collect_health(
 
     if database:
         now = _utc_now()
+        instant = dict(database.get("instant_delivery") or {})
+        oldest = _parse_time(instant.get("oldest_at"))
+        instant["oldest_age_seconds"] = (
+            round(max(0.0, (now - oldest).total_seconds()), 3) if oldest else 0.0
+        )
+        report["instant_delivery"] = instant
+        if (
+            report["config"]["lark_enabled"]
+            and report["config"]["lark_delivery_enabled"]
+            and report["config"]["lark_delivery_mode"] == "instant"
+        ):
+            if instant.get("failed_batches"):
+                warnings.append("instant_delivery_failed")
+            if instant.get("expired_leases"):
+                warnings.append("instant_delivery_lease_expired")
+            if instant["oldest_age_seconds"] > int(health_config["queue_wait_seconds"]):
+                warnings.append("instant_delivery_wait_exceeded")
         pending_oldest = _parse_time(database.get("pending_oldest_at"))
         if pending_oldest is not None:
             wait = max(0.0, (now - pending_oldest).total_seconds())
@@ -434,12 +537,19 @@ def collect_health(
         backup_dir = database_path.parent.parent / backup_dir
     local_backup = _latest_backup(backup_dir)
     offsite_backup = _latest_backup(backup_dir, offsite=True)
-    report["backups"] = {"local": local_backup, "offsite": offsite_backup}
+    offsite_enabled = os.environ.get("TRENDRADAR_OFFSITE_ENABLED", "false").lower() in {
+        "1", "true", "yes", "on",
+    }
+    report["backups"] = {
+        "local": local_backup, "offsite": offsite_backup, "offsite_enabled": offsite_enabled,
+    }
     backup_age = int(health_config["backup_max_age_hours"]) * 3600
     if health_config["require_backup"]:
         if local_backup is None or local_backup["age_seconds"] > backup_age:
             warnings.append("backup_overdue:local")
-        if offsite_backup is None or offsite_backup["data_age_seconds"] > backup_age:
+        if offsite_enabled and (
+            offsite_backup is None or offsite_backup["data_age_seconds"] > backup_age
+        ):
             warnings.append("backup_overdue:offsite")
     try:
         usage = shutil.disk_usage(database_path.parent)
@@ -454,15 +564,17 @@ def collect_health(
             warnings.append("disk_usage_high")
     except OSError:
         warnings.append("disk_usage_unavailable")
-    report["database_files"] = {
-        "database_bytes": database_path.stat().st_size if database_path.is_file() else 0,
-        "wal_bytes": database_path.with_name(database_path.name + "-wal").stat().st_size
-        if database_path.with_name(database_path.name + "-wal").is_file()
-        else 0,
-        "shm_bytes": database_path.with_name(database_path.name + "-shm").stat().st_size
-        if database_path.with_name(database_path.name + "-shm").is_file()
-        else 0,
-    }
+    report["database_files"] = {}
+    for name, suffix in (("database_bytes", ""), ("wal_bytes", "-wal"), ("shm_bytes", "-shm")):
+        try:
+            size = database_path.with_name(database_path.name + suffix).stat().st_size
+        except FileNotFoundError:
+            # SQLite may remove WAL/SHM files while the health snapshot is being read.
+            size = 0
+        except OSError:
+            size = None
+            warnings.append(f"database_file_unreadable:{name}")
+        report["database_files"][name] = size
     if warnings:
         report["warnings"] = warnings
         if report["status"] == "healthy":
@@ -493,6 +605,10 @@ def collect_health(
         if "queue_wait_exceeded" in warnings:
             report.setdefault("errors", []).append("queue_wait_exceeded")
             report["status"] = "unhealthy"
+        for warning in ("instant_delivery_failed", "instant_delivery_wait_exceeded"):
+            if warning in warnings:
+                report.setdefault("errors", []).append(warning)
+                report["status"] = "unhealthy"
     return report
 
 

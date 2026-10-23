@@ -14,7 +14,7 @@ from typing import Any
 
 from trendradar.core.models import Cluster, ContentItem, Story, normalize_tags
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 SQLITE_SYNCHRONOUS_MODES = frozenset({"OFF", "NORMAL", "FULL", "EXTRA"})
 _CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
 BASE_SCHEMA = """
@@ -176,7 +176,39 @@ CREATE TABLE IF NOT EXISTS feishu_deliveries (
     next_chunk INTEGER NOT NULL DEFAULT 0 CHECK(next_chunk >= 0)
 );
 """
-SCHEMA = BASE_SCHEMA + STORY_SCHEMA + ASSISTANT_SCHEMA + FEISHU_SCHEMA + FEISHU_DELIVERY_SCHEMA
+LARK_INSTANT_SCHEMA = """
+CREATE INDEX IF NOT EXISTS idx_stories_first_persisted ON stories(created_at, id);
+CREATE TABLE IF NOT EXISTS lark_instant_batches (
+    delivery_key TEXT PRIMARY KEY,
+    target_key TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('processing', 'completed', 'failed', 'quarantined')),
+    owner TEXT NOT NULL,
+    lease_until TEXT NOT NULL,
+    first_persisted_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    chunks_json TEXT NOT NULL,
+    next_chunk INTEGER NOT NULL DEFAULT 0 CHECK(next_chunk >= 0),
+    attempts INTEGER NOT NULL DEFAULT 1 CHECK(attempts > 0),
+    last_error TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_lark_instant_pending
+    ON lark_instant_batches(target_key, status, created_at);
+CREATE TABLE IF NOT EXISTS lark_story_deliveries (
+    target_key TEXT NOT NULL,
+    story_id TEXT NOT NULL,
+    first_persisted_at TEXT NOT NULL,
+    registered_at TEXT NOT NULL,
+    delivery_key TEXT REFERENCES lark_instant_batches(delivery_key) ON DELETE RESTRICT,
+    status TEXT NOT NULL CHECK(status IN ('registered', 'quarantined')),
+    PRIMARY KEY(target_key, story_id)
+);
+CREATE INDEX IF NOT EXISTS idx_lark_story_batch ON lark_story_deliveries(delivery_key);
+"""
+SCHEMA = (
+    BASE_SCHEMA + STORY_SCHEMA + ASSISTANT_SCHEMA + FEISHU_SCHEMA
+    + FEISHU_DELIVERY_SCHEMA + LARK_INSTANT_SCHEMA
+)
 
 
 def _utc(value: datetime, field_name: str) -> datetime:
@@ -432,6 +464,11 @@ class IntelligenceStorage:
             "SELECT session_id, request_id, role FROM assistant_messages LIMIT 0",
             "SELECT event_id, event_json, binding_json, delivery_attempts FROM feishu_events LIMIT 0",
             "SELECT delivery_key, chunks_json, next_chunk FROM feishu_deliveries LIMIT 0",
+            "SELECT target_key, story_id, first_persisted_at, registered_at, delivery_key, status "
+            "FROM lark_story_deliveries LIMIT 0",
+            "SELECT delivery_key, target_key, status, owner, lease_until, first_persisted_at, "
+            "created_at, updated_at, chunks_json, next_chunk, attempts, last_error "
+            "FROM lark_instant_batches LIMIT 0",
         )
         try:
             for query in queries:
@@ -467,6 +504,9 @@ class IntelligenceStorage:
             current = 5
         if current < 6:
             self._migrate_feishu_event_queue()
+            current = 6
+        if current < 7:
+            self._apply_migration(LARK_INSTANT_SCHEMA, 7)
 
     def _migrate_feishu_event_queue(self) -> None:
         columns = {

@@ -6,6 +6,7 @@ import os
 import sqlite3
 import sys
 import tarfile
+from contextlib import closing
 from pathlib import Path
 
 from trendradar.ai_frontier.storage import AIFrontierStorage
@@ -27,8 +28,14 @@ def make_installer(tmp_path, *, failure="", pause="", first_install=False,
     if not first_install:
         with IntelligenceStorage(database, synchronous="FULL"):
             pass
+        if old_schema in {5, 6}:
+            with closing(sqlite3.connect(database)) as connection, connection:
+                connection.execute("DROP TABLE lark_story_deliveries")
+                connection.execute("DROP TABLE lark_instant_batches")
+                connection.execute("DROP INDEX idx_stories_first_persisted")
+                connection.execute("PRAGMA user_version = 6")
         if old_schema == 5:
-            with sqlite3.connect(database) as connection:
+            with closing(sqlite3.connect(database)) as connection, connection:
                 connection.execute("DROP INDEX idx_feishu_events_recovery")
                 for column in ("event_json", "binding_json", "delivery_attempts"):
                     connection.execute(f"ALTER TABLE feishu_events DROP COLUMN {column}")
@@ -112,14 +119,15 @@ if sys.argv[1:3] == ['-m', 'trendradar.ops'] or sys.argv[1:2] == ['-']:
 if sys.argv[1:4] == ['-m', 'trendradar.ops', 'health']:
     if os.environ['TEST_FAILURE'] == 'health-error':
         raise RuntimeError('test-owned health command exception')
-if 'previous' in pathlib.Path(__file__).parts and os.environ['TEST_OLD_SCHEMA'] == '5':
+if 'previous' in pathlib.Path(__file__).parts and os.environ['TEST_OLD_SCHEMA'] in {'5', '6'}:
     # Historical code compatibility is simulated; SQLite/schema checks are real.
     import runpy
     from trendradar.intelligence import storage
-    storage.SCHEMA_VERSION = 5
+    old_schema = int(os.environ['TEST_OLD_SCHEMA'])
+    storage.SCHEMA_VERSION = old_schema
     def validate(self):
-        if self._connection.execute('PRAGMA user_version').fetchone()[0] != 5:
-            raise RuntimeError('previous release requires schema 5')
+        if self._connection.execute('PRAGMA user_version').fetchone()[0] != old_schema:
+            raise RuntimeError(f'previous release requires schema {old_schema}')
         self._connection.execute('SELECT event_id, status FROM feishu_events LIMIT 0')
     storage.IntelligenceStorage._validate_existing_schema = validate
     storage.IntelligenceStorage._initialize_schema = validate

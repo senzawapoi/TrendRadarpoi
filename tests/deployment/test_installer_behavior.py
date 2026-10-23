@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -34,13 +35,13 @@ def unit_commands(tmp_path):
 
 
 def seed_probe(database, value):
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database)) as connection, connection:
         connection.execute("CREATE TABLE deployment_probe (value TEXT NOT NULL)")
         connection.execute("INSERT INTO deployment_probe VALUES (?)", (value,))
 
 
 def probe(database):
-    with sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True) as connection:
+    with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
         assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert not connection.execute("PRAGMA foreign_key_check").fetchall()
         return (connection.execute("PRAGMA user_version").fetchone()[0],
@@ -217,6 +218,7 @@ def test_installer_success_with_real_health_and_configured_paths(tmp_path):
     seed_probe(database, "before-deploy")
     seed_probe(ai, "ai-before-deploy")
     before = {path: probe(path) for path in (database, ai)}
+    before[database] = (7, before[database][1])
     result = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
     assert not (tmp_path / "control/deploy-in-progress.json").exists()
@@ -296,7 +298,7 @@ def test_installer_post_boundary_failure_stops_roles_and_retains_guard(tmp_path,
     last_start = max(i for i, entry in enumerate(commands) if entry[0] == "start")
     assert ["stop", "test-bot.service"] in commands[last_start:]
     assert (tmp_path / "current").resolve() == tmp_path / "releases/candidate"
-    assert probe(database) == (6, "candidate-work")
+    assert probe(database) == (7, "candidate-work")
     assert json.loads((tmp_path / "units.json").read_text()) == []
     assert_restart_protected(environment, database)
 
@@ -312,6 +314,7 @@ def test_installer_interruption_preserves_protection(tmp_path, monkeypatch, poin
         seed_probe(database, "before-finalize")
         seed_probe(ai, "ai-before-finalize")
         before_finalize = {path: probe(path) for path in (database, ai)}
+        before_finalize[database] = (7, before_finalize[database][1])
     command = inject_fault(tmp_path, command, point, action)
     if action == "exception":
         result = run_installer(command, environment)
