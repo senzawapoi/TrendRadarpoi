@@ -1,4 +1,4 @@
-"""Core-owned Gemma translation with bounded calls and original-text fallback."""
+"""Core-owned Gemini translation with bounded calls and original-text fallback."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 _CJK_PATTERN = re.compile(r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]")
 _NUMBERED_LINE = re.compile(r"^(\d+)\s*[.\)\uff0e\u3001:\-\uff09]\s*(.+)")
-TRANSLATION_MODEL = "gemma-4-31b-it"
+TRANSLATION_MODEL = "gemini-3.1-flash-lite"
 MAX_PARTIAL_RECOVERY_CALLS = 3
 
 LANGUAGE_NAMES = {
@@ -79,7 +79,7 @@ def build_translation_client(settings: RuntimeSettings) -> GeminiClient | None:
 
 
 class TranslationEngine:
-    """Translate only through Gemma, retaining empty batch slots when unavailable."""
+    """Use the independent translation model, keeping failed batch slots empty."""
 
     TRANSLATION_APIS = ANONYMOUS_TRANSLATION_APIS
 
@@ -109,7 +109,7 @@ class TranslationEngine:
         """Generate bounded text through Gemini without exposing provider SDK values."""
         if self.gemini_client is None:
             raise GeminiUnavailableError()
-        # Gemma uses plain user prompts; do not require Gemini system/tool/schema features.
+        # Translation needs only a plain prompt, without tool or schema features.
         text = self.gemini_client.chat(
             f"{instruction}\n\n{prompt}" if instruction else prompt,
         ).text.strip()
@@ -170,12 +170,12 @@ class TranslationEngine:
             "translated_text": translated,
             "source_lang": source,
             "target_lang": target,
-            "api_used": "Google Gemma",
+            "api_used": "Google Gemini",
         }
 
     @staticmethod
     def _failed_translation(text: str, source: str, target: str, code: str) -> dict[str, Any]:
-        log.warning("Gemma translation failed; original text retained", error_code=code)
+        log.warning("Gemini translation failed; original text retained", error_code=code)
         return {
             "success": False,
             "original_text": text,
@@ -243,7 +243,7 @@ class TranslationEngine:
             translated_text = self.generate_text(numbered, instruction=instruction)
         except Exception as exc:
             code = exc.code if isinstance(exc, GeminiError) else "TRANSLATION_FAILED"
-            log.warning("Gemma batch translation failed", error_code=code)
+            log.warning("Gemini batch translation failed", error_code=code)
             return False
 
         lines = [line.strip() for line in translated_text.splitlines() if line.strip()]

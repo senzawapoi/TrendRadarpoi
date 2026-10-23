@@ -17,20 +17,14 @@ from trendradar.ops.maintenance import read_guard, read_recovery_cutover
 from .config import FeishuConfig
 from .ledger import lease_heartbeat, stamp
 from .models import stable_digest
+from .post import message_content
 
 
 def _validate_chunks(chunks: Any) -> None:
-    if (
-        not isinstance(chunks, list)
-        or not 1 <= len(chunks) <= 100
-        or any(
-            not isinstance(chunk, str)
-            or not chunk
-            or len(json.dumps({"text": chunk}, ensure_ascii=False).encode()) > 20_000
-            for chunk in chunks
-        )
-    ):
+    if not isinstance(chunks, list) or not 1 <= len(chunks) <= 100:
         raise ValueError("invalid instant delivery payload")
+    for chunk in chunks:
+        message_content(chunk)
 
 
 class InstantDeliveryScheduler:

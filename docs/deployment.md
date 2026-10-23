@@ -90,7 +90,16 @@ checks every 60 seconds without changing collector frequency. At most 20 new
 Stories are registered per batch; overflow remains eligible for subsequent ticks.
 Delivery uses persisted payloads and chunk checkpoints. Do not run daily delivery
 as a second sender. Configure the ordered `GEMINI_MODELS` list from `.env.example`;
-translation always uses a separate fixed `gemma-4-31b-it` profile and the same key.
+translation uses a separate `gemini-3.1-flash-lite` profile and the same key. Failed
+translations retain the original without switching to Gemma or inference models.
+
+New instant batches use Lark `post` rich text: batch count, source groups and numbered
+linked headlines. Each Story has one source link; detailed evidence remains in reports.
+Posts split only between entries and are saved as versioned string snapshots in the
+existing outbox. No schema migration is needed. Previously saved text batches still
+send as text with their original content, UUID and checkpoint. Roll back to an older
+renderer only after pending rich-text batches have drained, or retain the new decoder;
+older clients do not understand the new post snapshot format.
 
 ```bash
 systemctl status trendradar-bot trendradar-worker
@@ -327,6 +336,28 @@ the boot ID, exact process start identity and permitted transaction stage still
 have to match. Invalid, expired or future boottime values fail closed. Older
 records without this field retain strict UTC-age validation. Do not edit either
 timestamp or remove records to manufacture authorization.
+
+## Publisher recovery (2026-10-23)
+
+The `rss.feeds` entries support `transport: requests` for an explicitly selected
+publisher; the default remains `aiohttp`. Blocking requests run off the event loop
+under the existing concurrency limit and preserve timeout/proxy/error behavior.
+EE Times uses this option because identical requests from the VPS returned 200
+with requests and 403 with aiohttp. The remote filtering mechanism is unknown.
+
+Yahoo Finance's former RSS URL returns 404. Its source now uses the public
+`https://finance.yahoo.com/news/` listing with `format: yahoo_news`. Only recognized
+article cards and Yahoo Finance article URLs are accepted; missing absolute dates
+remain absent, and an unrecognized/challenge page fails the source. Existing
+source IDs and deduplication are preserved.
+
+HPCwire uses `https://feeds.feedburner.com/hpcwire`, whose feed metadata and article
+links point to HPCwire. This covers the main publication, not just the former
+AIwire subsection. The one-day article filter remains: the initial probe read ten
+entries, all older than that window, so the adapter honestly reported degraded
+with zero retained entries. Successful transport does not prove current content.
+Production `/etc/trendradar/config.yaml` must receive these three feed changes;
+installing application code alone does not replace the operator's configuration.
 
 ## Limits and open evidence
 

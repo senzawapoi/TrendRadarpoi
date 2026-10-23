@@ -405,6 +405,8 @@ def _run_main():
                     max_items=feed_config.get("max_items", 50),
                     enabled=feed_config.get("enabled", True),
                     max_age_days=max_age_days,
+                    transport=feed_config.get("transport", "aiohttp"),
+                    format=feed_config.get("format", "feed"),
                 )
                 if feed.id and feed.url and feed.enabled:
                     feeds.append(feed)

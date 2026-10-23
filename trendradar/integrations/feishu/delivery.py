@@ -10,6 +10,8 @@ from trendradar.core.models import Story
 from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.intelligence.story_report import prepare_story_report
 
+from .post import POST_PREFIX, encode_post, safe_link
+
 
 def safe_text(value: str) -> str:
     # Feishu recognizes <at ...> even in text messages; never allow evidence/model
@@ -62,7 +64,52 @@ class StoryDelivery:
             raise ValueError("delivery time must be aware")
         if not 1 <= len(stories) <= 20:
             raise ValueError("instant batch must contain 1 to 20 Stories")
-        return self._render(stories, now.astimezone(ZoneInfo("Asia/Shanghai")), daily=False)
+        return self._render_instant(stories, now.astimezone(ZoneInfo("Asia/Shanghai")))
+
+    def _render_instant(self, stories: list[Story], local: datetime) -> tuple[str, ...]:
+        groups: dict[str, list[tuple[str, str]]] = {}
+        for entry in prepare_story_report(stories, self.storage, evidence_limit=16):
+            story = entry["story"]
+            evidence = next(
+                (row for row in entry["evidence"] if safe_link(row["url"])),
+                entry["evidence"][0] if entry["evidence"] else {},
+            )
+            source = _compact_text(evidence.get("source_name") or story.domain, 80)
+            groups.setdefault(source, []).append((
+                _compact_text(story.title, 240), safe_link(evidence.get("url", "")),
+            ))
+
+        heading = f"Story Intelligence | {local:%m-%d %H:%M}"
+        total = [{"tag": "text", "text": f"\u672c\u6b21\u65b0\u589e\uff1a{len(stories)} \u6761"}]
+        chunks: list[str] = []
+        lines = [total]
+        number = 0
+        for group_index, (source, items) in enumerate(groups.items(), 1):
+            group = [{"tag": "text", "text": (
+                f"[{group_index}/{len(groups)}] {source} \u00b7 {len(items)} \u6761"
+            )}]
+            for item_index, (title, url) in enumerate(items):
+                number += 1
+                row = [{"tag": "text", "text": f"{number}. "}]
+                row.append({"tag": "a", "text": title, "href": url} if url else {
+                    "tag": "text", "text": title,
+                })
+                additions = [group, row] if item_index == 0 else [row]
+                candidate = encode_post(heading, lines + additions)
+                if len(candidate.removeprefix(POST_PREFIX).encode("utf-8")) > 12_000:
+                    chunks.append(encode_post(heading, lines))
+                    lines = [total, group, row]
+                else:
+                    lines.extend(additions)
+        chunks.append(encode_post(heading, lines))
+        if len(chunks) > 1:
+            # Each saved part is a complete post; never split a link or JSON element.
+            for index, chunk in enumerate(chunks, 1):
+                body = json.loads(chunk.removeprefix(POST_PREFIX))["zh_cn"]
+                chunks[index - 1] = encode_post(
+                    f"{heading} ({index}/{len(chunks)})", body["content"]
+                )
+        return tuple(chunks)
 
     def _render(self, stories: list[Story], local: datetime, *, daily: bool) -> tuple[str, ...]:
         lines = [f"Story Intelligence | {local:%Y-%m-%d %H:%M} Asia/Shanghai"]
@@ -99,3 +146,8 @@ class StoryDelivery:
             lines.append(entry_text if daily else entry_text[:8000])
         text = "\n\n".join(lines)
         return text_chunks(text[:100_000] if daily else text)
+
+
+def _compact_text(value: str, limit: int) -> str:
+    value = " ".join(str(value).split())
+    return safe_text(value if len(value) <= limit else value[:limit - 3] + "...")

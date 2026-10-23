@@ -1,6 +1,6 @@
 # AI Frontier - AI 前沿资讯聚合
 
-独立的 AI 前沿资讯聚合子系统，抓取全球 AI 最新动态，使用 Gemma 翻译并生成报告。新增 Story 由 Lark Scheduler 统一投递。
+独立的 AI 前沿资讯聚合子系统，抓取全球 AI 最新动态，使用 Gemini 3.1 Flash Lite 翻译并生成报告。新增 Story 由 Lark Scheduler 统一投递。
 
 ## 数据源
 
@@ -41,7 +41,7 @@ python -m trendradar.ai_frontier
 
 VPS 的 `trendradar-collect-ai.timer` 每 2 小时运行一次，与主采集共用进程锁，串行执行。`.github/workflows/ai-frontier.yml` 仅保留手动诊断，避免重复调度。
 
-翻译固定使用 `gemma-4-31b-it`，共享 `GEMINI_API_KEY`。失败保留原文；推理模型列表不影响翻译。
+翻译使用 `gemini-3.1-flash-lite`，共享 `GEMINI_API_KEY`。失败直接保留原文，不回退 Gemma；推理模型列表不影响翻译。
 
 ## 配置
 

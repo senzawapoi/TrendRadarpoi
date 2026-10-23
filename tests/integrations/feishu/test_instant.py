@@ -117,8 +117,9 @@ def test_long_batch_contains_every_registered_story_without_digest_provider(tmp_
         assert run.tick() == "sent"
         batch = storage.connection.execute("SELECT * FROM lark_instant_batches").fetchone()
         chunks = json.loads(batch["chunks_json"])
-        assert len(chunks) > 1
-        assert len("".join(chunks)) > 100_000
+        assert len("".join(chunks).encode("utf-8")) < 20_000
+        assert "original summary" not in "".join(chunks)
+        assert "Importance:" not in "".join(chunks)
         assert all(f"Story {i:03d} marker" in "".join(chunks) for i in range(20))
         digest.analyze.assert_not_called()
 

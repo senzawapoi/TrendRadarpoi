@@ -83,7 +83,7 @@ def test_core_translation_prefers_shared_gemini_client() -> None:
         "translated_text": "translated",
         "source_lang": "en",
         "target_lang": "zh",
-        "api_used": "Google Gemma",
+        "api_used": "Google Gemini",
     }
     assert gemini.calls[0][0].endswith("\n\nhello")
     assert "Translate" in gemini.calls[0][0]
@@ -203,14 +203,14 @@ def test_core_translation_modules_do_not_import_mcp() -> None:
 
 
 @pytest.mark.parametrize("facade", [TranslationEngine, TranslationService, TranslationTools])
-def test_real_inference_client_is_pinned_to_gemma_without_modifying_inference(facade):
+def test_real_inference_client_uses_flash_lite_without_modifying_inference(facade):
     from trendradar.ai import GeminiClient
 
     sdk = FakeSdkClient(_response("translated"), _response("inference"))
     inference = GeminiClient(_config(models=("inference-one", "inference-two")), client=sdk)
     translator = facade(gemini_client=inference)
     translator.translate_text("hello", "en", "zh")
-    assert sdk.models.calls[0]["model"] == TRANSLATION_MODEL
+    assert sdk.models.calls[0]["model"] == "gemini-3.1-flash-lite"
     assert "system_instruction" not in sdk.models.calls[0]["config"]
     assert inference.chat("inference").model == "inference-one"
 
@@ -226,6 +226,17 @@ def test_translation_failure_is_independent_of_inference_cooldowns():
     assert inference.chat("question").text == "still works"
     assert translation.batch_translate_titles(["three"]) == [""]
     assert len(sdk.models.calls) == 2
+
+
+def test_translation_failure_never_switches_to_gemma_or_inference_models():
+    from trendradar.ai import GeminiClient
+
+    sdk = FakeSdkClient(TimeoutError(), _response("must not be requested"))
+    engine = TranslationEngine(gemini_client=GeminiClient(_config(max_attempts=3), client=sdk))
+    outcome = engine.translate_text("original title", "en", "zh")
+    assert not outcome["success"]
+    assert outcome["translated_text"] == "original title"
+    assert [call["model"] for call in sdk.models.calls] == ["gemini-3.1-flash-lite"]
 
 
 def test_settings_translation_ignores_inference_models_and_reuses_key(tmp_path):

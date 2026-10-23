@@ -66,8 +66,9 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 ## 当前部署约定
 
 - 执行 [07-06 计划](.planning/phases/07-deployment/07-06-PLAN.md)，新 PR 不自动合并。
-- Gemini 共用一个环境密钥，默认按 3.8 Flash、3.5 Flash Lite、3.1 Flash Lite 顺序切换；翻译固定为 Gemma 4 31B。
+- Gemini 共用一个环境密钥，默认按 3.8 Flash、3.5 Flash Lite、3.1 Flash Lite 顺序切换；翻译独立使用 Gemini 3.1 Flash Lite，失败保留原文，不回退 Gemma。
 - 正式配置使用 Lark 即时模式，Scheduler 每 60 秒检查；不增加上游采集频率。
+- 即时推送采用来源分组、编号及可点击标题的紧凑富文本；消息分片整体保存，旧版文本快照仍按原内容重试。
 - VPS 使用 Python 3.12 独立虚拟环境，共享资源上限 512M/768M/50% CPU。
 - 本轮只做每小时本机备份，保留 24 小时、7 日、4 周；异地备份与 48 小时连续观察分别验收。
 

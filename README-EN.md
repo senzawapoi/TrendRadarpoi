@@ -24,13 +24,15 @@ The unified store is `output/intelligence.db`. Existing news/RSS date databases 
 
 All Google calls share environment-only `GEMINI_API_KEY`. Inference tries `gemini-3.8-flash`, `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`. `GEMINI_MODELS` accepts an ordered comma-separated list, ahead of legacy `GEMINI_MODEL` and YAML settings. Each request attempts a candidate once, with at most three attempts. Model failures trigger immediate failover and a default 60-second cooldown; shared authentication errors stop immediately. Exhaustion returns the existing deterministic local-evidence response.
 
-Translation uses a separate fixed `gemma-4-31b-it` profile with the same API key. It never inherits inference models or uses anonymous providers. Failed translations retain original text.
+Translation uses a separate `gemini-3.1-flash-lite` profile with the same API key. It never inherits inference models or uses anonymous providers. Failed translations retain original text without falling back to Gemma.
 
 ## Lark Delivery
 
 Use the environment-only credentials and identity settings in [.env.example](.env.example). Lark is disabled by default. Authorized direct messages and group mentions support text and images; completed duplicate events do not receive another reply.
 
 Production uses `LARK_DELIVERY_MODE=instant`, with daily delivery disabled. The Scheduler checks every 60 seconds, queues newly persisted Stories and processes at most 20 per batch. Overflow stays queued. Saved payloads, leases and chunk checkpoints survive retries and restarts. Collection frequency is unchanged; collectors generate reports without sending notifications. Maintenance guards suspend delivery.
+
+Instant messages show the batch count and numbered, clickable headlines grouped by source. Each Story links to one original source; reports retain summaries, scores and full evidence. Long posts split between entries. Previously saved plain-text messages retain their original content on retry.
 
 ## Operations
 

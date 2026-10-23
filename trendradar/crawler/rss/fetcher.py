@@ -20,6 +20,7 @@ from trendradar.utils.logging import log
 from trendradar.utils.time import DEFAULT_TIMEZONE, get_configured_time, is_within_days
 
 from .parser import RSSParser
+from .yahoo import YahooFinanceParser
 
 # ── Async helpers (must be top-level for pickling with ThreadPoolExecutor) ─────
 
@@ -101,6 +102,14 @@ class RSSFeedConfig:
     max_items: int = 0          # 最大条目数（0=不限制）
     enabled: bool = True        # 是否启用
     max_age_days: int | None = None  # 文章最大年龄（天），覆盖全局设置；None=使用全局，0=禁用过滤
+    transport: str = "aiohttp"
+    format: str = "feed"
+
+    def __post_init__(self) -> None:
+        if self.transport not in {"aiohttp", "requests"}:
+            raise ValueError("RSS transport must be aiohttp or requests")
+        if self.format not in {"feed", "yahoo_news"}:
+            raise ValueError("RSS format must be feed or yahoo_news")
 
 
 # ── Main fetcher class ─────────────────────────────────────────────────────────
@@ -143,6 +152,9 @@ class RSSFetcher:
         self.default_max_age_days = default_max_age_days
 
         self.parser = RSSParser()
+
+    def _parser_for(self, feed: RSSFeedConfig) -> RSSParser:
+        return YahooFinanceParser() if feed.format == "yahoo_news" else self.parser
 
     def _aiohttp_headers(self) -> dict[str, str]:
         """Build aiohttp session headers."""
@@ -201,6 +213,7 @@ class RSSFetcher:
         基于: python-resilience skill — retry with exponential backoff
         """
         for attempt in range(1, 4):
+            session = None
             try:
                 import requests
 
@@ -212,7 +225,7 @@ class RSSFetcher:
                 response = session.get(feed.url, timeout=self.timeout)
                 response.raise_for_status()
 
-                parsed_items = self.parser.parse(response.text, feed.url)
+                parsed_items = self._parser_for(feed).parse(response.text, feed.url)
 
                 if feed.max_items > 0:
                     parsed_items = parsed_items[:feed.max_items]
@@ -238,7 +251,6 @@ class RSSFetcher:
                     items.append(item)
 
                 log.info("RSS feed 获取成功", feed_name=feed.name, count=len(items))
-                session.close()
                 return items, None
 
             except requests.Timeout:
@@ -265,6 +277,10 @@ class RSSFetcher:
                 error = f"未知错误: {e}"
                 log.error("RSS feed 未知错误", feed_name=feed.name, error=error)
                 return [], error
+
+            finally:
+                if session is not None:
+                    session.close()
 
         return [], "重试耗尽"
 
@@ -316,6 +332,27 @@ class RSSFetcher:
 
     # ── Async version (preferred) ───────────────────────────────────────────
 
+    async def _fetch_configured(
+        self,
+        session: aiohttp.ClientSession,
+        semaphore: asyncio.Semaphore,
+        feed: RSSFeedConfig,
+    ) -> tuple[str, list[RSSItem], str | None]:
+        if feed.transport == "requests":
+            # Run the existing blocking client within the same concurrency budget.
+            async with semaphore:
+                items, error = await asyncio.to_thread(self.fetch_feed, feed)
+            return feed.id, items, error
+        return await _fetch_single_async(
+            session=session,
+            semaphore=semaphore,
+            feed=feed,
+            timeout=self.timeout,
+            parser=self._parser_for(feed),
+            timezone=self.timezone,
+            proxy_url=self.proxy_url if self.use_proxy else None,
+        )
+
     async def async_fetch_all(self, max_workers: int = 5) -> RSSData:
         """
         并发抓取所有 RSS 源（异步版本，使用 aiohttp）
@@ -347,17 +384,8 @@ class RSSFetcher:
             semaphore = asyncio.Semaphore(max_workers)
 
             # Build all tasks
-            proxy_url = self.proxy_url if self.use_proxy else None
             tasks = [
-                _fetch_single_async(
-                    session=session,
-                    semaphore=semaphore,
-                    feed=feed,
-                    timeout=self.timeout,
-                    parser=self.parser,
-                    timezone=self.timezone,
-                    proxy_url=proxy_url,
-                )
+                self._fetch_configured(session, semaphore, feed)
                 for feed in self.feeds
             ]
 
@@ -419,6 +447,8 @@ class RSSFetcher:
                 max_items=feed_config.get("max_items", 0),
                 enabled=feed_config.get("enabled", True),
                 max_age_days=max_age_days,
+                transport=feed_config.get("transport", "aiohttp"),
+                format=feed_config.get("format", "feed"),
             )
             if feed.id and feed.url:
                 feeds.append(feed)

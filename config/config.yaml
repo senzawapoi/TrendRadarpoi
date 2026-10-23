@@ -107,7 +107,8 @@ rss:
     
     - id: "yahoo-finance"
       name: "雅虎财经"
-      url: "https://finance.yahoo.com/news/rssindex"
+      url: "https://finance.yahoo.com/news/"
+      format: "yahoo_news"
       enabled: true
     
     -  id: "cnn_world"
@@ -166,8 +167,8 @@ rss:
        max_age_days: 1
      
     -  id: "HPCwire"
-       name: "HPCwire AIwire"
-       url: "https://www.hpcwire.com/aiwire/feed/"
+       name: "HPCwire"
+       url: "https://feeds.feedburner.com/hpcwire"
        enabled: true
        max_age_days: 1
 
@@ -179,7 +180,8 @@ rss:
 
     -  id: "EE Times"
        name: "EETimes"
-       url: "https://www.eetimes.com/feed"
+       url: "https://www.eetimes.com/feed/"
+       transport: "requests"
        enabled: true
        max_age_days: 1
 
