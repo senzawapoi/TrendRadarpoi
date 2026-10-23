@@ -35,6 +35,11 @@ jobs:
         run: python -m ruff check trendradar/core/locking.py trendradar/core/heartbeat.py trendradar/ops scripts/deploy tests/deployment tests/integrations/feishu
       - name: Tests
         run: python -B -m pytest tests -q -p no:cacheprovider
+      - name: PhaseGate structure, self tests and audit lint
+        run: |
+          python -B phasegate/phase7_gate.py inspect
+          python -B -m unittest discover -s phasegate/tests -q
+          python -m ruff check phasegate scripts/dev/audit_repository_handoff.py
       - name: Compile and build source artifact
         run: |
           python -B -m compileall -q trendradar mcp_server scripts/deploy
