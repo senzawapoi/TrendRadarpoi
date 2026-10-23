@@ -31,9 +31,9 @@ python -m trendradar.ai_frontier
 
 执行后将会：
 1. 并发抓取 7 类源的最新内容
-2. 按 `(source, url)` 去重，过滤 24h 外的旧条目
-3. 最佳努力写入统一 `output/intelligence.db`，并继续写入兼容权威 `output/ai_frontier.db`
-4. 按分数阈值过滤 + 翻译英文标题为中文
+2. 过滤新鲜度并按统一规则去重；兼容输出保留 `(source, url)` 去重
+3. 最佳努力写入统一 `output/intelligence.db`，解析所有新鲜候选标题的翻译结果后生成 Story；pending 条目暂不发布
+4. 继续写入兼容权威 `output/ai_frontier.db`，按分数阈值及报告数量限制筛选，复用已有译文
 5. 保存 HTML 报告到 `output/ai_frontier/YYYY-MM-DD/HH-MM.html`
 6. 新增 Story 等待独立 Lark Scheduler 投递；采集器不直接发送
 
@@ -42,6 +42,8 @@ python -m trendradar.ai_frontier
 VPS 的 `trendradar-collect-ai.timer` 每 2 小时运行一次，与主采集共用进程锁，串行执行。`.github/workflows/ai-frontier.yml` 仅保留手动诊断，避免重复调度。
 
 翻译使用 `gemini-3.1-flash-lite`，共享 `GEMINI_API_KEY`。失败直接保留原文，不回退 Gemma；推理模型列表不影响翻译。
+
+成功译文按原标题、模型及策略匹配后可跨重启复用；失败结果在同次报告中不再调用模型，后续采集可重试。HTML 条数上限不限制 Story 候选翻译，首次运行的翻译量可能增加。统一层关闭或不可用时保留旧报告路径。完整边界见[翻译契约](../../docs/intelligence.md#title-translation-before-publication)。
 
 ## 配置
 

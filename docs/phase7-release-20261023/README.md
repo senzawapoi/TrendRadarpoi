@@ -1,5 +1,9 @@
 # Phase 7 Candidate: 2026-10-23
 
+Historical pre-freeze record. Resume from the [current handoff](HANDOFF.md) for
+the recorded deployment, uncommitted translation repair and remaining gates.
+Statements below describe the candidate at the time of these checks.
+
 This record belongs to the new candidate branch, not the earlier frozen v6 audit.
 Base master: `d5e50ac105165bc009e6fc8304cd8298fc9fbb8c`, merged PR #6.
 Branch: `fix/phase7-lark-routing-20261023`. No new candidate commit or production

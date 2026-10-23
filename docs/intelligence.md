@@ -1,8 +1,8 @@
 # Unified Intelligence And Story Layer
 
 Phase 1 adds a compatibility-first canonical ingestion path. Phase 2 derives stable, ranked Stories
-from that canonical data. Phase 3 adds a bounded security domain. Existing reports, notifications,
-MCP readers, and legacy SQLite schemas remain unchanged; Story and security reports are additive
+from that canonical data. Phase 3 adds a bounded security domain. Legacy reports,
+MCP readers, and SQLite schemas remain compatible; Story and security reports are additive
 views. Phase 4 centralizes Gemini and adds a bounded local Assistant with schema-v3 sessions,
 server-built citations, and static local-read tools. Phase 5 adds opt-in Lark transport,
 bounded image input, event deduplication, saved-reply delivery retry and daily delivery with
@@ -17,7 +17,8 @@ existing collector -> SourceAdapter -> Normalize -> ContentItem -> Deduplicate
                                                             |-> intelligence.db
                                                             `-> legacy projection/output
                                                                     |
-canonical ContentItem -> Cluster -> Story -> Importance -> output/stories/YYYY-MM-DD.html
+canonical ContentItem -> title resolution (main / AI Frontier) -> Cluster -> Story -> Importance
+                                                                         `-> Story report / Lark
 
 CISA KEV / NVD / security RSS -> ContentItem(security) -> Security Story
                                                         -> output/security/YYYY-MM-DD.html
@@ -34,6 +35,34 @@ or site fan-out.
 
 `AdapterRunner` isolates fetch and per-item normalization failures. Its passive health state is
 `unknown`, `healthy`, `degraded`, or `unhealthy`; `health_check()` never performs another request.
+
+### Title Translation Before Publication
+
+The main and AI Frontier collectors resolve canonical titles before publishing Stories.
+New items are persisted with `metadata.title_translation.status=pending`; pending items are
+excluded from Story generation, including another collector's clustering context. Translation
+runs outside SQLite/outbox transactions. A single metadata transaction then records `translated`,
+`original` (no translation needed), `fallback` (failed), or `disabled`, before Story publication.
+Metadata write failures defer publication but preserve legacy reporting. After interruption,
+the next observation of an item resumes resolution without changing its canonical identity.
+
+`title_translation` binds the original title, result, target language, model, policy version and
+UTC resolution time. Successful matching results survive restarts; failures are retried only on a
+later collection run, not by the same run's legacy report. Canonical and observation metadata
+share the result while raw titles, URLs and observation times/counts remain unchanged. Localized
+Story titles do not change clustering/identity or the original title used for interest scoring.
+Optional wording cannot overwrite the resolved display title. Existing schemas remain at v7.
+
+Translation uses only `gemini-3.1-flash-lite`, with original-text fallback. The statistical
+`median`/`average` regression guard rejects the known mistranslation; this is not a general
+semantic-quality guarantee. AI Frontier now translates all fresh Story candidates, not only
+the legacy report's first 30 items; the initial translation workload can therefore increase.
+
+Saved Lark batches, delivery registrations and message UUIDs are never rewritten or requeued.
+Historical unregistered Stories are not automatically bulk-translated. Before deploying this
+change, keep the scheduler stopped while checking that backlog and running the first collection;
+items outside the current feed window require a separately scoped repair. Already delivered
+English messages remain historical evidence, not candidates for automatic resend.
 
 ## Content Contract
 
@@ -57,8 +86,9 @@ singleton Story.
 
 Story IDs remain stable when later sources extend an existing event. Membership and source
 observations are retained as evidence. The default generator creates bounded title and summary
-wording without a provider; an injected wording client may change only those two fields. It cannot
-change identity, membership, evidence, or ranking, and invalid/provider-failure output falls back
+wording without a provider; an injected wording client may change only those two fields,
+but cannot overwrite a resolved display title. It cannot change identity, membership,
+evidence, or ranking, and invalid/provider-failure output falls back
 to deterministic wording.
 
 Importance is an explainable 0-100 score composed from source diversity, source reliability,
@@ -216,7 +246,8 @@ with already-fetched records; it does not refetch upstream sources.
 `INTELLIGENCE_STORY_WORDING_ENABLED`, and comma-separated `INTELLIGENCE_USER_INTERESTS` override
 their Story settings. Disable only Story derivation with `INTELLIGENCE_STORY_ENABLED=false`.
 Wording enhancement is off by default; when enabled and a `GEMINI_API_KEY` is available, the lazy
-Gemini client may rewrite only the Story title and summary. It cannot choose identity, members,
+Gemini client may rewrite title and summary wording, preserving any resolved display title.
+It cannot choose identity, members,
 evidence, importance, or ranking, and all provider failures use deterministic fallback wording.
 Story persistence/report failures are best effort and cannot interrupt canonical ingestion or
 legacy output. The Story report is additive and never replaces `output/index.html`.
@@ -330,8 +361,13 @@ Reconnect defaults are five consecutive failures then a 300-second cooldown;
 only a connection stable for 60 seconds resets the failure streak.
 
 Enable `LARK_DELIVERY_ENABLED=true` and set `LARK_DELIVERY_TARGET` to a chat ID
-for daily Story delivery. `LARK_DELIVERY_TIME` / `LARK_DELIVERY_END` override
-the existing `notification.push_window.start/end`; defaults cover 00:00-23:59.
+for Story delivery. Production selects `LARK_DELIVERY_MODE=instant`: the Scheduler
+registers new Stories by target and Story ID, with at most 20 per batch and durable
+saved payloads/checkpoints. Translation happens before publication, not while sending.
+Do not run another daily sender against the same production target.
+
+For optional daily mode, `LARK_DELIVERY_TIME` / `LARK_DELIVERY_END` override
+`lark.delivery.time/end` (with legacy `feishu` aliases); defaults cover 00:00-23:59.
 The worker checks every 60 seconds, using `Asia/Shanghai`, after any in-flight
 Assistant turn. Ranked Stories, Importance, source links and optional digest
 follow the existing Story report baseline. Empty output remains retryable.

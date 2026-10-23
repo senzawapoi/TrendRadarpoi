@@ -34,6 +34,8 @@ python -m trendradar.integrations.lark --check
 
 翻译使用独立的 `gemini-3.1-flash-lite` 客户端，共用 API key；不继承推理模型列表，也不调用匿名翻译服务。失败直接保留原文，不回退 Gemma。
 
+主采集和 AI Frontier 在发布 Story 前完成规范标题翻译并保存结果，报告复用同一译文；原始来源证据与已保存的投递内容保持不变。详见[翻译与发布契约](docs/intelligence.md#title-translation-before-publication)。
+
 ## Lark
 
 凭据和授权身份使用 [.env.example](.env.example) 中的 `LARK_*`，不得写入 YAML 或 Git。支持授权单聊、群聊 @、图片与图文；已送达的重复事件不会再次回复。
@@ -56,7 +58,7 @@ python -m ruff check <changed-python-paths>
 python -m trendradar.ops health --readiness --json
 ```
 
-当前计划见 [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md)。代码与离线测试通过不等于 VPS 验收；真实收件、恢复及至少 48 小时观察分别记录。保留的历史证据见 [交接记录](docs/phase7-actual-gap-evidence/HANDOFF.md)。
+当前计划见 [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md)。[当前交接](docs/phase7-release-20261023/HANDOFF.md)区分已部署版本与本地未发布的翻译修复；本地 Windows/Linux 全量验证和 Python 3.12 归档安装已通过，修复发布、中文标题真实收件及至少 48 小时观察仍待完成。
 
 ## 来源与许可证
 

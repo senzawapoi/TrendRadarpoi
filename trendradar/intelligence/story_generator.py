@@ -16,6 +16,7 @@ from trendradar.core.models import (
 )
 from trendradar.intelligence.deduplicate import event_time
 from trendradar.intelligence.stories import story_identity_key
+from trendradar.intelligence.translation import localized_title
 from trendradar.utils.logging import log
 
 GENERATOR_VERSION = "story-generator-v1"
@@ -103,11 +104,13 @@ def generate_story(
         raise ValueError("cluster members and ContentItems must match")
     ordered = sorted(members.values(), key=lambda item: (event_time(item), item.id))
     representative = ordered[0]
+    translated_title = localized_title(representative)
+    original_title = _clean_title(representative)[:MAX_TITLE_LENGTH].rstrip()
     identity_key = story_identity_key(cluster, ordered)
     story = Story(
         id=deterministic_story_id(identity_key),
         identity_key=identity_key,
-        title=_clean_title(representative)[:MAX_TITLE_LENGTH].rstrip(),
+        title=(translated_title or original_title)[:MAX_TITLE_LENGTH].rstrip(),
         summary=_fallback_summary(ordered, cluster),
         domain=cluster.domain,
         event_time=cluster.event_time,
@@ -124,12 +127,18 @@ def generate_story(
             ),
         },
     )
+    title_resolution = representative.metadata.get("title_translation")
+    if isinstance(title_resolution, dict):
+        story.metadata["title_translation"] = dict(title_resolution)
+        story.metadata["title_content_id"] = representative.id
+    if translated_title or isinstance(title_resolution, dict):
+        story.metadata["ranking_title"] = original_title
     if wording_client is None:
         return story
 
     try:
         wording = _parse_wording(
-            wording_client.enhance(title=story.title, summary=story.summary)
+            wording_client.enhance(title=original_title, summary=story.summary)
         )
     except Exception as exc:
         log.warning("Story wording enhancement failed; using deterministic fallback", error=str(exc))
@@ -137,7 +146,11 @@ def generate_story(
     if wording is None:
         log.warning("Story wording enhancement returned invalid content; using fallback")
         return story
-    story.title = wording.title
+    # Optional wording must not overwrite the resolved display title or fallback decision.
+    if not translated_title and not isinstance(title_resolution, dict):
+        story.title = wording.title
+    else:
+        story.metadata["ranking_title"] = wording.title
     story.summary = wording.summary
     story.metadata["wording_enhanced"] = True
     return story

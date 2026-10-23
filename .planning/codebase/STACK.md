@@ -1,6 +1,6 @@
 # Technology Stack
 
-**Analysis Date:** 2026-10-14 (deployment and dependency reconciliation)
+**Analysis Date:** 2026-10-23 (deployment and dependency reconciliation)
 
 ## Languages
 
@@ -17,7 +17,7 @@
 
 **Environment:**
 - CPython 3.10 or newer, declared in `pyproject.toml`.
-- Linux is the production baseline in GitHub Actions and Docker; Windows setup scripts support local use.
+- Linux VPS uses Python 3.12; Windows setup scripts support local development and isolated UAT.
 
 **Package Manager:**
 - pip with `requirements.txt` for CI and Docker installs.
@@ -25,8 +25,9 @@
 - `requirements.lock` pins the runtime graph used by Phase 7 installer/CI.
 - `build-requirements.lock` pins pip/Hatchling and resolved build dependencies;
   install the application with `--no-build-isolation --no-deps` after both locks.
-  RG-04 dirty-artifact installation passed in an empty Linux Python 3.10 venv
-  outside the checkout. A clean committed candidate and CI execution remain open.
+  The recorded deployed commit has empty Python 3.12 archive-install and CI evidence;
+  the uncommitted title repair needs its own frozen verification. See the
+  [current handoff](../../docs/phase7-release-20261023/HANDOFF.md).
 
 ## Frameworks
 
@@ -55,15 +56,15 @@
   hooks that must be revalidated before upgrades.
 - beautifulsoup4 4.12+ - GitHub Trending and official blog HTML extraction.
 - structlog 24.x - structured application logging in `trendradar/utils/logging.py`.
-- tenacity 8.x - retry policy in RSS and notification network paths; Gemini retries are bounded by
-  the core client.
+- tenacity 8.x - retry policy in RSS network paths; Gemini candidate attempts are bounded by
+  the core client, with SDK implicit retries disabled.
 
 **Infrastructure:**
 - SQLite from the Python standard library - date-partitioned news/RSS stores,
-  schema-v1 `output/ai_frontier.db`, and schema-v6 `output/intelligence.db` for canonical, Story, Session,
+  schema-v1 `output/ai_frontier.db`, and schema-v7 `output/intelligence.db` for canonical, Story, Session,
   and Feishu event/delivery data.
 - supercronic - cron process used by the crawler Docker image through `docker/entrypoint.sh`.
-- GitHub Actions cache/artifacts - persistence and report retention for scheduled jobs.
+- GitHub Actions cache/artifacts - diagnostics/report retention and release artifacts; VPS snapshots protect production SQLite.
 
 ## Configuration
 
@@ -84,11 +85,12 @@
 - Run from repository root because several modules resolve `config/` and `output/` with relative paths.
 
 **Production:**
-- GitHub Actions supports scheduled batch crawling; Docker supports a persistent cron service and MCP sidecar.
+- VPS systemd timers own scheduled batch crawling; GitHub collection is manual diagnostics. Legacy Docker remains available.
 - Security, local Assistant and ResearchGateway are implemented and offline-tested.
-  Selected Windows Lark/Gemini scenarios have live evidence. Phase 7 actual-gap
-  remediation, remaining live gates and VPS deployment are unfinished.
+  Windows and VPS have separate live evidence. Title-repair release validation,
+  Chinese-title receipt, source health and 48-hour observation remain open;
+  backups are local-only and offsite recovery is unaccepted.
 
 ---
 
-*Stack analysis: 2026-10-14*
+*Stack reconciled: 2026-10-23; live service state not rechecked.*

@@ -26,6 +26,8 @@ All Google calls share environment-only `GEMINI_API_KEY`. Inference tries `gemin
 
 Translation uses a separate `gemini-3.1-flash-lite` profile with the same API key. It never inherits inference models or uses anonymous providers. Failed translations retain original text without falling back to Gemma.
 
+Main and AI Frontier collection resolve and persist canonical title translations before publishing Stories; reports reuse the same results. Raw evidence and saved delivery payloads remain unchanged. See the [translation contract](docs/intelligence.md#title-translation-before-publication).
+
 ## Lark Delivery
 
 Use the environment-only credentials and identity settings in [.env.example](.env.example). Lark is disabled by default. Authorized direct messages and group mentions support text and images; completed duplicate events do not receive another reply.
@@ -46,7 +48,7 @@ python -m ruff check <changed-python-paths>
 python -m trendradar.ops health --readiness --json
 ```
 
-Track implementation in [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md). Offline verification, live VPS acceptance and at least 48 hours of observation are separate gates. Historical evidence is preserved in the [handoff](docs/phase7-actual-gap-evidence/HANDOFF.md).
+Track implementation in [07-06-PLAN.md](.planning/phases/07-deployment/07-06-PLAN.md). The [current handoff](docs/phase7-release-20261023/HANDOFF.md) separates the recorded deployed release from the uncommitted translation repair. Local Windows/Linux full regression and Python 3.12 archive installation pass. Releasing the repair, Chinese-title receipt and at least 48 healthy hours remain open gates.
 
 ## Attribution
 

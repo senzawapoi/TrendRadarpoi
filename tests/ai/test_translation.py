@@ -310,3 +310,27 @@ def test_malformed_batch_numbering_is_not_reassigned_or_fanned_out():
     assert engine.batch_translate_titles(["one", "two"]) == ["", ""]
     assert len(gemini.calls) == 1
 
+
+@pytest.mark.parametrize("numbered", [False, True])
+def test_median_mistranslation_is_rejected_without_whole_batch_fanout(numbered):
+    title = 'Median product "lifespan" has fallen from ~4y down to ~1.5y'
+    wrong = "产品平均寿命从约4年降至约1.5年"
+    gemini = FakeGemini(("1. " if numbered else "") + wrong)
+    engine = TranslationEngine(gemini_client=gemini)
+    assert engine.batch_translate_titles([title]) == [""]
+    assert len(gemini.calls) == 1
+    assert "median means 中位数" in gemini.calls[0][0]
+    assert "quantities, units" in gemini.calls[0][0]
+
+
+def test_median_fixture_preserves_numbers_and_single_text_fallback():
+    title = 'Median product "lifespan" has fallen from ~4y down to ~1.5y'
+    correct = "产品寿命中位数从约4年降至约1.5年"
+    gemini = FakeGemini("1. " + correct, "产品平均寿命下降")
+    engine = TranslationEngine(gemini_client=gemini)
+    assert engine.batch_translate_titles([title]) == [correct]
+    outcome = engine.translate_text(title)
+    assert not outcome["success"]
+    assert outcome["translated_text"] == title
+    assert outcome["error"]["code"] == "TRANSLATION_TERMINOLOGY"
+

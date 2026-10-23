@@ -62,6 +62,7 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 7. 飞书和 MCP 只能向内调用核心服务；身份授权必须先于内容解析、媒体下载和 Assistant。保留有界队列、重连冷却；已送达的重复 `event_id` 不再发送，失败投递只重试已保存回复，不声称外部投递严格 exactly-once。
 8. Windows UAT 与 Linux VPS 部署分开；真实测试期间保留 `test/runtime/` 的库、WAL/SHM、图片与日志。核实实例描述文件与进程，不启动第二个 bot，不执行 `-Reset`。
 9. Phase 7 安装只走固定受控入口与可信 `common.env`；不删事务记录绕过维护保护。保留 `PrivateTmp`，服务解释器不得放在 `/tmp` 或 `/var/tmp`；未完成复现时保留旧审计包和隔离 Linux 工具链。
+10. 标题翻译必须先于 Story 发布，pending 条目不得进入聚类上下文；保留原始证据与排序输入。不得为修正语言改写已保存的投递内容或重新发送已登记 Story。
 
 ## 当前部署约定
 
@@ -76,5 +77,5 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 
 - [文档导航](docs/README.md)：运行契约、Lark 配置、数据库表与验收证据。
 - [本地测试沙箱](test/README.md)：入口、诊断、单实例核对及清理规则。
-- [Phase 7 缺口交接](docs/phase7-actual-gap-evidence/HANDOFF.md)：已执行检查、失败用例和接续顺序。
+- [Phase 7 当前交接](docs/phase7-release-20261023/HANDOFF.md)：区分已部署版本、本地翻译修复、验证失败与接续顺序。
 - [.planning/STATE.md](.planning/STATE.md)：当前进度与待办；原始需求和 `conductor/` 历史快照不代表已交付状态。

@@ -10,14 +10,10 @@ It supersedes the older model, notification, resource and offsite requirements.
 Use Python 3.12 on the VPS. This release uses instant Lark delivery and local
 backups only; offsite recovery and 48-hour observation remain separate open gates.
 
-Historical acceptance status and remaining external gates are in the
-[actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md). The current worktree
-is not an accepted production candidate. The guarded
-`backup activate --deployment-rollback` API and Bash installer tests now pass,
-and the historical real-systemd rollback failure has a confirmed permission
-cause and passing final regression. Authorized local work is complete:
-27 reviewed scenarios PASS; RG-04 clean candidate remains BLOCKED. G1 PASS;
-G2 clean-candidate and G3 target gates remain open before production use.
+The [current handoff](phase7-release-20261023/HANDOFF.md) separates recorded
+release `p7-20261023-8fc8f82` from the uncommitted title-translation repair and
+lists remaining acceptance gates. The [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md)
+preserves earlier installer/restore evidence; its pre-deployment status is historical.
 
 ## Layout and secrets
 
@@ -100,6 +96,22 @@ existing outbox. No schema migration is needed. Previously saved text batches st
 send as text with their original content, UUID and checkpoint. Roll back to an older
 renderer only after pending rich-text batches have drained, or retain the new decoder;
 older clients do not understand the new post snapshot format.
+
+### Title Translation Release
+
+Main and AI Frontier collection resolve canonical titles before publishing Stories;
+the Scheduler does not translate. Inspect `metadata.title_translation` and
+`title_translated`, the Story title and saved post together. Chinese legacy HTML
+or a successful model probe alone does not prove translated delivery. Pending
+translation metadata blocks publication; a recorded failure permits original text.
+See the [pipeline contract](intelligence.md#title-translation-before-publication).
+
+For the first release of this repair, keep the Scheduler stopped while inspecting
+unregistered historical Stories and completing the first collection. Records outside
+the current feed window are not automatically repaired. Do not clear delivery ledgers,
+edit frozen payloads or requeue previously delivered English posts. Resume sending only
+after reviewing the backlog, then verify a new Story's actual Chinese-title receipt.
+The repair adds no schema migration; the existing strict v7 checks still apply.
 
 ```bash
 systemctl status trendradar-bot trendradar-worker
@@ -310,8 +322,8 @@ Do not manually remove transaction files to unblock work. A durably finalized
 deployment can be confirmed with `maintenance finalize-deployment --database ...`
 only for the matching release/current symlink and passing health checks;
 `confirm-deployment-rollback` requires a persisted pre-business-boundary rollback.
-These paths pass the reviewed local assertion matrix; clean-candidate and
-production-target gates remain open. Database movements now fsync affected directories on
+Historical assertion results and subsequent release evidence are linked in the
+current handoff; new revisions need their own validation. Database movements fsync affected directories on
 POSIX; journal directory-fsync error propagation and metadata failure paths
 now have repair and focused fault-test evidence in the
 [restore follow-up](phase7-actual-gap-evidence/restore-durability-20261014.json).

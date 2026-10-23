@@ -588,6 +588,32 @@ class IntelligenceStorage:
             )
         return item_count, observation_count
 
+    def update_title_translations(self, translations: dict[str, dict[str, Any]]) -> None:
+        """Atomically attach display metadata without rewriting raw evidence or sightings."""
+        with self.transaction() as connection:
+            for item_id, record in translations.items():
+                row = connection.execute(
+                    "SELECT title, metadata_json FROM content_items WHERE id=?", (item_id,)
+                ).fetchone()
+                if row is None or row["title"] != record["original_title"]:
+                    raise ValueError("canonical translation title changed before persistence")
+                additions = {"title_translation": record, "title_translated": record["text"]}
+                metadata = {**_json_mapping(row["metadata_json"]), **additions}
+                connection.execute(
+                    "UPDATE content_items SET metadata_json=? WHERE id=?",
+                    (json.dumps(metadata, ensure_ascii=False, sort_keys=True), item_id),
+                )
+                rows = connection.execute(
+                    "SELECT id, metadata_json FROM content_observations WHERE content_item_id=?",
+                    (item_id,),
+                ).fetchall()
+                for observation in rows:
+                    metadata = {**_json_mapping(observation["metadata_json"]), **additions}
+                    connection.execute(
+                        "UPDATE content_observations SET metadata_json=? WHERE id=?",
+                        (json.dumps(metadata, ensure_ascii=False, sort_keys=True), observation["id"]),
+                    )
+
     @staticmethod
     def _upsert_item(connection: sqlite3.Connection, item: ContentItem) -> int:
         now = datetime.now(tz=timezone.utc).isoformat()

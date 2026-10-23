@@ -38,6 +38,7 @@ from trendradar.core.locking import LockUnavailable, runtime_locks
 from trendradar.core.settings import load_settings, load_yaml_config
 from trendradar.intelligence.gemini_wording import build_story_wording_client
 from trendradar.intelligence.integration import open_intelligence_storage
+from trendradar.intelligence.translation import CanonicalTitleTranslator
 from trendradar.ops.maintenance import read_guard
 from trendradar.services.translation_service import TranslationService
 from trendradar.utils.logging import log
@@ -205,6 +206,10 @@ async def _run(config_path: str) -> int:
                 "intelligence_storage": intelligence_storage,
                 "story_wording_client": story_wording_client,
                 "digest_analyzer": digest_analyzer,
+                "title_translator": CanonicalTitleTranslator(
+                    translation_service.batch_translate_titles
+                    if cfg.get("translate", True) and translation_service.translation_tools else None
+                ),
             }
             fetch_options = {
                 key: value
@@ -233,12 +238,13 @@ async def _run(config_path: str) -> int:
     # 4. 翻译
     translated = 0
     if cfg.get("translate", True):
-        translated = translate_items(
+        translate_items(
             to_push,
             gemini_api_key=None,
             translation_service=translation_service,
             gemini_client=gemini_client,
         )
+        translated = sum(bool(item.title_translated) for item in to_push)
         log.info(f"翻译条目 {translated}")
 
     # 5. HTML 报告

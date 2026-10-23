@@ -178,7 +178,10 @@ def _run_main():
             fetch_rss_with_adapters,
             open_intelligence_storage,
         )
-        from trendradar.intelligence.translation import translate_news_items_canonically
+        from trendradar.intelligence.translation import (
+            CanonicalTitleTranslator,
+            translate_news_items_canonically,
+        )
         from trendradar.services.translation_service import TranslationService
         from trendradar.storage.base import (
             NewsItem,
@@ -265,6 +268,10 @@ def _run_main():
         proxy_url = config.get("PROXY_URL", "")
         translated_count = 0
         canonical_translation_cache = {}
+        title_translator = CanonicalTitleTranslator(
+            translator.batch_translate_titles if translator.translation_tools else None,
+            legacy_cache=canonical_translation_cache,
+        )
         total_hot_titles = 0
 
         # 读取报告模式（daily / current / incremental）
@@ -306,6 +313,7 @@ def _run_main():
                     storage=intelligence_storage,
                     story_wording_client=story_wording_client,
                     digest_analyzer=digest_analyzer,
+                    title_translator=title_translator,
                 )
                 results, id_to_name, _title_info = convert_news_data_to_results(hot_news_data)
                 failed_ids = hot_news_data.failed_ids
@@ -329,7 +337,7 @@ def _run_main():
 
                 if hot_news_items:
                     log.info("翻译热榜数据", count=len(hot_news_items))
-                    hot_translated = translate_news_items_canonically(
+                    translate_news_items_canonically(
                         hot_news_items,
                         lambda items: translator.translate_news_items(
                             items,
@@ -337,6 +345,7 @@ def _run_main():
                         ),
                         cache=canonical_translation_cache,
                     )
+                    hot_translated = sum(bool(item.title_translated) for item in hot_news_items)
                     translated_count += hot_translated
                     log.success("热榜翻译完成", translated=hot_translated, total=len(hot_news_items))
 
@@ -435,6 +444,7 @@ def _run_main():
                         storage=intelligence_storage,
                         story_wording_client=story_wording_client,
                         digest_analyzer=digest_analyzer,
+                        title_translator=title_translator,
                         request_interval=rss_config.get("REQUEST_INTERVAL", 2000),
                         timeout=rss_config.get("TIMEOUT", 15),
                         use_proxy=rss_config.get("USE_PROXY", False),
@@ -475,7 +485,7 @@ def _run_main():
                                 news_item._canonical_content_id = canonical_id
 
                         log.info("翻译 RSS 数据", count=len(rss_news_items))
-                        rss_translated = translate_news_items_canonically(
+                        translate_news_items_canonically(
                             rss_news_items,
                             lambda items: translator.translate_news_items(
                                 items,
@@ -483,6 +493,7 @@ def _run_main():
                             ),
                             cache=canonical_translation_cache,
                         )
+                        rss_translated = sum(bool(item.title_translated) for item in rss_news_items)
                         translated_count += rss_translated
                         log.success("RSS 翻译完成", translated=rss_translated, total=len(rss_news_items))
 

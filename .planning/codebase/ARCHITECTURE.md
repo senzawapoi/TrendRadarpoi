@@ -1,38 +1,40 @@
 <!-- refreshed: 2026-09-12 -->
 # Architecture
 
-**Analysis Date:** 2026-10-14 (runtime-boundary reconciliation)
+**Analysis Date:** 2026-10-23 (runtime-boundary reconciliation)
 
 ## System Overview
 
 ```text
 Main crawler / AI Frontier -> existing collectors -> SourceAdapter
-  -> Normalize / Deduplicate -> intelligence.db -> Story / Security / Importance
-  -> compatibility projections -> legacy SQLite / reports / notifications
+  -> Normalize / Deduplicate -> intelligence.db -> title resolution -> Story / Importance
+  -> compatibility projections -> legacy SQLite / reports
+Security adapters -> canonical evidence -> Security Story / Importance
 
 FastMCP -> core services / legacy history / selected crawl operations
 
 Feishu SDK runner (opt-in) -> identity / chat / event gate -> local Assistant
   -> bounded SQLite retrieval / static read tools -> optional core GeminiClient
   -> persisted response -> SDK reply
-Feishu daily scheduler -> ranked Stories -> digest -> durable delivery checkpoints
+Lark Scheduler -> new Stories -> saved native post -> durable delivery checkpoints
+Optional daily mode -> ranked Stories -> digest -> separate delivery ledger
 ```
 
 ## Component Responsibilities
 
 | Component | Responsibility | File |
 |-----------|----------------|------|
-| Main orchestrator | Runs hot-list and RSS crawl, translation, storage, analysis, report, and push in one process | `trendradar/__main__.py` |
-| App context | Wraps loaded configuration and constructs storage, report, and notification collaborators | `trendradar/context.py` |
+| Main orchestrator | Runs hot-list and RSS crawl, canonical translation, storage, Story analysis and reports | `trendradar/__main__.py` |
+| App context | Wraps loaded configuration and constructs storage and report collaborators | `trendradar/context.py` |
 | Core | Configuration, keyword matching, ranking/frequency analysis, and shared exceptions | `trendradar/core/` |
 | Unified source boundary | Wraps NewsNow, RSS, and enabled AI Frontier sources without replacing their parsers | `trendradar/sources/` |
 | Intelligence data layer | Runs adapters, normalizes, deduplicates, builds Stories, stores provenance/Assistant sessions, and backfills history | `trendradar/intelligence/` |
 | AI and Assistant | Owns Gemini, translation/analysis, bounded sessions, retrieval, citations, and static local tools | `trendradar/ai/` |
 | Security domain | Collects, analyzes, ranks, and reports CISA/NVD/RSS security evidence | `trendradar/domains/security/` |
 | Storage | Date-partitioned SQLite/local output and optional S3-compatible backend | `trendradar/storage/` |
-| AI Frontier | Independent seven-source async aggregation, deduplication, translation, SQLite state, rendering, and Bark push | `trendradar/ai_frontier/` |
+| AI Frontier | Seven-source aggregation, canonical title resolution, compatible SQLite state and HTML | `trendradar/ai_frontier/` |
 | MCP server | Exposes historical query, analytics, crawl, config, translation, and storage tools | `mcp_server/server.py` |
-| Feishu integration | Authorizes SDK events, bounds media/workers, suppresses completed duplicates, retries failed delivery and schedules daily delivery | `trendradar/integrations/feishu/` |
+| Lark integration | Authorizes SDK events, bounds media/workers, suppresses completed duplicates and delivers saved replies/Story posts | `trendradar/integrations/lark/`, `trendradar/integrations/feishu/` |
 | External research | Opt-in allowlisted evidence through isolated Agent-Reach routes; no ingestion or arbitrary shell dispatch | `trendradar/research/` |
 | Operations | Strict database checks/migration, read-only health, durable maintenance/deployment guards and multi-database recovery | `trendradar/ops/` |
 
@@ -70,7 +72,7 @@ Feishu daily scheduler -> ranked Stories -> digest -> durable delivery checkpoin
 
 **Persistence and output:**
 - Purpose: retain crawl/Story/Assistant history, detect new items, render reports, and push messages.
-- Location: `trendradar/intelligence/storage.py`, `trendradar/storage/`, `trendradar/report/`, `trendradar/notification/`, and `trendradar/ai_frontier/storage.py`.
+- Location: `trendradar/intelligence/storage.py`, `trendradar/storage/`, `trendradar/report/`, `trendradar/integrations/feishu/`, and `trendradar/ai_frontier/storage.py`.
 
 ## Data Flow
 
@@ -79,15 +81,15 @@ Feishu daily scheduler -> ranked Stories -> digest -> durable delivery checkpoin
 1. `load_config()` builds normalized configuration and `AppContext` (`trendradar/__main__.py`).
 2. Per-platform/per-feed adapters reuse `DataFetcher` and `RSSFetcher`, then normalize to `ContentItem`.
 3. Deduplication writes canonical items plus observations to `intelligence.db` and projects the raw records back to legacy groupings.
-4. Canonical representatives are translated once and translation fields propagate to compatible duplicates; `StorageManager` persists legacy history.
-5. Existing analyzers, reports, and `NotificationDispatcher` continue unchanged.
+4. Canonical titles resolve before Story publication; pending items cannot enter clustering context. Results persist atomically in canonical/observation metadata and propagate to legacy output.
+5. `StorageManager` persists legacy history and existing analyzers/renderers produce reports. The independent Lark Scheduler registers new Stories and freezes payloads for delivery.
 
 ### AI Frontier Path
 
 1. `build_sources()` still constructs seven enabled `AISource` implementations.
 2. With intelligence enabled, one wrapper adapter runs per enabled top-level source; existing classes retain internal fan-out.
-3. Canonical output is deduplicated and written best effort, then projected back to `AIItem` for freshness, legacy deduplication, and `AIFrontierStorage`.
-4. Source thresholds, optional translation, HTML, and Bark behavior remain compatible.
+3. Fresh canonical output is deduplicated and written best effort; all fresh Story candidates resolve titles before publication, including candidates outside the HTML cap.
+4. Projected `AIItem` records reuse translations for compatible storage, score filtering and HTML; the collector never sends. Failed translations retain originals without a second report-time call.
 
 ### MCP Request Path
 
@@ -114,7 +116,7 @@ Feishu daily scheduler -> ranked Stories -> digest -> durable delivery checkpoin
    send or Assistant turn, while failed delivery retries a saved reply. Media downloads are
    bounded and image bytes stay in memory.
 4. Chat-scoped hashed principals/sessions call the existing Assistant and static tools.
-5. Replies and daily digests use persisted leases/checkpoints; reconnect attempts have cooldown.
+5. Replies, instant Story posts and optional daily digests use persisted leases/checkpoints; reconnect attempts have cooldown. Saved payloads are never rewritten for localization.
    These local guarantees cannot make provider acceptance and SQLite commits atomic. See
    [Lark limits](../../docs/intelligence.md#lark-assistant).
 
@@ -126,15 +128,15 @@ and do not enter the ingestion database. Production operations separate Bot,
 Worker and one-shot Scheduler roles. A fixed root-owned installer loads trusted
 configuration; durable deployment/restore transactions gate acceptance of work.
 See [deployment contracts](../../docs/deployment.md) and
-[current acceptance gaps](../../docs/phase7-actual-gap-evidence/HANDOFF.md).
+[current acceptance gaps](../../docs/phase7-release-20261023/HANDOFF.md).
 
 **State Management:**
 - SQLite files are the persistent state; date folders partition core news/RSS data while AI Frontier uses one database.
-- `output/intelligence.db` schema v6 stores canonical content, observations, source runs, Stories,
-  memberships, Assistant sessions/messages, and additive Feishu event/delivery ledgers;
+- `output/intelligence.db` schema v7 stores canonical content, observations, source runs, Stories,
+  memberships, Assistant sessions/messages, and additive event/daily/instant-delivery ledgers;
   legacy stores remain current read authority.
 - `AppContext` caches collaborators per process, and MCP uses an in-process cache singleton.
-- GitHub Actions cache is relied on to preserve state between ephemeral jobs.
+- Production state stays on the VPS with local SQLite snapshots; GitHub manual diagnostics may use caches, which are not backups.
 
 ## Key Abstractions
 
@@ -178,7 +180,7 @@ See [deployment contracts](../../docs/deployment.md) and
 **AI Frontier:**
 - Location: `trendradar/ai_frontier/__main__.py`.
 - Triggers: `python -m trendradar.ai_frontier` or its scheduled workflow.
-- Responsibilities: focused AI-source collection and Bark report.
+- Responsibilities: focused AI-source collection, canonical Story publication and HTML report.
 
 **MCP:**
 - Location: `mcp_server/server.py`.
@@ -243,4 +245,4 @@ isolation. See `docs/intelligence.md` and Phase 5 `VERIFICATION.md` for the offl
 
 ---
 
-*Architecture analysis: 2026-10-14; acceptance gaps are tracked separately.*
+*Architecture reconciled: 2026-10-23; acceptance gaps are tracked separately.*

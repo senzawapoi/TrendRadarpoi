@@ -204,17 +204,21 @@ def test_abstract_source_cannot_be_created():
 - Preserve Feishu validation, identities, duplicate suppression, sessions, media,
   recovery and delivery coverage. Selected Windows tenant tests have separate
   [live evidence](../phases/05-feishu-assistant/05-LIVE-UAT.md); skipped/pending
-  scenarios and Linux provider acceptance remain open.
+  scenarios remain scoped to that record. VPS observations and the local translation
+  repair are tracked separately in the current handoff.
 - Retain the existing ResearchGateway allowlist/timeout tests and no-shell boundary.
 - Phase 7 CI defines pytest, scoped Ruff, dependency checks, artifact building
-  and a privileged Linux/systemd job. Backup cases pass locally, but recorded
-  CI execution, full role/timer lifecycle and comprehensive secret scanning
-  remain open. Follow the [actual-gap handoff](../../docs/phase7-actual-gap-evidence/HANDOFF.md).
+  and a privileged Linux/systemd job. Follow the [current handoff](../../docs/phase7-release-20261023/HANDOFF.md)
+  for recorded deployment and repair validation. The `/proc` test-helper race is
+  fixed with eight regression cases. Final Windows: 823 passed/364 skipped; Linux
+  Python 3.12: 1181 passed/6 skipped, including 13 real systemd quiesce/recovery
+  and two backup-unit cases. Separate empty-venv archive installation: one pass.
+  This validates the uncommitted repair locally, not a released artifact or tenant.
 - The guarded deployment-rollback API and historical 57-test Bash installer
   suite have passing evidence. The new rollback/readiness/quiesce/assertion
   modules are included in privileged CI; 18 local wiring tests pass, including
-  path existence. ENV-03 is repaired; finish the dated handoff's final regression
-  and per-case audit. Local wiring tests do not establish GitHub execution.
+  path existence. These are historical scopes; new revisions need their own final
+  regression. Local wiring tests alone do not establish GitHub execution.
 
 ---
 

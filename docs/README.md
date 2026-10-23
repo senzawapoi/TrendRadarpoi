@@ -18,42 +18,29 @@
 | Contribute code or use an agent | [Repository guidelines](../AGENTS.md) and [Chinese agent guide](../CLAUDE.md) |
 | Configure the seven AI source types | [AI Frontier guide](../trendradar/ai_frontier/README.md) |
 | Deploy on Linux VPS and restore safely | [Deployment runbook](deployment.md) and [Phase 7 acceptance](phase7-acceptance.md) |
-| Resume the current Phase 7 candidate | [07-06 plan](../.planning/phases/07-deployment/07-06-PLAN.md) and [new candidate evidence](phase7-release-20261023/README.md) |
+| Resume Phase 7 deployment and translation repair | [Current handoff](phase7-release-20261023/HANDOFF.md) and [07-06 plan](../.planning/phases/07-deployment/07-06-PLAN.md) |
 | Inspect earlier Phase 7 repairs and tests | [Historical handoff](phase7-actual-gap-evidence/HANDOFF.md) and [07-05 plan](../.planning/phases/07-deployment/07-05-PLAN.md) |
 
 ## Delivery Status
 
-Phase 7 07-06 is in implementation: ordered model failover, fixed Gemma translation,
-Lark instant Story delivery and local-only VPS backups. Full candidate verification,
-deployment and live observation are still open. The earlier results below apply to
-the preserved v6 input set, not the current branch.
+Phase 0-6 implementation is offline-verified. Recorded Phase 7 release
+`p7-20261023-8fc8f82` was deployed through approved GitHub run 39905435713.
+Translation uses Gemini 3.1 Flash Lite; Lark is the only notification transport.
+The subsequent canonical-title repair is local and uncommitted: it is not part of
+that release. Chinese-title Lark acceptance remains open despite successful
+legacy HTML translation. Final local Windows/Linux regression and Python 3.12 archive
+installation now pass; the process-helper race is fixed. See the
+[current handoff](phase7-release-20261023/HANDOFF.md) and
+[follow-up evidence](phase7-release-20261023/TRANSLATION-FOLLOWUP.md) for results,
+retained failed runs, evidence locations and resume order.
 
-Phase 0-6 implementation is offline-verified. Earlier Phase 7 authorized local work is
-complete: frozen v6 Windows full 683 passed/342 skipped, Linux full 1019 passed/
-6 skipped, two explained upstream warnings each, all exit 0. Real systemd
-quiesce has 11 passing cases and backup units 2 within Linux full. Separate
-actual empty-venv dirty installation passes; all 301 source/resource hashes
-and archive members match. [Final report](phase7-actual-gap-evidence/verification-20261022.md)
-binds commands, environments, artifact and all skips. The 28-case audit is
-27 PASS/1 BLOCKED (RG-04 clean candidate): G1 PASS; G2 blocked; G3/VPS pending.
-Actual GitHub execution and remote backup remain open. Historical failures and
-archived pre-fix reproduction are retained; do not poll old test handles.
-
-ENV-03 fixed-entry YAML readability was repaired: the 48-test Linux follow-up
-passed. The 2026-10-14 deployment-only run finished with 466 passed and 6 skipped.
-These are historical scoped results. The dated 2026-10-15 handoff's local work
-is complete; current evidence includes repaired Windows tzdata and same-boot
-controller leases without relaxing the 15-second/identity fences.
-The live UAT record confirms Lark private
-text/follow-up, pure-image, a fresh single-post mixed-image request, explicit group mentions,
-session isolation and normal same-database restart continuity. Controlled recovery checks pass;
-real network interruption remains unexecuted, and scheduled delivery awaits recipient confirmation.
-This is Windows UAT, not Linux VPS deployment. Lark stays disabled by default; external research
-also stays disabled by default. `--check` validates
-configuration without network access or database writes, not provider credentials or tenant
-permissions. Phase 7 requires completion of the current test matrix and its VPS gates; Phase 8 remains
-roadmap work. Phase 5 B6 non-whitelisted testing is an accepted skip; C3 real
-interruption and C4 recipient confirmation remain open.
+Source-health issues, Podcast/Blog recovery and 48-hour observation remain open.
+This release uses local backups only; offsite recovery is not accepted. Preserve
+the Phase 5 B6 accepted skip. Windows UAT and VPS observations have separate evidence;
+neither substitutes for a new release's checks. Lark and external research remain
+opt-in, and `--check` validates configuration without proving tenant permissions.
+The [v6 report](phase7-actual-gap-evidence/verification-20261022.md) and
+[pre-release record](phase7-release-20261023/README.md) are historical checkpoints.
 
 The four root `TrendRadarpoi_*` requirement documents preserve the original brief. Use the GSD
 state and phase verification files above for implementation progress and unresolved work.
