@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
+
+from trendradar.ai_frontier._http import run_with_concurrency
+from trendradar.utils.logging import log
 
 SourceType = Literal["arxiv", "reddit", "hackernews", "github", "x", "podcast", "blog"]
 
@@ -47,6 +51,10 @@ class AIItem:
         }
 
 
+class SourceFetchError(RuntimeError):
+    """A bounded, non-sensitive fetch/parse failure code for one source endpoint."""
+
+
 class AISource(ABC):
     """AI 前沿数据源抽象基类"""
 
@@ -55,6 +63,31 @@ class AISource(ABC):
     def __init__(self, config: dict) -> None:
         self.config = config
         self.enabled = config.get("enabled", True)
+        self._fetch_errors: list[str] = []
+
+    @property
+    def fetch_errors(self) -> tuple[str, ...]:
+        return tuple(self._fetch_errors)
+
+    async def _gather(
+        self, coros: list[Awaitable[list[AIItem]]], labels: list[str], *, limit: int,
+    ) -> list[list[AIItem]]:
+        """Keep useful siblings while preserving each failed endpoint for health."""
+        results = await run_with_concurrency(coros, limit=limit)
+        collected: list[list[AIItem]] = []
+        for label, result in zip(labels, results, strict=True):
+            if isinstance(result, BaseException) and not isinstance(result, Exception):
+                raise result
+            if isinstance(result, list):
+                collected.append(result)
+                continue
+            reason = str(result) if isinstance(result, SourceFetchError) else type(result).__name__
+            # Never retain arbitrary exception messages (URLs may contain credentials).
+            error = f"{str(label)[:80]}:{reason[:120]}"
+            self._fetch_errors.append(error)
+            log.warning("AI source endpoint failed", source=self.name, failure=error)
+            collected.append([])
+        return collected
 
     @abstractmethod
     async def fetch(self) -> list[AIItem]:

@@ -58,6 +58,7 @@ class AdapterRunner:
         normalized_raw_items: list[Any] = []
         normalize_errors: list[str] = []
         fetch_error = ""
+        partial_errors: tuple[str, ...] = ()
 
         try:
             async with semaphore:
@@ -65,6 +66,7 @@ class AdapterRunner:
                 if not isinstance(fetched, list):
                     raise TypeError("adapter.fetch() must return a list")
                 raw_items = fetched
+                partial_errors = adapter.fetch_errors
         except Exception as exc:
             fetch_error = str(exc) or type(exc).__name__
         else:
@@ -77,20 +79,21 @@ class AdapterRunner:
 
         finished_at = datetime.now(tz=timezone.utc)
         duration_ms = max(0, round((monotonic() - timer) * 1000))
-        if fetch_error or (raw_items and not items):
+        if fetch_error or ((raw_items or partial_errors) and not items):
             status = HealthStatus.UNHEALTHY
-        elif not raw_items or normalize_errors:
+        elif not raw_items or normalize_errors or partial_errors:
             status = HealthStatus.DEGRADED
         else:
             status = HealthStatus.HEALTHY
-        error_summary = fetch_error or "; ".join(normalize_errors[:5])
+        errors = [*partial_errors, *normalize_errors]
+        error_summary = fetch_error or "; ".join(errors[:5])
         health = SourceHealth(
             adapter_id=adapter.adapter_id,
             status=status,
             checked_at=finished_at,
             fetched_count=len(raw_items),
             normalized_count=len(items),
-            error_count=(1 if fetch_error else len(normalize_errors)),
+            error_count=(1 if fetch_error else len(errors)),
             error_summary=error_summary,
         )
         adapter._set_health(health)

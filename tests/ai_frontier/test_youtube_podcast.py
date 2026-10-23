@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
+
+import pytest
+
 from trendradar.ai_frontier.sources.youtube_podcast import YouTubePodcastSource
 
 SAMPLE_RSS = """<?xml version="1.0" encoding="UTF-8"?>
@@ -60,3 +64,36 @@ def test_parse_rss_extracts_podcast_items():
 def test_parse_rss_respects_max_items():
     src = YouTubePodcastSource({"max_items_per_feed": 1})
     assert len(src._parse_rss("Latent Space", SAMPLE_RSS)) == 1
+
+
+@pytest.mark.parametrize("metadata", [
+    '<link href="https://www.youtube.com/channel/UCexpected123" rel="canonical">',
+    '<meta content="https://www.youtube.com/channel/UCexpected123" property="og:url">',
+    '<link type="application/rss+xml" href="https://www.youtube.com/feeds/videos.xml?channel_id=UCexpected123">',
+    '<script>{"channelMetadataRenderer":{"externalId":"UCexpected123"}}</script>',
+])
+def test_page_metadata_wins_over_recommended_video_channels(metadata):
+    html = '<script>{"channelId":"UCunrelated123"}</script>' + metadata
+    assert YouTubePodcastSource({})._parse_channel_id(html) == "UCexpected123"
+
+
+def test_does_not_select_arbitrary_browse_ids_or_foreign_canonical_url():
+    html = ('<link rel="canonical" href="https://example.com/channel/UCwrong123">'
+            '<script>{"recommendation":{"browseId":"UCwrong123","channelId":"UCwrong123"}}</script>')
+    assert YouTubePodcastSource({})._parse_channel_id(html) == ""
+
+
+@pytest.mark.parametrize("feed,expected", [
+    ({"channel_id": "UCexpected123"}, "https://www.youtube.com/feeds/videos.xml?channel_id=UCexpected123"),
+    ({"rss_url": "https://publisher.example/podcast.xml", "channel_id": "UCexpected123"},
+     "https://publisher.example/podcast.xml"),
+])
+def test_explicit_identity_does_not_fetch_handle_page(feed, expected):
+    assert asyncio.run(YouTubePodcastSource({})._resolve_rss_url(None, feed)) == expected
+
+
+def test_successful_html_response_is_not_an_empty_podcast_feed():
+    from trendradar.ai_frontier.sources.base import SourceFetchError
+
+    with pytest.raises(SourceFetchError, match="invalid_feed"):
+        YouTubePodcastSource({})._parse_rss("podcast", "<html>Consent</html>")
