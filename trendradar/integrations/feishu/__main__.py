@@ -288,7 +288,7 @@ def run_worker_role(settings, config, client, stop=None, *, poll_seconds=WORKER_
 
 
 def run_scheduler_once(settings, config, client) -> str:
-    """Execute one durable daily-delivery tick and return its status."""
+    """Execute one durable Story-delivery tick and return its status."""
     heartbeat = RoleHeartbeat("scheduler", settings.intelligence_database_path)
     if read_guard(settings.intelligence_database_path) is not None:
         heartbeat.write(
@@ -341,7 +341,9 @@ def _validate(config: FeishuConfig, settings, role: str) -> str | None:
     if role == "bot" and "group" in config.allowed_chat_types and not config.bot_id:
         return "LARK_BOT_ID is required for mentioned group messages."
     if role == "scheduler" and config.delivery_enabled and not config.delivery_target:
-        return "LARK_DELIVERY_TARGET is required for daily delivery."
+        return "LARK_DELIVERY_TARGET is required for Story delivery."
+    if config.delivery_mode not in {"instant", "daily"}:
+        return "LARK_DELIVERY_MODE must be instant or daily."
     if role == "combined" and not config.identity_fields:
         return "Lark requires an identity allowlist."
     if role == "combined" and "group" in config.allowed_chat_types and not config.bot_id:

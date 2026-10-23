@@ -5,7 +5,6 @@
 
 环境变量：
     GEMINI_API_KEY   —— Gemini 翻译 API Key（可选）
-    BARK_URL         —— Bark 推送 URL（优先级高于 config）
 
 流程：
     1. 加载 config（config/config.yaml 的 ai_frontier 节点）
@@ -15,7 +14,7 @@
     5. 分数过滤 + 截断
     6. 批量翻译英文标题为中文
     7. 保存 HTML 报告
-    8. 推送 Bark
+    8. Story 由独立 Lark Scheduler 投递
 """
 
 from __future__ import annotations
@@ -29,16 +28,17 @@ from pathlib import Path
 
 from trendradar.ai import build_gemini_client
 from trendradar.ai.analyzer import DailyDigestAnalyzer, NarrativeLimits
+from trendradar.ai.translator import build_translation_client
 from trendradar.ai_frontier.detector import filter_new_for_push
 from trendradar.ai_frontier.fetcher import fetch_and_process
-from trendradar.ai_frontier.pusher import push_items_to_bark
 from trendradar.ai_frontier.renderer import save_html_report
 from trendradar.ai_frontier.storage import AIFrontierStorage
 from trendradar.ai_frontier.translator import translate_items
 from trendradar.core.locking import LockUnavailable, runtime_locks
-from trendradar.core.settings import RuntimeSettings, load_settings, load_yaml_config
+from trendradar.core.settings import load_settings, load_yaml_config
 from trendradar.intelligence.gemini_wording import build_story_wording_client
 from trendradar.intelligence.integration import open_intelligence_storage
+from trendradar.intelligence.translation import CanonicalTitleTranslator
 from trendradar.ops.maintenance import read_guard
 from trendradar.services.translation_service import TranslationService
 from trendradar.utils.logging import log
@@ -72,7 +72,6 @@ def _default_config() -> dict:
         "freshness_hours": 24,
         "translate": True,
         "push": {
-            "bark_url": "",
             "min_score_hackernews": 50,
             "min_score_reddit": 30,
             "min_stars_github": 100,
@@ -136,27 +135,6 @@ def _deep_merge(base: dict, override: dict) -> None:
             base[k] = v
 
 
-def _resolve_bark_url(config: dict, settings: RuntimeSettings | None = None) -> str:
-    """优先级：BARK_URL 环境变量 > ai_frontier.push.bark_url > notification.channels.bark.url"""
-    runtime_settings = settings or load_settings(DEFAULT_CONFIG_PATH, fallback_to_empty=True)
-    env_url = runtime_settings.get_str("BARK_URL")
-    if env_url:
-        return env_url
-    push_url = (config.get("push") or {}).get("bark_url", "").strip()
-    if push_url:
-        return push_url
-    # 回退到主 config 的 notification.channels.bark.url
-    return ""
-
-
-def _resolve_main_bark_from_config(config_path: str | Path) -> str:
-    """从主 config 的 notification.channels.bark.url 读取"""
-    try:
-        data = load_yaml_config(config_path)
-    except Exception:
-        return ""
-    channels = (data.get("notification") or {}).get("channels") or {}
-    return ((channels.get("bark") or {}).get("url") or "").strip()
 
 
 def _open_frontier_storage(settings):
@@ -184,7 +162,9 @@ async def _run(config_path: str) -> int:
     run_start = datetime.now(tz=timezone.utc).isoformat()
 
     gemini_client = build_gemini_client(settings)
-    translation_service = TranslationService(gemini_client=gemini_client)
+    translation_service = TranslationService(
+        gemini_api_key="", gemini_client=build_translation_client(settings)
+    )
 
     intelligence_storage = open_intelligence_storage(
         settings.intelligence_enabled,
@@ -226,6 +206,10 @@ async def _run(config_path: str) -> int:
                 "intelligence_storage": intelligence_storage,
                 "story_wording_client": story_wording_client,
                 "digest_analyzer": digest_analyzer,
+                "title_translator": CanonicalTitleTranslator(
+                    translation_service.batch_translate_titles
+                    if cfg.get("translate", True) and translation_service.translation_tools else None
+                ),
             }
             fetch_options = {
                 key: value
@@ -254,12 +238,13 @@ async def _run(config_path: str) -> int:
     # 4. 翻译
     translated = 0
     if cfg.get("translate", True):
-        translated = translate_items(
+        translate_items(
             to_push,
             gemini_api_key=None,
             translation_service=translation_service,
             gemini_client=gemini_client,
         )
+        translated = sum(bool(item.title_translated) for item in to_push)
         log.info(f"翻译条目 {translated}")
 
     # 5. HTML 报告
@@ -268,21 +253,6 @@ async def _run(config_path: str) -> int:
     except Exception as e:
         log.warning("保存 HTML 失败", error=str(e))
 
-    # 6. Bark 推送
-    bark_url = _resolve_bark_url(cfg, settings)
-    if not bark_url:
-        bark_url = _resolve_main_bark_from_config(config_path)
-
-    if not bark_url:
-        log.warning("未配置 Bark URL，跳过推送")
-    elif not to_push:
-        log.info("本次无需推送")
-    else:
-        ok = push_items_to_bark(bark_url, to_push, title="🤖 AI 前沿")
-        if ok:
-            log.success(f"Bark 推送成功，共 {len(to_push)} 条")
-        else:
-            log.warning("Bark 推送失败")
 
     log.success(f"AI 前沿任务完成 (start={run_start})")
     return 0

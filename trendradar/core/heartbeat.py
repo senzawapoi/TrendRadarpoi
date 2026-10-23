@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +13,17 @@ from pathlib import Path
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def boot_clock() -> tuple[str, int] | None:
+    """Return a Linux boot-bound clock that includes suspend and ignores UTC corrections."""
+    if not hasattr(time, "CLOCK_BOOTTIME"):
+        return None
+    try:
+        identity = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+        return identity, time.clock_gettime_ns(time.CLOCK_BOOTTIME)
+    except OSError:
+        return None
 
 
 def heartbeat_directory(database_path: str | Path) -> Path:
@@ -40,8 +52,12 @@ class RoleHeartbeat:
             "state": state,
             "release_id": os.environ.get("TRENDRADAR_RELEASE_ID", "unknown")[:128],
         }
+        clock = boot_clock()
+        if clock is not None:
+            payload["boot_id"], payload["updated_boottime_ns"] = clock
         for key, value in fields.items():
-            if key not in {"text", "content", "payload", "token", "secret"}:
+            if key not in {"text", "content", "payload", "token", "secret",
+                           "boot_id", "updated_boottime_ns"}:
                 payload[key] = value
         self.path.parent.mkdir(parents=True, exist_ok=True)
         fd, temporary = tempfile.mkstemp(prefix=f".{self.role}-", suffix=".tmp", dir=self.path.parent)

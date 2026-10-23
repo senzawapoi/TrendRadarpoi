@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-24",
+  "worktree": "C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023",
+  "branch": "work/trendradar-handoff",
+  "base_commit": "28e7283162b58213aee474b02cb492efebbc7fc6",
+  "scope": "offline handoff candidate; not a release candidate",
+  "publication_note": "This freezes pre-commit validation. Owner approval on 2026-10-24 authorizes four commits, branch push and stacked PR. Subsequent final-commit installation and CI are recorded in the PR; historical base/dirty values below are intentionally unchanged.",
+  "commands": [
+    {
+      "command": "python -B -m pytest tests -q -p no:cacheprovider --tb=short --junitxml=/var/lib/trendradar-handoff-full-final-20261024.xml",
+      "environment": "WSL native ext4 copy, Python 3.12.3, SQLite 3.45.1",
+      "exit_code": 0,
+      "result": "1212 passed, 6 skipped, 2 dependency deprecation warnings",
+      "seconds": 559.23,
+      "evidence": "handoff/evidence/full-final-20261024.xml",
+      "skips": "3 Windows-only cases, 2 opt-in historical pre-fix cases, 1 opt-in archive installation (passed separately)"
+    },
+    {
+      "command": "python phasegate/phase7_gate.py inspect",
+      "environment": "WSL native ext4 copy, Python 3.12.3",
+      "exit_code": 0,
+      "result": "PASS: 34 scenarios, 14 suites; 20 partial, 7 reviewed, 7 external",
+      "meaning": "structural mapping only; no application tests executed"
+    },
+    {
+      "command": "python -m unittest discover -s phasegate/tests -q",
+      "environment": "WSL native ext4 copy, Python 3.12.3",
+      "exit_code": 0,
+      "result": "51 passed"
+    },
+    {
+      "command": "python -m ruff check <changed source/tests> phasegate scripts/dev/audit_repository_handoff.py",
+      "environment": "WSL native ext4 copy, Python 3.12.3",
+      "exit_code": 0,
+      "result": "All checks passed"
+    },
+    {
+      "command": "python -m pytest tests/deployment/test_ci_acceptance_scope.py -q -p no:cacheprovider",
+      "environment": "WSL native ext4 copy, Python 3.12.3",
+      "exit_code": 0,
+      "result": "20 passed"
+    },
+    {
+      "command": "python -m pip check",
+      "environment": "retained Python 3.12.3 environment",
+      "exit_code": 0,
+      "result": "No broken requirements found"
+    },
+    {
+      "command": "TRENDRADAR_P7_ARTIFACT_INSTALL=true python -m pytest tests/deployment/test_release_install_linux.py -q -s",
+      "environment": "WSL native ext4 copy; no local wheelhouse; 300 second pip timeout",
+      "exit_code": 1,
+      "result": "BLOCKED: locked dependency install timed out after 300 seconds",
+      "meaning": "historical failure before wheelhouse recovery; exact timeout cause was not proven"
+    },
+    {
+      "command": "TRENDRADAR_P7_ARTIFACT_INSTALL=true TRENDRADAR_P7_WHEELHOUSE=/var/lib/trendradar-handoff-wheelhouse-20261024 python -B -m pytest tests/deployment/test_release_install_linux.py -q -s -p no:cacheprovider --tb=short --junitxml=/var/lib/trendradar-handoff-install-final-20261024.xml",
+      "environment": "WSL native ext4 Git clone at 28e7283 plus reviewed uncommitted code; Python 3.12.3, SQLite 3.45.1",
+      "exit_code": 0,
+      "result": "1 passed, 1 tarfile deprecation warning",
+      "seconds": 72.16,
+      "evidence": "handoff/evidence/artifact-install-final-20261024.xml",
+      "meaning": "empty venv pinned runtime install, pip check, installed-package imports outside checkout and offline smoke passed; build-lock installation still uses pip index/cache; not a clean release candidate"
+    },
+    {
+      "command": "python -B -m pytest tests/deployment/test_deployment_contracts.py -q -p no:cacheprovider --tb=short",
+      "environment": "WSL native ext4 Git clone, Python 3.12.3",
+      "exit_code": 0,
+      "result": "10 passed",
+      "seconds": 1.25,
+      "meaning": "includes CRLF shell and extensionless-installer regression, tar size, source preservation and non-shell byte preservation"
+    },
+    {
+      "command": "python scripts/dev/audit_repository_handoff.py --old ...TrendRadarpoi-master --current ...TrendRadarpoi-phase7-fix-20261023",
+      "environment": "Windows Python; content hashes normalize CRLF to LF",
+      "exit_code": 0,
+      "result": "46 modified + 479 untracked old entries; 325 identical; 13 deferred quote/tool; 5 real PhaseGate files migrated"
+    }
+  ],
+  "security_scan": {
+    "method": "custom regex categories over old changed/untracked and current tracked/candidate files; values never emitted",
+    "old_files": 525,
+    "old_utf_text_files": 524,
+    "report": "handoff/workspace-audit-20261024-review.json",
+    "counts_policy": "Use the linked audit snapshot for exact counts; the report excludes its own output. Documentation edits after that snapshot require a final in-memory rescan.",
+    "old_regex_locations": 4,
+    "current_regex_locations": 2,
+    "adjudication": [
+      "Old README webhook matches are documented placeholders with example markers.",
+      "Old/current settings test matches are literal nested-YAML fixture text.",
+      "Old/current Feishu config match is a settings field access, not a credential value.",
+      "No private-key, API-key, token, database, .env, or oversized file was selected for migration."
+    ],
+    "status": "no confirmed secret value; custom scan is not a history or remote-secret audit"
+  },
+  "reconciliation": {
+    "old_workspace_preserved": true,
+    "bulk_merge_performed": false,
+    "active_quote_tool_code_ported": false,
+    "real_phasegate_files_migrated": 5,
+    "deferred_missing_source_files": 6,
+    "generated_or_demo_entries_excluded": 86,
+    "runtime_or_uat_data_deleted": false
+  },
+  "open_gates": [
+    "Diagnose the 2026-10-23 19:41 Yahoo Finance/other untranslated Story batch.",
+    "Review and, if authorized, port the deferred Lark quote/tool repair with red tests first.",
+    "After approved commits, build and validate a clean exact-commit archive; the current dirty install proves packaging only.",
+    "Review current source-health and installer candidate changes before committing.",
+    "Prove source stability, 48-hour operation, and local backup restore on the VPS.",
+    "Complete offsite backup and restore; not implemented in this handoff."
+  ],
+  "not_performed_during_precommit_validation": [
+    "commit, push, pull request, merge, deployment, live VPS query, live Lark/Gemini call",
+    "native Windows regression rerun; WSL/Linux is the current test path"
+  ],
+  "source_binding": {
+    "prior_snapshot": "handoff/source-fingerprint-20261024.json",
+    "final_snapshot": "handoff/source-fingerprint-final-20261024.json",
+    "normalization": "SHA256 after CRLF to LF normalization; application and dependency content only, not an exact archive hash",
+    "meaning": "The prior snapshot belongs to the 1210-test run. The final snapshot binds the 1212-test run and final artifact-install source; curated documentation may be added afterwards."
+  },
+  "artifact_install": {
+    "archive_sha256": "e7e70a678439d1497e80cdf5f7ec568a8a11adb88766e3149e858c4a8afb9be6",
+    "archive_bytes": 5892424,
+    "git_commit": "28e7283162b58213aee474b02cb492efebbc7fc6",
+    "git_dirty": true,
+    "clean_candidate": false,
+    "checkout_imports": false,
+    "pip_check": "No broken requirements found.",
+    "raw_local_evidence": "/var/lib/trendradar-handoff-install-final-20261024.log"
+  },
+  "earlier_attempts": [
+    "Original broad run: 8 failed, 656 passed, 6 skipped. CI target list and archive preflight ordering were repaired; mounted-filesystem installer timeout was not reproduced on ext4.",
+    "Prior full run before CRLF packaging fix: 1210 passed, 6 skipped, 2 warnings in 565.48s; session 6977; no JUnit was requested.",
+    "Archive runtime dependency installation first exceeded its 300-second timeout; cause unknown. A pinned wheelhouse was subsequently acquired.",
+    "A no-Git test-copy invocation correctly failed because manifest git_commit was unknown. The real Git clone is used for final installation.",
+    "Wheelhouse-backed archive install exposed CRLF in release_smoke.sh: Bash reported invalid pipefail option. Archive-only shell normalization fixed it; source files and non-shell bytes remain untouched.",
+    "The extensionless-shell regression failed (1 failed, 9 passed) before extending normalization to recognized Bash/sh shebangs. Final focused run passed 10 tests.",
+    "An intermediate archive install passed before extensionless-shell hardening; final install was rerun after that change. The latest JUnit/evidence is authoritative, not a claim that all intermediate raw XML filenames were immutable."
+  ]
+}

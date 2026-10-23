@@ -16,13 +16,17 @@ concurrency:
 jobs:
   offline:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python }}
       - name: Install declared dependencies and checks
         run: python -m pip install --disable-pip-version-check -r requirements.lock pytest ruff
       - name: Dependency check
@@ -31,6 +35,11 @@ jobs:
         run: python -m ruff check trendradar/core/locking.py trendradar/core/heartbeat.py trendradar/ops scripts/deploy tests/deployment tests/integrations/feishu
       - name: Tests
         run: python -B -m pytest tests -q -p no:cacheprovider
+      - name: PhaseGate structure, self tests and audit lint
+        run: |
+          python -B phasegate/phase7_gate.py inspect
+          python -B -m unittest discover -s phasegate/tests -q
+          python -m ruff check phasegate scripts/dev/audit_repository_handoff.py
       - name: Compile and build source artifact
         run: |
           python -B -m compileall -q trendradar mcp_server scripts/deploy
@@ -39,20 +48,24 @@ jobs:
       - name: Upload release evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: phase7-release-evidence
+          name: phase7-release-evidence-${{ matrix.python }}
           path: dist/RELEASE-MANIFEST.json
           if-no-files-found: error
 
   privileged-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python }}
       - name: Require actual systemd and create isolated toolchain
         run: |
           set -eu
@@ -68,7 +81,7 @@ jobs:
           from pathlib import Path
 
           assert os.geteuid() == 0
-          assert sys.version_info[:2] == (3, 10), sys.version
+          assert sys.version_info[:2] in {(3, 10), (3, 12)}, sys.version
           for executable in (sys.executable, sys._base_executable):
               resolved = Path(executable).resolve()
               assert not any(directory == resolved or directory in resolved.parents
@@ -80,7 +93,7 @@ jobs:
             "$GITHUB_WORKSPACE" /var/lib/trendradar-p7-ci/source
           sudo git -C /var/lib/trendradar-p7-ci/source checkout --detach "$GITHUB_SHA"
           sudo runuser -u nobody -- /var/lib/trendradar-p7-ci/venv/bin/python -B -c \
-            'import os,sys; from pathlib import Path; assert os.getuid() == 65534; assert sys.version_info[:2] == (3, 10); root=Path("/var/lib/trendradar-p7-ci/source"); assert (root/"tests/deployment/test_systemd_quiesce_linux.py").read_bytes(); sys.path.insert(0,str(root)); import trendradar.ops; assert Path(trendradar.ops.__file__).is_relative_to(root)'
+            'import os,sys; from pathlib import Path; assert os.getuid() == 65534; assert sys.version_info[:2] in {(3, 10), (3, 12)}; root=Path("/var/lib/trendradar-p7-ci/source"); assert (root/"tests/deployment/test_systemd_quiesce_linux.py").read_bytes(); sys.path.insert(0,str(root)); import trendradar.ops; assert Path(trendradar.ops.__file__).is_relative_to(root)'
       - name: Real UID, controller, lock, installer and systemd checks
         working-directory: /var/lib/trendradar-p7-ci/source
         run: |
@@ -88,6 +101,9 @@ jobs:
             /var/lib/trendradar-p7-ci/venv/bin/python -B -m pytest \
             tests/deployment/test_actual_gap_health.py \
             tests/deployment/test_backup.py \
+            tests/deployment/test_backup_retention.py \
+            tests/deployment/test_finalize_diagnostics.py \
+            tests/deployment/test_heartbeat_read_race.py \
             tests/deployment/test_ci_acceptance_scope.py \
             tests/deployment/test_combined_readiness.py \
             tests/deployment/test_deployment_contracts.py \
@@ -96,6 +112,7 @@ jobs:
             tests/deployment/test_environment_loading.py \
             tests/deployment/test_health.py \
             tests/deployment/test_installer_behavior.py \
+            tests/deployment/test_installer_role_capture.py \
             tests/deployment/test_offsite_backup.py \
             tests/deployment/test_offsite_processes.py \
             tests/deployment/test_release_inputs.py \

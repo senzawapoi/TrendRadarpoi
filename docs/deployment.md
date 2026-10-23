@@ -5,14 +5,15 @@ and offline tests do not prove that a VPS is installed, reachable, or stable.
 Fill the host-specific values from `python scripts/deploy/preflight.py --json`
 before enabling any service.
 
-Current acceptance status and remaining external gates are in the
-[actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md). The current worktree
-is not an accepted production candidate. The guarded
-`backup activate --deployment-rollback` API and Bash installer tests now pass,
-and the historical real-systemd rollback failure has a confirmed permission
-cause and passing final regression. Authorized local work is complete:
-27 reviewed scenarios PASS; RG-04 clean candidate remains BLOCKED. G1 PASS;
-G2 clean-candidate and G3 target gates remain open before production use.
+The active implementation plan is [07-06](../.planning/phases/07-deployment/07-06-PLAN.md).
+It supersedes the older model, notification, resource and offsite requirements.
+Use Python 3.12 on the VPS. This release uses instant Lark delivery and local
+backups only; offsite recovery and 48-hour observation remain separate open gates.
+
+The [current handoff](phase7-release-20261023/HANDOFF.md) records the latest
+deployment `p7-20261023-28e7283` and distinguishes it from the owner-approved,
+undeployed handoff commits/stacked PR. The [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md)
+preserves earlier installer/restore evidence; its pre-deployment status is historical.
 
 ## Layout and secrets
 
@@ -34,7 +35,7 @@ Worker, Scheduler, main collection, and AI Frontier.
 
 Production templates set `INTELLIGENCE_REQUIRE_EXISTING=true` and
 `INTELLIGENCE_SQLITE_SYNCHRONOUS=FULL`. Prepare both compatibility stores before
-starting a role; role constructors only open an existing schema-v6
+starting a role; role constructors only open an existing current-schema
 `intelligence.db` and schema-v1 `ai_frontier.db` in this mode:
 
 Run database preparation and snapshots as the service user with the same trusted
@@ -76,9 +77,42 @@ same production scope on VPS. The templates do not perform that cutover.
 ## Roles and operations
 
 Bot owns the Lark WebSocket and durably records authorized events. Worker polls
-the existing schema-v6 `EventLedger`, claims work, sends replies, and reuses
+the existing `EventLedger`, claims work, sends replies, and reuses
 saved replies after failures. Scheduler runs one `DeliveryScheduler.tick()` and
 exits. The no-role command remains combined mode for local compatibility.
+
+Set `LARK_DELIVERY_MODE=instant` with the authorized target. The scheduler timer
+checks every 60 seconds without changing collector frequency. At most 20 new
+Stories are registered per batch; overflow remains eligible for subsequent ticks.
+Delivery uses persisted payloads and chunk checkpoints. Do not run daily delivery
+as a second sender. Configure the ordered `GEMINI_MODELS` list from `.env.example`;
+translation uses a separate `gemini-3.1-flash-lite` profile and the same key. Failed
+translations retain the original without switching to Gemma or inference models.
+
+New instant batches use Lark `post` rich text: batch count, source groups and numbered
+linked headlines. Each Story has one source link; detailed evidence remains in reports.
+Posts split only between entries and are saved as versioned string snapshots in the
+existing outbox. No schema migration is needed. Previously saved text batches still
+send as text with their original content, UUID and checkpoint. Roll back to an older
+renderer only after pending rich-text batches have drained, or retain the new decoder;
+older clients do not understand the new post snapshot format.
+
+### Title Translation Release
+
+Main and AI Frontier collection resolve canonical titles before publishing Stories;
+the Scheduler does not translate. Inspect `metadata.title_translation` and
+`title_translated`, the Story title and saved post together. Chinese legacy HTML
+or a successful model probe alone does not prove translated delivery. Pending
+translation metadata blocks publication; a recorded failure permits original text.
+See the [pipeline contract](intelligence.md#title-translation-before-publication).
+
+The first production rollout of this repair was `p7-20261023-28e7283`; see the
+[Phase 7 handoff](phase7-release-20261023/HANDOFF.md) for the recorded deployment
+and owner-confirmed Chinese-title receipt. For any future translation release, hold
+the Scheduler while reviewing unregistered historical Stories and completing the
+first collection. Records outside the current feed window are not automatically
+repaired. Do not clear delivery ledgers, edit frozen payloads or requeue previously
+delivered English posts. The repair added no schema migration; strict v7 checks remain.
 
 ```bash
 systemctl status trendradar-bot trendradar-worker
@@ -120,6 +154,13 @@ Each database is copied through SQLite Online Backup API and validated before
 the manifest becomes complete. If `TRENDRADAR_OFFSITE_ENABLED=true`, the
 backup unit runs `scripts/deploy/offsite_backup.py` after the local snapshot;
 configure `RESTIC_REPOSITORY` and `RESTIC_PASSWORD_FILE` in `backup.env`.
+
+For this deployment set `TRENDRADAR_OFFSITE_ENABLED=false` in `common.env` and
+`backup.env`. Readiness still requires a fresh local snapshot, but does not
+require an offsite receipt. The hourly backup unit applies managed retention:
+24 hourly, 7 daily and 4 weekly snapshots in Asia/Shanghai. Only snapshots
+explicitly marked retention-managed are pruned; manual snapshots and historical
+recovery evidence are preserved. Local backups do not protect against host loss.
 
 The backup tool uses SQLite Online Backup API, validates each snapshot, and
 writes a manifest only after every requested database succeeds. It does not
@@ -282,8 +323,8 @@ Do not manually remove transaction files to unblock work. A durably finalized
 deployment can be confirmed with `maintenance finalize-deployment --database ...`
 only for the matching release/current symlink and passing health checks;
 `confirm-deployment-rollback` requires a persisted pre-business-boundary rollback.
-These paths pass the reviewed local assertion matrix; clean-candidate and
-production-target gates remain open. Database movements now fsync affected directories on
+Historical assertion results and subsequent release evidence are linked in the
+current handoff; new revisions need their own validation. Database movements fsync affected directories on
 POSIX; journal directory-fsync error propagation and metadata failure paths
 now have repair and focused fault-test evidence in the
 [restore follow-up](phase7-actual-gap-evidence/restore-durability-20261014.json).
@@ -309,13 +350,36 @@ have to match. Invalid, expired or future boottime values fail closed. Older
 records without this field retain strict UTC-age validation. Do not edit either
 timestamp or remove records to manufacture authorization.
 
+## Publisher recovery (2026-10-23)
+
+The `rss.feeds` entries support `transport: requests` for an explicitly selected
+publisher; the default remains `aiohttp`. Blocking requests run off the event loop
+under the existing concurrency limit and preserve timeout/proxy/error behavior.
+EE Times uses this option because identical requests from the VPS returned 200
+with requests and 403 with aiohttp. The remote filtering mechanism is unknown.
+
+Yahoo Finance's former RSS URL returns 404. Its source now uses the public
+`https://finance.yahoo.com/news/` listing with `format: yahoo_news`. Only recognized
+article cards and Yahoo Finance article URLs are accepted; missing absolute dates
+remain absent, and an unrecognized/challenge page fails the source. Existing
+source IDs and deduplication are preserved.
+
+HPCwire uses `https://feeds.feedburner.com/hpcwire`, whose feed metadata and article
+links point to HPCwire. This covers the main publication, not just the former
+AIwire subsection. The one-day article filter remains: the initial probe read ten
+entries, all older than that window, so the adapter honestly reported degraded
+with zero retained entries. Successful transport does not prove current content.
+Production `/etc/trendradar/config.yaml` must receive these three feed changes;
+installing application code alone does not replace the operator's configuration.
+
 ## Limits and open evidence
 
 `deploy/systemd/trendradar.slice` puts Bot, Worker, Scheduler, collectors,
-health and backup in one cgroup with initial `MemoryHigh=1G`,
-`MemoryMax=1250M`, and `TasksMax=128`. Measure CPU, memory, tasks, file
+health and backup in one cgroup with initial `MemoryHigh=512M`,
+`MemoryMax=768M`, `CPUQuota=50%`, and `TasksMax=128`. Measure CPU, memory, tasks, file
 descriptors, disk and inode peaks on the target and adjust through a reviewed
-release. The `.example` file remains a reference for hosts that need different
+release. If these limits cannot support the measured workload, pause activation.
+Do not automatically expand the budget or alter unrelated services. The `.example` file remains a reference for hosts that need different
 limits. Keep release interpreters outside `/tmp` and `/var/tmp`: `PrivateTmp=yes`
 can hide them from service execution. Research and Lark are disabled in the
 example configuration. Isolated systemd backup-unit defaults/overrides and

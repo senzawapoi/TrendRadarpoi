@@ -92,6 +92,7 @@ ai_frontier:
         "TRENDRADAR_CONTROL_DIR": str(tmp_path / "control"),
         "TRENDRADAR_LOCK_DIR": str(tmp_path / "locks"),
         "TRENDRADAR_BACKUP_DIR": str(backup_dir),
+        "TRENDRADAR_OFFSITE_ENABLED": "true",
         "TRENDRADAR_RELEASE_ID": "release-policy",
         "TRENDRADAR_HEALTH_EXPECTED_ROLES": "bot,worker",
         "TRENDRADAR_HEALTH_EXPECTED_SOURCES": ",".join(SOURCES),
@@ -118,6 +119,26 @@ ai_frontier:
     return database, config, manifest_path, now, network_calls
 
 
+def test_local_only_readiness_does_not_require_offsite_receipt(release_policy, monkeypatch):
+    _, config, manifest_path, _, _ = release_policy
+    monkeypatch.setenv("TRENDRADAR_OFFSITE_ENABLED", "false")
+    manifest_path.with_name("offsite-manifest.json").unlink()
+    report = health.collect_health(config, readiness=True)
+    assert report["status"] == "healthy", report
+    assert report["backups"]["offsite_enabled"] is False
+    assert report["backups"]["offsite"] is None
+
+
+def test_local_only_readiness_still_requires_local_backup(release_policy, monkeypatch):
+    _, config, manifest_path, _, _ = release_policy
+    monkeypatch.setenv("TRENDRADAR_OFFSITE_ENABLED", "false")
+    manifest_path.unlink()
+    report = health.collect_health(config, readiness=True)
+    assert report["status"] == "unhealthy"
+    assert "backup_overdue:local" in report["errors"]
+    assert "backup_overdue:offsite" not in report["errors"]
+
+
 @pytest.mark.parametrize("fault,errors", [
     (None, set()),
     ("bot", {"non_accepting_heartbeat:bot:connecting"}),
@@ -129,7 +150,7 @@ ai_frontier:
     ("heartbeat-boundary", set()),
     ("stale-heartbeat", {"stale_heartbeat:bot"}),
     ("future-heartbeat", {"future_heartbeat:bot"}),
-    ("source", {"source_unhealthy:rss:second-required"}),
+    ("source", {"source_unhealthy:rss:second-required", "stale_source:rss:second-required"}),
     ("missing-source", {"missing_source_run:rss:second-required"}),
     ("source-boundary", set()),
     ("source-age", {"stale_source:rss:second-required"}),
@@ -157,7 +178,7 @@ def test_actual_release_policy_requires_roles_sources_and_backups(
         assert result == (2 if expected_errors else 0), report
         assert report["status"] == ("unhealthy" if expected_errors else "healthy"), report
         assert set(report.get("errors", [])) == expected_errors, report
-        assert report["database"]["schema"] == 6
+        assert report["database"]["schema"] == 7
         assert report["ai_frontier_database"]["schema"] == 1
         assert report["config"]["lark_enabled"] is False
         assert report["config"]["gemini_enabled"] is False
@@ -181,6 +202,8 @@ def test_actual_release_policy_requires_roles_sources_and_backups(
         else:
             age = {"heartbeat-boundary": 60, "stale-heartbeat": 60.001, "future-heartbeat": -1}
             payload["updated_at"] = (now - timedelta(seconds=age[fault])).isoformat()
+            payload.pop("boot_id", None)
+            payload.pop("updated_boottime_ns", None)
         bot_path.write_text(json.dumps(payload), encoding="utf-8")
     elif fault in {"source", "missing-source", "source-boundary", "source-age"}:
         with IntelligenceStorage(database, synchronous="FULL") as storage:

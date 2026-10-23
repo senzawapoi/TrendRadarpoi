@@ -1,5 +1,5 @@
 [Unit]
-Description=Run TrendRadar daily delivery tick every minute
+Description=Run TrendRadar Story delivery tick every minute
 
 [Timer]
 OnBootSec=2min

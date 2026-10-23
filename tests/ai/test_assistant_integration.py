@@ -2,19 +2,30 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
+
+import pytest
 
 from trendradar.ai import (
     AssistantLimits,
     AssistantRequest,
     AssistantService,
+    GeminiClient,
+    GeminiConfig,
     GeminiResult,
     GeminiToolCall,
     build_assistant_service,
 )
+from trendradar.ai.client import DEFAULT_GEMINI_MODELS
+from trendradar.ai.media import ImagePart
 from trendradar.core.settings import load_settings
+
+from .test_gemini_client import FakeSdkClient, StatusError, _response
 
 NOW = datetime(2026, 9, 4, 12, tzinfo=timezone.utc)
 
@@ -212,3 +223,227 @@ def test_factory_fails_closed_without_enabled_local_storage(tmp_path: Path) -> N
     disabled = load_settings(disabled_path, environ={})
 
     assert build_assistant_service(disabled, storage=None) is None
+
+
+def signed_tool_response(name="search_stories"):
+    return SimpleNamespace(
+        text="private model tool preamble",
+        candidates=[SimpleNamespace(content=SimpleNamespace(parts=[{
+            "function_call": {"name": name, "args": {"query": "Alpha"}, "id": "tool-id"},
+            "thought_signature": b"private-thought-signature",
+        }]))],
+    )
+
+
+def test_tool_failover_rebuilds_original_images_and_validated_evidence_once(
+    seeded_intelligence, monkeypatch,
+):
+    story_ref = f"story:{seeded_intelligence.story.id}"
+    sdk = FakeSdkClient(
+        TimeoutError(), signed_tool_response(), TimeoutError(),
+        _response(f"Grounded [{story_ref}] forged [story:unknown]."),
+    )
+    client = GeminiClient(
+        GeminiConfig(api_key="assistant-test-key", min_request_interval_seconds=0), client=sdk,
+    )
+    service = AssistantService(seeded_intelligence.storage, gemini_client=client)
+    execute = service.tool_registry.execute
+    executions = []
+
+    def record(*args):
+        executions.append(args[0])
+        return execute(*args)
+
+    monkeypatch.setattr(service.tool_registry, "execute", record)
+    image = ImagePart(b"\x89PNG\r\n\x1a\noriginal-image", "image/png")
+    session = service.create_session("owner", now=NOW)
+    request = AssistantRequest(
+        "failover", "owner", "Original Alpha question", session_id=session.session_id,
+        requested_at=NOW, images=(image,),
+    )
+    reply = service.handle(request)
+    assert executions == ["search_stories"]
+    assert [call["model"] for call in sdk.models.calls] == [
+        DEFAULT_GEMINI_MODELS[0], DEFAULT_GEMINI_MODELS[1],
+        DEFAULT_GEMINI_MODELS[1], DEFAULT_GEMINI_MODELS[2],
+    ]
+    continuation = sdk.models.calls[2]
+    assert "thought_signature" in repr(continuation["contents"])
+    final = sdk.models.calls[3]
+    assert "tools" not in final["config"]
+    rendered = repr(final["contents"])
+    for forbidden in ("function_call", "function_response", "thought_signature", "private model"):
+        assert forbidden not in rendered
+    assert "Original Alpha question" in rendered
+    assert "Validated tool evidence JSON" in rendered
+    assert story_ref in rendered
+    assert final["contents"][-1]["parts"][-1]["inline_data"]["data"] == image.data
+    assert [citation.ref for citation in reply.citations] == [story_ref]
+    assert "story:unknown" not in reply.text
+    assert seeded_intelligence.storage.count("assistant_messages") == 2
+    assert service.handle(request) == reply
+    assert len(sdk.models.calls) == 4
+    assert executions == ["search_stories"]
+
+
+@pytest.mark.parametrize("permission", [False, True])
+def test_rebuild_preserves_tool_permission_and_rejects_new_tool_calls(
+    seeded_intelligence, permission,
+):
+    sdk = FakeSdkClient(signed_tool_response(), TimeoutError(), signed_tool_response(), _response("done"))
+    client = GeminiClient(
+        GeminiConfig(api_key="assistant-key", min_request_interval_seconds=0), client=sdk,
+    )
+    service = AssistantService(
+        seeded_intelligence.storage, gemini_client=client,
+        permissions={"intelligence.read"} if permission else set(),
+    )
+    reply = service.handle(AssistantRequest("bounded", "owner", "Alpha", requested_at=NOW))
+    assert len(reply.tool_calls) == 1
+    assert reply.tool_calls[0].allowed is permission
+    assert [call["model"] for call in sdk.models.calls] == [
+        DEFAULT_GEMINI_MODELS[0], DEFAULT_GEMINI_MODELS[0],
+        DEFAULT_GEMINI_MODELS[1], DEFAULT_GEMINI_MODELS[2],
+    ]
+    for call in sdk.models.calls[2:]:
+        assert "tools" not in call["config"]
+        text = repr(call["contents"])
+        assert "thought_signature" not in text
+        if not permission:
+            assert "Validated tool evidence JSON:\\n[]" in text
+    assert reply.text == "done"
+
+
+def test_tool_continuation_auth_failure_returns_local_evidence_without_cycling(seeded_intelligence):
+    sdk = FakeSdkClient(signed_tool_response(), StatusError(403))
+    client = GeminiClient(
+        GeminiConfig(api_key="auth-test-key", min_request_interval_seconds=0), client=sdk,
+    )
+    reply = AssistantService(seeded_intelligence.storage, gemini_client=client).handle(
+        AssistantRequest("auth", "owner", "Alpha", requested_at=NOW)
+    )
+    assert reply.degraded
+    assert "authentication" in reply.degraded_reason
+    assert len(reply.tool_calls) == 1
+    assert len(sdk.models.calls) == 2
+
+
+def test_near_cap_failover_preserves_complete_question_images_and_tool_evidence(
+    seeded_intelligence, monkeypatch,
+):
+    story_ref = f"story:{seeded_intelligence.story.id}"
+    sdk = FakeSdkClient(signed_tool_response(), TimeoutError(), _response(f"Answer [{story_ref}]"))
+    client = GeminiClient(
+        GeminiConfig(api_key="near-cap-test-key", min_request_interval_seconds=0), client=sdk,
+    )
+    service = AssistantService(seeded_intelligence.storage, gemini_client=client)
+    question = "Alpha " + "Q" * 7786
+    image = ImagePart(b"\x89PNG\r\n\x1a\noriginal-image", "image/png")
+    tool_output = json.dumps({"fact": "TOOL_EVIDENCE_SENTINEL", "ref": story_ref})
+    executions = []
+    execute = service.tool_registry.execute
+
+    def record(*args):
+        executions.append(args[0])
+        return replace(execute(*args), text=tool_output)
+
+    monkeypatch.setattr(service.tool_registry, "execute", record)
+    context = service._retrieve("Alpha", service._resolve_range(
+        None, None, None, now=NOW, days=None,
+    ))
+    context = replace(context, items=(replace(seeded_intelligence.standalone, content=""),))
+    padding = 24000 - len(context.to_prompt())
+    assert padding > 0
+    context = replace(context, items=(replace(context.items[0], content="C" * padding),))
+    assert len(context.to_prompt()) == 24000
+    monkeypatch.setattr(service, "_retrieve", lambda _question, _interval: context)
+    session = service.create_session("owner", now=NOW)
+    prior = service._fallback(
+        AssistantRequest("prior", "owner", "Previous question", requested_at=NOW),
+        session.session_id, context, reason="fixture history",
+    )
+    service.sessions.complete_turn(
+        session.session_id, "owner", "prior", "History " + "H" * 7900,
+        replace(prior, text="Earlier answer " + "A" * 11900), now=NOW,
+    )
+    service.sessions.complete_turn(
+        session.session_id, "owner", "prior-2", "Recent history " + "H" * 1800,
+        replace(prior, request_id="prior-2", text="Recent answer " + "A" * 1500), now=NOW,
+    )
+    request = AssistantRequest(
+        "near-cap", "owner", question, session_id=session.session_id,
+        requested_at=NOW, images=(image,),
+    )
+    reply = service.handle(request)
+    assert [call["model"] for call in sdk.models.calls] == [
+        DEFAULT_GEMINI_MODELS[0], DEFAULT_GEMINI_MODELS[0], DEFAULT_GEMINI_MODELS[1],
+    ]
+    initial_text = sdk.models.calls[0]["contents"][-1]["parts"][0]["text"]
+    assert 31900 < len(initial_text) <= 32000
+    final = sdk.models.calls[-1]
+    text_parts = [part["text"] for message in final["contents"] for part in message["parts"] if "text" in part]
+    assert sum(map(len, text_parts)) <= client.config.max_input_chars
+    assert any(question in text for text in text_parts)
+    assert any("TOOL_EVIDENCE_SENTINEL" in text for text in text_parts)
+    evidence_text = next(text for text in text_parts if "Validated tool evidence JSON:\n" in text)
+    evidence_json = evidence_text.split("Validated tool evidence JSON:\n", 1)[1]
+    evidence = json.loads(evidence_json)
+    assert evidence == [{"tool": "search_stories", "output": tool_output}]
+    local_text = next(text for text in text_parts if text.startswith("Local evidence JSON:\n"))
+    json.loads(local_text.split("\n", 1)[1])
+    assert final["contents"][-1]["parts"][-1]["inline_data"]["data"] == image.data
+    assert "tools" not in final["config"]
+    assert all(term not in repr(final["contents"]) for term in (
+        "thought_signature", "function_call", "function_response", "private model",
+    ))
+    assert executions == ["search_stories"]
+    assert reply.truncation.context is True
+    assert reply.truncation.history is True
+    assert reply.degraded and "reconstruction" in reply.degraded_reason
+    assert [citation.ref for citation in reply.citations] == [story_ref]
+    assert service.handle(request) == reply
+    assert len(sdk.models.calls) == 3
+
+
+@pytest.mark.parametrize("continuation_succeeds", [False, True])
+def test_required_reconstruction_overflow_never_sends_truncated_evidence(
+    seeded_intelligence, monkeypatch, continuation_succeeds,
+):
+    sdk = FakeSdkClient(
+        signed_tool_response(), _response("Same model answer") if continuation_succeeds else TimeoutError(),
+    )
+    client = GeminiClient(GeminiConfig(
+        api_key="small-budget", max_input_chars=4096, min_request_interval_seconds=0,
+    ), client=sdk)
+    service = AssistantService(seeded_intelligence.storage, gemini_client=client)
+    tool_output = json.dumps({"fact": "REQUIRED_TOOL_EVIDENCE" + "X" * 3700})
+    execute = service.tool_registry.execute
+    executions = []
+
+    def record(*args):
+        executions.append(args[0])
+        return replace(execute(*args), text=tool_output)
+
+    monkeypatch.setattr(service.tool_registry, "execute", record)
+    image = ImagePart(b"\x89PNG\r\n\x1a\nfixture", "image/png")
+    session = service.create_session("owner", now=NOW)
+    request = AssistantRequest(
+        "overflow", "owner", "Alpha " + "Q" * 900,
+        session_id=session.session_id, requested_at=NOW, images=(image,),
+    )
+    reply = service.handle(request)
+    assert [call["model"] for call in sdk.models.calls] == [DEFAULT_GEMINI_MODELS[0]] * 2
+    assert executions == ["search_stories"]
+    assert reply.tool_calls[0].result == tool_output
+    if continuation_succeeds:
+        assert reply.text == "Same model answer"
+        assert not reply.degraded
+        assert not reply.truncation.context
+    else:
+        assert reply.degraded
+        assert "cannot fit the complete question and validated tool evidence" in reply.degraded_reason
+        assert reply.truncation.context
+        assert "deterministic local-evidence" in reply.text
+        assert reply.citations
+    assert service.handle(request) == reply
+    assert len(sdk.models.calls) == 2

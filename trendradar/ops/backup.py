@@ -125,6 +125,7 @@ def create_snapshot(
     databases: list[str | Path], destination: str | Path, *, release_id: str = "unknown",
     root: str | Path | None = None,
     target_mapping: list[str | Path] | None = None,
+    retention_managed: bool = False,
 ) -> dict[str, Any]:
     """Create an all-or-nothing local snapshot set and manifest."""
     source_paths = list(dict.fromkeys(Path(path).resolve() for path in databases))
@@ -143,6 +144,7 @@ def create_snapshot(
         "release_id": release_id[:128],
         "databases": [],
         "complete": False,
+        "retention_managed": retention_managed,
     }
     root_path = Path(root).resolve() if root is not None else None
     if root_path is not None:
@@ -745,6 +747,8 @@ def main(argv=None) -> int:
     create.add_argument("--root", default="output", help="runtime output root for automatic discovery")
     create.add_argument("--destination", required=True)
     create.add_argument("--release-id", default="unknown")
+    create.add_argument("--apply-retention", action="store_true",
+                        help="manage scheduled snapshots: 24 hourly, 7 daily, 4 weekly")
     restore = subparsers.add_parser("restore")
     restore.add_argument("--snapshot", required=True)
     restore.add_argument("--destination", required=True)
@@ -764,9 +768,16 @@ def main(argv=None) -> int:
     subparsers.add_parser("recover").add_argument("--database", required=True)
     args = parser.parse_args(argv)
     if args.command == "create":
+        if args.apply_retention and args.database:
+            parser.error("--apply-retention requires automatic --root discovery")
         databases = args.database or discover_databases(args.root)
         result = create_snapshot(databases, args.destination, release_id=args.release_id,
-                                 root=args.root if not args.database else None)
+                                 root=args.root if not args.database else None,
+                                 retention_managed=args.apply_retention)
+        if args.apply_retention:
+            from trendradar.ops.backup_retention import prune_snapshots
+
+            result["retention"] = prune_snapshots(args.destination, args.root)
     elif args.command == "restore":
         guard_database = args.guard_database or os.environ.get("INTELLIGENCE_DB_PATH") or str(
             Path(args.destination).expanduser().resolve().parent / ".restore-target.db"

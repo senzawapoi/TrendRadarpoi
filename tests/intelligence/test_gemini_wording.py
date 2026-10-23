@@ -8,6 +8,11 @@ from trendradar.intelligence import gemini_wording
 from trendradar.intelligence.gemini_wording import GeminiStoryWordingClient
 
 
+@pytest.fixture(autouse=True)
+def isolated_model_cooldowns(monkeypatch):
+    monkeypatch.setattr("trendradar.ai.client._MODEL_COOLDOWNS", {})
+
+
 class _FakeModels:
     def __init__(self, text: str):
         self.text = text
@@ -45,7 +50,7 @@ def test_wording_client_parses_json_and_sends_only_wording_context():
 
     assert result == {"title": "Edited title", "summary": "Edited summary"}
     request = fake.models.calls[0]
-    assert request["model"] == "gemini-2.0-flash"
+    assert request["model"] == "gemini-3.8-flash"
     serialized = str(request["contents"])
     assert "Base title" in serialized
     assert "Base summary" in serialized
@@ -86,10 +91,10 @@ def test_builder_is_lazy_and_requires_key_and_all_enablement_gates(tmp_path, mon
     enabled = _settings(tmp_path, enabled=True, key="test-key")
 
     assert gemini_wording.build_story_wording_client(enabled) == "client"
-    assert captured == {
-        "api_key": "test-key",
-        "options": {"model": "gemini-2.0-flash"},
-    }
+    assert captured["api_key"] == "test-key"
+    assert captured["options"]["gemini_client"].config.models == (
+        "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+    )
 
 
 def test_empty_key_is_rejected_before_sdk_creation():

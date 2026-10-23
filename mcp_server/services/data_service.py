@@ -4,9 +4,13 @@
 提供统一的数据查询接口,封装数据访问逻辑。
 """
 
+import os
 import re
 from collections import Counter
 from datetime import datetime, timedelta
+from typing import ClassVar
+
+from trendradar.core.settings import RuntimeSettings
 
 from ..utils.errors import DataNotFoundError
 from .cache_service import get_cache
@@ -17,7 +21,7 @@ class DataService:
     """数据访问服务类"""
 
     # 中文停用词列表（用于 auto_extract 模式）
-    STOPWORDS = {
+    STOPWORDS: ClassVar[set[str]] = {
         '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一',
         '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有',
         '看', '好', '自己', '这', '那', '来', '被', '与', '为', '对', '将', '从',
@@ -31,7 +35,7 @@ class DataService:
         '热搜', '刷屏', '引发', '关注', '网友', '评论', '转发', '点赞'
     }
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None):
         """
         初始化数据服务
 
@@ -377,8 +381,8 @@ class DataService:
         keyword_to_news = {}
 
         # 遍历要处理的标题
-        for platform_id, titles in titles_to_process.items():
-            for title in titles.keys():
+        for titles in titles_to_process.values():
+            for title in titles:
                 if extract_mode == "keywords":
                     # 基于预设关键词统计
                     word_groups = self.parser.parse_frequency_words()
@@ -482,23 +486,14 @@ class DataService:
             }
 
         if section == "all" or section == "push":
-            notification = config_data.get("notification", {})
-            batch_size = advanced.get("batch_size", {})
+            lark = RuntimeSettings(
+                self.parser.project_root / "config/config.yaml", config_data, os.environ,
+            ).lark_config
             push_config = {
-                "enable_notification": notification.get("enabled", True),
-                "enabled_channels": [],
-                "message_batch_size": batch_size.get("default", 4000),
-                "push_window": notification.get("push_window", {})
+                "enable_notification": bool(lark.get("enabled") and lark.get("delivery_enabled")),
+                "enabled_channels": ["lark"] if lark.get("enabled") else [],
+                "delivery_mode": lark.get("delivery_mode", "instant"),
             }
-
-            # 检测已配置的通知渠道
-            channels = notification.get("channels", {})
-            if channels.get("feishu", {}).get("webhook_url"):
-                push_config["enabled_channels"].append("feishu")
-            if channels.get("dingtalk", {}).get("webhook_url"):
-                push_config["enabled_channels"].append("dingtalk")
-            if channels.get("wework", {}).get("webhook_url"):
-                push_config["enabled_channels"].append("wework")
 
         if section == "all" or section == "keywords":
             keywords_config = {
@@ -622,7 +617,6 @@ class DataService:
         total_storage = 0
         oldest_record = None
         latest_record = None
-        total_news = 0
 
         if output_dir.exists():
             # 遍历日期文件夹
@@ -648,7 +642,7 @@ class DataService:
             try:
                 with open(version_file) as f:
                     version = f.read().strip()
-            except:
+            except OSError:
                 pass
 
         return {

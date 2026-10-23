@@ -167,10 +167,11 @@ def test_artifact_opt_in_is_separate_and_all_pytest_runs_use_root_toolchain(priv
     assert len(artifact_calls) == 1
 
 
-def test_toolchain_uses_python310_locked_dependencies_and_service_uid(workflow, privileged_trace):
+def test_toolchain_uses_supported_python_locked_dependencies_and_service_uid(workflow, privileged_trace):
     job = workflow["jobs"]["privileged-linux"]
     setup, = (step for step in job["steps"] if "actions/setup-python@" in step.get("uses", ""))
-    assert str(setup["with"]["python-version"]) == "3.10"
+    assert setup["with"]["python-version"] == "${{ matrix.python }}"
+    assert job["strategy"]["matrix"]["python"] == ["3.10", "3.12"]
     commands = [_command(record)[1] for _, record in privileged_trace if record["tool"] == "sudo"]
     venv, = (args for args in commands if args[1:4] == ["-B", "-m", "venv"])
     assert Path("/var/lib") in Path(venv[-1]).parents
@@ -232,6 +233,7 @@ def test_acceptance_failure_is_the_step_exit_code(privileged_trace, fake_shell, 
 
 @pytest.mark.parametrize("executable,base,version,uid,accepted", [
     ("/var/lib/p7/venv/bin/python", "/opt/hostedtoolcache/Python/3.10/bin/python", (3, 10), 0, True),
+    ("/var/lib/p7/venv/bin/python", "/usr/bin/python3.12", (3, 12), 0, True),
     ("/tmp/venv/bin/python", "/usr/bin/python3.10", (3, 10), 0, False),
     ("/var/lib/p7/venv/bin/python", "/var/tmp/python/bin/python", (3, 10), 0, False),
     ("/var/lib/p7/venv/bin/python", "/usr/bin/python3.11", (3, 11), 0, False),

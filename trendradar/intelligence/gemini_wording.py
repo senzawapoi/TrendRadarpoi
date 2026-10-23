@@ -6,12 +6,17 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from trendradar.ai.client import GeminiClient, GeminiConfig
+from trendradar.ai.client import (
+    DEFAULT_GEMINI_MODEL,
+    GeminiClient,
+    GeminiConfig,
+    build_gemini_client,
+)
 from trendradar.ai.errors import GeminiResponseError
 from trendradar.core.settings import RuntimeSettings
 from trendradar.utils.logging import log
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = DEFAULT_GEMINI_MODEL
 MAX_TITLE_LENGTH = 240
 MAX_SUMMARY_LENGTH = 1200
 
@@ -53,7 +58,7 @@ class GeminiStoryWordingClient:
         self,
         api_key: str | None = None,
         *,
-        model: str = DEFAULT_MODEL,
+        model: str | None = None,
         client: Any | None = None,
         gemini_client: GeminiClient | None = None,
     ) -> None:
@@ -66,7 +71,7 @@ class GeminiStoryWordingClient:
             resolved = GeminiClient(
                 GeminiConfig(
                     api_key=key,
-                    model=str(model or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
+                    **({"model": model} if model else {}),
                     max_attempts=1,
                     min_request_interval_seconds=0,
                 ),
@@ -76,7 +81,7 @@ class GeminiStoryWordingClient:
             resolved = GeminiClient(
                 GeminiConfig(
                     api_key=key,
-                    model=str(model or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
+                    **({"model": model} if model else {}),
                 )
             )
         else:
@@ -134,15 +139,11 @@ def build_story_wording_client(
     api_key = settings.gemini_api_key
     if not api_key:
         return None
-    config = story_config if isinstance(story_config, Mapping) else {}
-    wording = config.get("wording")
-    wording = wording if isinstance(wording, Mapping) else {}
-    model = str(wording.get("model") or DEFAULT_MODEL)
     try:
-        options: dict[str, Any] = {"model": model}
-        if gemini_client is not None:
-            options["gemini_client"] = gemini_client
-        return GeminiStoryWordingClient(api_key, **options)
+        resolved = gemini_client or build_gemini_client(settings)
+        if not resolved.config.enabled:
+            return None
+        return GeminiStoryWordingClient(api_key, gemini_client=resolved)
     except Exception as exc:
         log.warning(
             "Story wording client unavailable; deterministic fallback remains active",

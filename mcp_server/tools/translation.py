@@ -9,6 +9,7 @@ import requests
 from trendradar.ai.client import GeminiClient
 from trendradar.ai.translator import (
     ANONYMOUS_TRANSLATION_APIS,
+    TRANSLATION_MODEL,
     TranslationEngine,
     optional_gemini_client,
 )
@@ -37,7 +38,7 @@ class TranslationTools:
         self.default_target = default_target
         self.gemini_api_key = gemini_api_key
         self.gemini_client = resolved_client
-        self.gemini_model = None
+        self.gemini_model = TRANSLATION_MODEL
         self._engine = translation_engine or TranslationEngine(
             default_source=default_source,
             default_target=default_target,
@@ -59,15 +60,6 @@ class TranslationTools:
             target=target,
             use_cache=use_cache,
         )
-
-    def _call_translation_api(
-        self,
-        api_config: dict[str, Any],
-        text: str,
-        source: str,
-        target: str,
-    ) -> dict[str, Any] | None:
-        return self._engine._call_translation_api(api_config, text, source, target)
 
     def _translate_with_gemini(
         self,

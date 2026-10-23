@@ -16,7 +16,9 @@ import yaml
 
 DEFAULT_CONFIG_PATH = Path("config/config.yaml")
 
-DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+DEFAULT_GEMINI_MODELS = ("gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
+DEFAULT_GEMINI_MODEL = DEFAULT_GEMINI_MODELS[0]
+DEFAULT_GEMINI_MODEL_COOLDOWN_SECONDS = 60.0
 DEFAULT_GEMINI_TIMEOUT_SECONDS = 30.0
 DEFAULT_GEMINI_MAX_ATTEMPTS = 3
 DEFAULT_GEMINI_RETRY_BACKOFF_SECONDS = 1.0
@@ -257,14 +259,39 @@ class RuntimeSettings:
         return self.get_bool("GEMINI_ENABLED", "ai.gemini.enabled", True)
 
     @property
+    def gemini_models(self) -> tuple[str, ...]:
+        """Resolve lists and legacy singles without allowing YAML to mask environment."""
+        value = (
+            self._environment_value("GEMINI_MODELS")
+            or self._environment_value("GEMINI_MODEL")
+            or self.yaml_value("ai.gemini.models")
+            or self.yaml_value("ai.gemini.model")
+            or DEFAULT_GEMINI_MODELS
+        )
+        if isinstance(value, str):
+            value = value.split(",")
+        if not isinstance(value, tuple | list):
+            return ()  # Invalid local configuration fails closed in GeminiConfig.
+        if any(not isinstance(item, str) for item in value):
+            return ()
+        return tuple(dict.fromkeys(item.strip() for item in value if item.strip()))
+
+    @property
     def gemini_config(self) -> dict[str, Any]:
         """Return bounded, secret-free configuration accepted by ``GeminiConfig``."""
         return {
             "enabled": self.gemini_enabled,
-            "model": self.get_str(
-                "GEMINI_MODEL",
-                "ai.gemini.model",
-                DEFAULT_GEMINI_MODEL,
+            "model": next(iter(self.gemini_models), DEFAULT_GEMINI_MODEL),
+            "models": self.gemini_models,
+            "model_cooldown_seconds": _bounded_float(
+                self.get_float(
+                    "GEMINI_MODEL_COOLDOWN_SECONDS",
+                    "ai.gemini.model_cooldown_seconds",
+                    DEFAULT_GEMINI_MODEL_COOLDOWN_SECONDS,
+                ),
+                DEFAULT_GEMINI_MODEL_COOLDOWN_SECONDS,
+                minimum=0.0,
+                maximum=3600.0,
             ),
             "timeout_seconds": _bounded_float(
                 self.get_float(
@@ -388,15 +415,20 @@ class RuntimeSettings:
                 self._lark_environment_key("DELIVERY_TARGET"),
                 self._lark_yaml_path("delivery.target"),
             ),
+            "delivery_mode": self.get_str(
+                self._lark_environment_key("DELIVERY_MODE"),
+                self._lark_yaml_path("delivery.mode"),
+                "daily",
+            ).strip().lower(),
             "delivery_time": self.get_str(
                 self._lark_environment_key("DELIVERY_TIME"),
                 self._lark_yaml_path("delivery.time"),
-                self.get_str("PUSH_WINDOW_START", "notification.push_window.start", "00:00"),
+                "00:00",
             ),
             "delivery_end": self.get_str(
                 self._lark_environment_key("DELIVERY_END"),
                 self._lark_yaml_path("delivery.end"),
-                self.get_str("PUSH_WINDOW_END", "notification.push_window.end", "23:59"),
+                "23:59",
             ),
         }
         for name, default, minimum, maximum in (

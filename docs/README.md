@@ -4,6 +4,8 @@
 
 | Task | Read |
 |------|------|
+| Configure keyword matching, aliases, filtering and HTML report modes | [Configuration / 配置与关键词](configuration.md) (中文 / English) |
+| Connect a local MCP client over stdio | [MCP client setup / MCP 客户端配置](mcp-setup.md) (中文 / English) |
 | Understand ingestion, Story, Security, storage and rollback | [Intelligence guide](intelligence.md) |
 | Configure or run the opt-in Lark Assistant | [Lark setup and limits](intelligence.md#lark-assistant) |
 | Execute Phase 5 live acceptance and troubleshoot failures | [Live acceptance runbook](phase5-live-acceptance.md) and [result record](../.planning/phases/05-feishu-assistant/05-LIVE-UAT.md) |
@@ -16,36 +18,32 @@
 | Contribute code or use an agent | [Repository guidelines](../AGENTS.md) and [Chinese agent guide](../CLAUDE.md) |
 | Configure the seven AI source types | [AI Frontier guide](../trendradar/ai_frontier/README.md) |
 | Deploy on Linux VPS and restore safely | [Deployment runbook](deployment.md) and [Phase 7 acceptance](phase7-acceptance.md) |
-| Resume Phase 7 actual-gap repairs and tests | [Current handoff](phase7-actual-gap-evidence/HANDOFF.md) and [07-05 plan](../.planning/phases/07-deployment/07-05-PLAN.md) |
+| Resume Phase 7 deployment and translation repair | [Current handoff](phase7-release-20261023/HANDOFF.md) and [07-06 plan](../.planning/phases/07-deployment/07-06-PLAN.md) |
+| Reconcile worktrees and prepare a maintainer PR | [Repository handoff](repository-handoff-20261023.md) |
+| Inspect earlier Phase 7 repairs and tests | [Historical handoff](phase7-actual-gap-evidence/HANDOFF.md) and [07-05 plan](../.planning/phases/07-deployment/07-05-PLAN.md) |
 
 ## Delivery Status
 
-Phase 0-6 implementation is offline-verified. Phase 7 authorized local work is
-complete: frozen v6 Windows full 683 passed/342 skipped, Linux full 1019 passed/
-6 skipped, two explained upstream warnings each, all exit 0. Real systemd
-quiesce has 11 passing cases and backup units 2 within Linux full. Separate
-actual empty-venv dirty installation passes; all 301 source/resource hashes
-and archive members match. [Final report](phase7-actual-gap-evidence/verification-20261022.md)
-binds commands, environments, artifact and all skips. The 28-case audit is
-27 PASS/1 BLOCKED (RG-04 clean candidate): G1 PASS; G2 blocked; G3/VPS pending.
-Actual GitHub execution and remote backup remain open. Historical failures and
-archived pre-fix reproduction are retained; do not poll old test handles.
+Phase 0-6 implementation is offline-verified. GitHub run `39921046202` deployed
+`p7-20261023-28e7283`; its validated-artifact and deploy jobs succeeded, and the
+owner confirmed Chinese Story titles and links arrived in Lark. Translation uses
+Gemini 3.1 Flash Lite; Lark is the only notification transport. This does not
+close source stability, 48-hour operation, or offsite recovery. See the
+[current handoff](phase7-release-20261023/HANDOFF.md),
+[follow-up evidence](phase7-release-20261023/TRANSLATION-FOLLOWUP.md) and
+[repository reconciliation](repository-handoff-20261023.md) for scope and resume order.
 
-ENV-03 fixed-entry YAML readability was repaired: the 48-test Linux follow-up
-passed. The 2026-10-14 deployment-only run finished with 466 passed and 6 skipped.
-These are historical scoped results. The dated 2026-10-15 handoff's local work
-is complete; current evidence includes repaired Windows tzdata and same-boot
-controller leases without relaxing the 15-second/identity fences.
-The live UAT record confirms Lark private
-text/follow-up, pure-image, a fresh single-post mixed-image request, explicit group mentions,
-session isolation and normal same-database restart continuity. Controlled recovery checks pass;
-real network interruption remains unexecuted, and scheduled delivery awaits recipient confirmation.
-This is Windows UAT, not Linux VPS deployment. Lark stays disabled by default; external research
-also stays disabled by default. `--check` validates
-configuration without network access or database writes, not provider credentials or tenant
-permissions. Phase 7 requires completion of the current test matrix and its VPS gates; Phase 8 remains
-roadmap work. Phase 5 B6 non-whitelisted testing is an accepted skip; C3 real
-interruption and C4 recipient confirmation remain open.
+Source-health issues, Podcast/Blog recovery and 48-hour observation remain open.
+The later 10-23 19:41 Yahoo Finance/English-title report is still undiagnosed;
+the earlier translated receipt does not close it. The old-tree
+[Lark quote/tool patch](handoff/deferred-lark-repair.md) is preserved for port review,
+not active implementation.
+This release uses local backups only; offsite recovery is not accepted. Preserve
+the Phase 5 B6 accepted skip. Windows UAT and VPS observations have separate evidence;
+neither substitutes for a new release's checks. Lark and external research remain
+opt-in, and `--check` validates configuration without proving tenant permissions.
+The [v6 report](phase7-actual-gap-evidence/verification-20261022.md) and
+[pre-release record](phase7-release-20261023/README.md) are historical checkpoints.
 
 The four root `TrendRadarpoi_*` requirement documents preserve the original brief. Use the GSD
 state and phase verification files above for implementation progress and unresolved work.
@@ -53,8 +51,9 @@ state and phase verification files above for implementation progress and unresol
 
 ## Local Verification
 
-Run from the repository root with Python 3.10+. Install runtime dependencies with
-`python -m pip install -r requirements.txt`; install the currently undeclared test/lint tools with
+Run from the repository root in WSL/Linux (production Python 3.12, compatibility 3.10+).
+Use a native Linux filesystem for installer/systemd tests. Install runtime dependencies with
+`python -m pip install -r requirements.lock`; install the currently undeclared test/lint tools with
 `python -m pip install pytest ruff`. Run `python -m pytest tests -q` and
 `python -m ruff check <changed-python-paths>`. Full-tree Ruff has existing debt; do not mix a
 repository-wide formatting sweep into feature work.

@@ -72,6 +72,11 @@ class SourceAdapter(Generic[RawT], ABC):
         """Return recent execution state without performing another request."""
         return self._health
 
+    @property
+    def fetch_errors(self) -> tuple[str, ...]:
+        """Failures isolated inside a successful partial fetch, without refetching."""
+        return ()
+
     def _set_health(self, health: SourceHealth) -> None:
         self._health = health
 

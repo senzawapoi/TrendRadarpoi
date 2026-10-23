@@ -3,6 +3,7 @@
 Description=TrendRadar resource slice candidate
 
 [Slice]
-# MemoryHigh=1G
-# MemoryMax=1250M
-# TasksMax=128
+MemoryHigh=512M
+MemoryMax=768M
+CPUQuota=50%
+TasksMax=128

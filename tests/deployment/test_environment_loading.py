@@ -21,10 +21,14 @@ def test_quoted_configuration_and_caller_environment_are_separate(tmp_path):
         )),
         "INTELLIGENCE_SQLITE_SYNCHRONOUS=FULL",
         "TRENDRADAR_INITIAL_UNITS=unit-a.service unit-b.timer",
+        "GEMINI_MODELS=gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite",
+        "GEMINI_MODEL_COOLDOWN_SECONDS=60",
     ]), encoding="utf-8")
     parsed = parse_environment(common)
     assert parsed["CONFIG_PATH"] == str(config)
     assert parsed["TRENDRADAR_INITIAL_UNITS"] == "unit-a.service unit-b.timer"
+    assert parsed["GEMINI_MODELS"].split(",")[0] == "gemini-3.8-flash"
+    assert parsed["GEMINI_MODEL_COOLDOWN_SECONDS"] == "60"
     common.write_text(common.read_text() + "\nPATH=/malicious", encoding="utf-8")
     with pytest.raises(ValueError, match="not allowed"):
         parse_environment(common)

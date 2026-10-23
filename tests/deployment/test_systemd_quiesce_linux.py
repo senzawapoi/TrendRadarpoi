@@ -149,11 +149,33 @@ def _python_entry(sandbox: Path, args: list[str]) -> int:
         if args[2:3] == ["health"] and config["failure"] == "health-error":
             _event(sandbox, "health-command-exception")
             raise RuntimeError("test-owned health command exception")
-        if args[2:4] == ["maintenance", "confirm-deployment-rollback"]:
+        if (args[2:4] == ["maintenance", "finalize-deployment"]
+                and config["failure"] == "finalize-heartbeat-race"):
+            from trendradar.ops import health
+
+            original_clock = health._utc_now
+
+            def sampled_before_writer():
+                sampled = original_clock()
+                time.sleep(0.25)  # Actual service writers publish every 100 ms.
+                return sampled
+
+            health._utc_now = sampled_before_writer
+        if (args[2:4] == ["maintenance", "finalize-deployment"]
+                and config["failure"] == "finalize-clock-correction"):
+            from trendradar.ops import health
+
+            original_clock = health._utc_now
+            health._utc_now = lambda: original_clock() - timedelta(seconds=5)
+        if args[2:4] in (["maintenance", "confirm-deployment-rollback"],
+                         ["maintenance", "finalize-deployment"]):
             output = io.StringIO()
             with redirect_stdout(output):
                 result = main(args[2:])
-            _event(sandbox, "rollback-confirmation", returncode=result, output=output.getvalue())
+            name = "rollback-confirmation" if args[3].startswith("confirm-") else "finalize-confirmation"
+            _event(sandbox, name, returncode=result, output=output.getvalue())
+            if result:
+                print(output.getvalue(), end="")
         else:
             result = main(args[2:])
         if (args[2:4] == ["backup", "restore"] and result == 0
@@ -530,12 +552,15 @@ def _restored(scope: QuiesceScope) -> list[str]:
             if event["event"] == "systemctl-before" and event["args"][0] == "start"]
 
 
-@pytest.mark.parametrize("mode", ["all-writers", "mixed", "first-install", "explicit-restart"])
+@pytest.mark.parametrize("mode", ["all-writers", "mixed", "first-install", "explicit-restart",
+                                  "finalize-heartbeat-race", "finalize-clock-correction"])
 def test_real_systemd_quiesce_and_exact_successful_restoration(quiesce_scope, mode):
     scope = quiesce_scope
     services, timers = scope.config["services"], scope.config["timers"]
     initial = [services["bot"], services["worker"], timers["backup"]]
     restart = []
+    if mode in {"finalize-heartbeat-race", "finalize-clock-correction"}:
+        scope.update(failure=mode)
     if mode == "all-writers":
         scope.update(timer_race=True)
         active = scope.start_previous(ROLES, TIMED_ROLES)

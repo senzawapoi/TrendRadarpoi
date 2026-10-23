@@ -1,4 +1,4 @@
-"""Asia/Shanghai once-per-window delivery with durable chunk checkpoints."""
+"""One scheduler with exclusive instant or explicit daily delivery modes."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.ops.maintenance import read_guard, read_recovery_cutover
 
 from .config import FeishuConfig
+from .instant import InstantDeliveryScheduler
 from .ledger import lease_heartbeat, stamp, utc_now
 from .models import stable_digest
 
@@ -128,6 +129,13 @@ class DeliveryScheduler:
         now = now or self.clock()
         if read_guard(self.storage.db_path) is not None:
             return "maintenance"
+        if self.config.delivery_mode == "instant":
+            return InstantDeliveryScheduler(
+                self.config, self.storage, self.delivery, self.client,
+                lock=self.lock, clock=self.clock,
+            ).tick(now)
+        if self.config.delivery_mode != "daily":
+            return "disabled"
         key = window_key(self.config, now)
         if key is None:
             return "not_due"

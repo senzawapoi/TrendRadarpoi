@@ -173,11 +173,14 @@ class _SdkOperations:
     def send(self, target: str, text: str, *, message_uuid: str | None = None) -> bool:
         from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
+        from .post import message_content
+
+        message_type, content = message_content(text)
         builder = (
             CreateMessageRequestBody.builder()
             .receive_id(target)
-            .msg_type("text")
-            .content(json.dumps({"text": text}, ensure_ascii=False))
+            .msg_type(message_type)
+            .content(content)
         )
         if message_uuid:
             builder.uuid(message_uuid)

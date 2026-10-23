@@ -34,7 +34,7 @@ def test_health_reads_database_and_heartbeat_without_provider_io(tmp_path, monke
     heartbeat.write(state="running", last_result="sent")
     report = collect_health(config)
     assert report["status"] == "healthy"
-    assert report["database"]["schema"] == 6
+    assert report["database"]["schema"] == 7
     assert report["heartbeats"]["worker"]["state"] == "running"
     assert "last_result" not in json.dumps(report)
 

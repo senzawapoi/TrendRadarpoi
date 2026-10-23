@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from pathlib import Path
 
 import pytest
@@ -29,7 +30,11 @@ def _snapshot(tmp_path):
 def _alive(pid):
     if os.name != "nt":
         stat = Path(f"/proc/{pid}/stat")
-        return stat.exists() and stat.read_text().rsplit(")", 1)[1].split()[0] != "Z"
+        try:
+            status = stat.read_text()
+        except (FileNotFoundError, ProcessLookupError):
+            return False
+        return status.rsplit(")", 1)[1].split()[0] != "Z"
     from ctypes import wintypes
 
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -71,7 +76,56 @@ def _cleanup_owned(pid):
             kernel.TerminateProcess(handle, 92)
             kernel.CloseHandle(handle)
     else:
-        os.kill(pid, signal.SIGKILL)
+        with suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Linux procfs lifecycle")
+@pytest.mark.parametrize("error", [FileNotFoundError, ProcessLookupError])
+def test_alive_handles_exit_before_stat_read(monkeypatch, error):
+    monkeypatch.setattr(Path, "exists", lambda self: True)
+
+    def disappeared(self):
+        raise error(self)
+
+    monkeypatch.setattr(Path, "read_text", disappeared)
+    assert not _alive(12345)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Linux procfs lifecycle")
+@pytest.mark.parametrize(("state", "alive"), [("S", True), ("R", True), ("Z", False)])
+def test_alive_distinguishes_running_and_zombie_processes(monkeypatch, state, alive):
+    monkeypatch.setattr(Path, "exists", lambda self: True)
+    monkeypatch.setattr(Path, "read_text", lambda self: f"12345 (test (child)) {state} 1 0")
+    assert _alive(12345) is alive
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Linux procfs lifecycle")
+def test_alive_does_not_hide_unreadable_stat(monkeypatch):
+    monkeypatch.setattr(Path, "exists", lambda self: True)
+
+    def unreadable(self):
+        raise PermissionError(self)
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+    with pytest.raises(PermissionError):
+        _alive(12345)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX signal lifecycle")
+@pytest.mark.parametrize("error", [ProcessLookupError, PermissionError])
+def test_cleanup_handles_only_exit_before_signal(monkeypatch, error):
+    monkeypatch.setitem(globals(), "_alive", lambda pid: True)
+
+    def failed_signal(pid, sig):
+        raise error(pid)
+
+    monkeypatch.setattr(os, "kill", failed_signal)
+    if error is ProcessLookupError:
+        _cleanup_owned(12345)
+    else:
+        with pytest.raises(PermissionError):
+            _cleanup_owned(12345)
 
 
 def _fake_tree(tmp_path, mode):

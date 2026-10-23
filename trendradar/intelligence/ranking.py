@@ -165,7 +165,7 @@ def score_story(
 
     searchable = " ".join(
         [
-            normalize_identity_title(story.title),
+            normalize_identity_title(story.metadata.get("ranking_title") or story.title),
             normalize_identity_title(story.summary),
             *(normalize_identity_title(tag) for tag in story.tags),
             *(normalize_identity_title(entity) for entity in story.entities),

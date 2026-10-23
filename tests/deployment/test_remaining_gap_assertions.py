@@ -122,7 +122,7 @@ def test_fixed_entry_uses_all_configured_paths_for_actual_operations(entry_scope
         db = Path(os.environ['INTELLIGENCE_DB_PATH'])
         ai = Path(os.environ['AI_FRONTIER_DB_PATH'])
         snapshots = Path(os.environ['TRENDRADAR_BACKUP_DIR'])
-        for path, kind, schema in ((db, 'intelligence', 6), (ai, 'ai_frontier', 1)):
+        for path, kind, schema in ((db, 'intelligence', 7), (ai, 'ai_frontier', 1)):
             with contextlib.redirect_stdout(io.StringIO()):
                 assert database.main(['migrate', '--database', str(path), '--kind', kind]) == 0
                 assert database.main(['check', '--database', str(path), '--kind', kind]) == 0
@@ -137,7 +137,7 @@ def test_fixed_entry_uses_all_configured_paths_for_actual_operations(entry_scope
             assert health.main(['--readiness', '--json']) == 0
         report = json.loads(capture.getvalue())
         assert report['database_path'] == str(db)
-        assert report['database']['schema'] == 6
+        assert report['database']['schema'] == 7
         assert report['ai_frontier_database']['schema'] == 1
         snapshot = backup.create_snapshot([db, ai], snapshots, root=db.parent, release_id='candidate')
         restored = Path({str(sandbox / 'restore-preflight')!r})
@@ -195,7 +195,7 @@ def test_fixed_entry_quoted_values_and_missing_required_keys(entry_scope, missin
     if missing_key is None:
         assert result.returncode == 0, result.stdout + result.stderr
         with sqlite3.connect(database) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 6
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
     else:
         assert result.returncode == 2
         assert "invalid or missing trusted production configuration" in result.stderr
@@ -243,7 +243,7 @@ def test_first_install_service_uid_writes_both_databases_in_wal(tmp_path):
             os.setgid(65534)
             os.setuid(65534)
             assert os.geteuid() == 65534
-            for name, schema in (('intelligence.db', 6), ('ai_frontier.db', 1)):
+            for name, schema in (('intelligence.db', 7), ('ai_frontier.db', 1)):
                 path = Path(sys.argv[1]) / name
                 connection = sqlite3.connect(path)
                 try:

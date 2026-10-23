@@ -40,6 +40,7 @@ def test_defaults_and_legacy_allowlist(tmp_path):
     settings = load_settings(path, environ={})
     config = FeishuConfig.from_settings(settings)
     assert not config.enabled and not config.delivery_enabled
+    assert config.delivery_mode == "daily"
     assert config.identity_fields == (("open_id", ("legacy",)),)
     assert config.timezone == "Asia/Shanghai"
     assert config.api_domain == LARK_API_DOMAIN
@@ -80,7 +81,7 @@ def test_invalid_identity_override_denies_instead_of_using_yaml(tmp_path, raw):
     assert not FeishuConfig.from_settings(settings).identity_fields
 
 
-def test_empty_environment_preserves_yaml_and_delivery_window(tmp_path):
+def test_empty_environment_preserves_identity_but_ignores_retired_push_window(tmp_path):
     path = tmp_path / "config.yaml"
     path.write_text(
         "feishu:\n  identity_fields: {union_id: [union]}\n"
@@ -91,7 +92,27 @@ def test_empty_environment_preserves_yaml_and_delivery_window(tmp_path):
         load_settings(path, environ={"FEISHU_IDENTITY_FIELDS": " "})
     )
     assert config.identity_fields == (("union_id", ("union",)),)
-    assert (config.delivery_time, config.delivery_end) == ("08:30", "10:00")
+    assert (config.delivery_time, config.delivery_end) == ("00:00", "23:59")
+    assert config.delivery_mode == "daily"
+
+
+def test_explicit_daily_settings_and_mode_precedence(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text(
+        'lark:\n  delivery: {mode: daily, time: "8:30", end: "10:00", enabled: true}\n',
+        encoding="utf-8",
+    )
+    daily = FeishuConfig.from_settings(load_settings(path, environ={}))
+    assert daily.delivery_mode == "daily" and daily.delivery_enabled
+    assert (daily.delivery_time, daily.delivery_end) == ("08:30", "10:00")
+    instant = FeishuConfig.from_settings(load_settings(path, environ={
+        "LARK_DELIVERY_MODE": "instant", "FEISHU_DELIVERY_MODE": "daily",
+        "PUSH_WINDOW_START": "02:00", "PUSH_WINDOW_END": "03:00",
+    }))
+    assert instant.delivery_mode == "instant"
+    assert (instant.delivery_time, instant.delivery_end) == ("08:30", "10:00")
+    invalid = FeishuConfig.from_mapping({"delivery_enabled": True, "delivery_mode": "typo"})
+    assert not invalid.delivery_enabled
 
 
 def test_invalid_mapping_bounds_and_booleans():
@@ -107,3 +128,25 @@ def test_invalid_mapping_bounds_and_booleans():
     assert config.allowed_chat_types == ()
     assert config.reconnect_attempts == 5
     assert config.delivery_time == "00:00"
+
+
+@pytest.mark.parametrize("mode,expected,enabled", [
+    (None, "daily", True),
+    (" DAILY ", "daily", True),
+    (" TyPo ", "typo", False),
+])
+@pytest.mark.parametrize("source", ["LARK_DELIVERY_MODE", "FEISHU_DELIVERY_MODE", "yaml"])
+def test_delivery_mode_boundary_preserves_daily_default_and_invalid_disable(
+    tmp_path, mode, expected, enabled, source,
+):
+    path = tmp_path / "config.yaml"
+    path.write_text(
+        "lark:\n  delivery:\n    enabled: true\n"
+        + (f'    mode: "{mode}"\n' if source == "yaml" and mode is not None else ""),
+        encoding="utf-8",
+    )
+    env = {source: mode} if source != "yaml" and mode is not None else {}
+    settings = load_settings(path, environ=env)
+    transport = FeishuConfig.from_settings(settings)
+    assert settings.lark_config["delivery_mode"] == transport.delivery_mode == expected
+    assert transport.delivery_enabled is enabled

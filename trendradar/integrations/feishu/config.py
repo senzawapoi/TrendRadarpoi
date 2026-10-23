@@ -64,6 +64,7 @@ class FeishuConfig:
     max_message_chars: int = 8_000
     request_timeout_seconds: int = 30
     delivery_enabled: bool = False
+    delivery_mode: str = "daily"
     delivery_time: str = "00:00"
     delivery_end: str = "23:59"
     timezone: str = "Asia/Shanghai"
@@ -101,6 +102,10 @@ class FeishuConfig:
         )
         object.__setattr__(self, "enabled", _bool(self.enabled))
         object.__setattr__(self, "delivery_enabled", _bool(self.delivery_enabled))
+        mode = str(self.delivery_mode).strip().lower()
+        object.__setattr__(self, "delivery_mode", mode)
+        if mode not in {"instant", "daily"}:
+            object.__setattr__(self, "delivery_enabled", False)
         object.__setattr__(self, "delivery_time", _time(self.delivery_time, "00:00"))
         object.__setattr__(self, "delivery_end", _time(self.delivery_end, "23:59"))
         object.__setattr__(self, "timezone", "Asia/Shanghai")
@@ -137,6 +142,7 @@ class FeishuConfig:
                 "max_message_chars",
                 "request_timeout_seconds",
                 "delivery_enabled",
+                "delivery_mode",
                 "delivery_time",
                 "delivery_end",
                 "delivery_target",

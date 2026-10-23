@@ -18,8 +18,8 @@ from datetime import datetime, timezone
 import aiohttp
 import feedparser
 
-from trendradar.ai_frontier._http import make_session, run_with_concurrency
-from trendradar.ai_frontier.sources.base import AIItem, AISource
+from trendradar.ai_frontier._http import make_session
+from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
 DEFAULT_INSTANCES = [
@@ -92,7 +92,7 @@ class NitterSource(AISource):
         )
         available = [r for r in results if isinstance(r, str)]
         log.info(f"Nitter 可用实例: {len(available)}/{len(self.instances)}")
-        return available if available else self.instances[:1]
+        return available
 
     # ── 单账号抓取 ──────────────────────────────────────
     async def _fetch_account(
@@ -111,17 +111,18 @@ class NitterSource(AISource):
                 if not text or ("<rss" not in text[:500].lower() and "<feed" not in text[:500].lower()):
                     continue
                 items = await asyncio.to_thread(self._parse_rss, account, text)
-                if items:
-                    return items
+                return items
             except asyncio.TimeoutError:
                 continue
             except Exception:
                 continue
-        return []
+        raise SourceFetchError("no_usable_instance")
 
     # ── RSS 解析（CPU 密集，在线程池运行）──────────────
     def _parse_rss(self, account: str, text: str) -> list[AIItem]:
         parsed = feedparser.parse(text)
+        if not parsed.version or (parsed.bozo and not parsed.entries):
+            raise SourceFetchError("invalid_feed")
         items: list[AIItem] = []
         valid_count = 0
 
@@ -162,6 +163,7 @@ class NitterSource(AISource):
 
     # ── 主入口 ──────────────────────────────────────────
     async def fetch(self) -> list[AIItem]:
+        self._fetch_errors.clear()
         if not self.enabled or not self.accounts:
             return []
 
@@ -174,12 +176,14 @@ class NitterSource(AISource):
         async with session:
             # 1. 预探测可用实例（并发，~6s 内完成）
             working = await self._probe_instances(session)
+            if not working:
+                raise SourceFetchError("no_usable_instance")
 
             # 2. Semaphore 限流 + 并发抓取所有账号
             coros = [
                 self._fetch_account(session, acc, working) for acc in self.accounts
             ]
-            results = await run_with_concurrency(coros, limit=8)
+            results = await self._gather(coros, self.accounts, limit=8)
 
         merged: list[AIItem] = []
         for r in results:
