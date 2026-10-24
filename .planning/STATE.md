@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-stopped_at: 28e7283 deployed and localized Lark title receipt confirmed; handoff follow-up tests and Phase 7 operational gates remain open
+stopped_at: PR 8 merged; local quote/tool repairs implemented; production remains 28e7283 and operational gates remain open
 last_updated: "2026-10-24"
-last_activity: 2026-10-24 -- owner approved four handoff commits and stacked PR; WSL full regression 1212 passed; 19:41 translation and deferred Lark port remain open
+last_activity: 2026-10-24 -- owner authorized local PR 8 handoff repairs; provider fallback diagnosed and quote/tool fixes validated locally
 progress:
   total_phases: 9
   completed_phases: 7
@@ -25,15 +25,20 @@ owns worktree reconciliation, pending changes and the maintainer PR sequence.
 Roadmap completion counts are unchanged; one successful release and receipt do
 not close source stability, 48-hour operation or offsite recovery.
 
-- Worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`.
-- Handoff branch: `work/trendradar-handoff`, based on deployed commit `28e7283162b58213aee474b02cb492efebbc7fc6`.
+- Active worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`.
+- Repair branch: `fix/pr8-handoff-repairs-20261024`, based on `b700fc6`, whose tree matches PR 8 merge `a0dd38e`. Changes remain local and uncommitted.
 - Recorded VPS release: `p7-20261023-28e7283`, GitHub run 39921046202; the owner confirmed Chinese titles and links arrived in Lark.
-- The canonical-title repair is deployed. Source-health/installer follow-up commits are approved for a stacked handoff PR and are not deployed.
-- Pre-commit validation performed no production query, provider call, message send or deployment. The owner then approved four commits, branch push and PR; see Git history and the PR for current publication/CI state.
-- The later 10-23 19:41 Yahoo Finance/English-title report is undiagnosed. Earlier localized receipt is historical evidence, not a closure of this report.
-- The old-tree tool/quote repair is preserved as a source-only review attachment; active code is not ported.
+- PR 8 source-health/installer follow-ups are merged, not deployed. PR 7 remains open; merged-tree CI run 40039626037 passed all four jobs.
+- Read-only VPS diagnosis identified Gemini server failure plus cooldown and 21 original-title fallbacks for 19:41/19:42. Frozen messages are unchanged; provider stability needs live observation.
+- The old reference quote/tool repair is now adapted locally with additional model-failover/input-boundary regressions. See [current repair evidence](../docs/handoff/PR8-REPAIR-20261024.md).
 
 ## Verification And Next Work
+
+Latest local PR 8 repair: **1464 passed / 6 skipped**, 2 existing dependency warnings,
+543.12 seconds in WSL Python 3.12.3. Focused AI/Lark/translation: **538 passed**.
+Changed-file Ruff and Git whitespace checks pass. The 299 source/config/dependency
+paths match the tested WSL tree after line-ending normalization. See the current
+repair record above; the following older results retain their historical scope.
 
 The `/proc` process-helper race is fixed with eight regression cases. Final Windows:
 823 passed / 364 skipped. Final Linux Python 3.12: 1181 passed / 6 skipped, including
@@ -41,16 +46,16 @@ real systemd cases. Separate empty-venv archive installation: 1 passed. Scoped R
 and diff checks pass. The archive is explicitly dirty, not a release candidate.
 See [follow-up evidence](../docs/phase7-release-20261023/TRANSLATION-FOLLOWUP.md).
 
-The current WSL Python 3.12 full run passed 1212 tests, with 6 skips and 2 dependency
+The PR 8 baseline WSL Python 3.12 full run passed 1212 tests, with 6 skips and 2 dependency
 warnings. Separate empty-venv archive installation passed after CRLF packaging
 repair; it remains a dirty archive, not a release candidate. PhaseGate self tests
 passed 51 cases. Historical counts above belong to
 the prior translation repair; use [current evidence](../docs/handoff-validation-20261024.json)
 for this handoff candidate. No new native Windows tests are required.
 
-1. Continue from the four owner-approved `work/trendradar-handoff` commits and
-   stacked PR. Verify final-commit install/CI evidence; the pre-commit inventory
-   and dirty archive records remain historical snapshots.
+1. Continue from the local repair branch and current repair evidence. Obtain scoped
+   commit/push instructions, fetch the stack, then bind clean CI/install evidence
+   to the resulting commit. Historical inventories remain snapshots.
 2. If later deploying follow-up changes, use the protected exact-commit release
    flow. Do not rewrite saved delivery snapshots or resend delivered Stories.
 3. Continue source-health/Podcast/Blog stability work and 48-hour healthy

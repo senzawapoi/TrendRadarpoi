@@ -1,27 +1,29 @@
 # Phase 7 Current Handoff
 
-Reconciled 2026-10-24. The latest recorded VPS deployment is `28e7283`; the
-13:41 translation issue below has a deployed repair and an owner-confirmed receipt.
-The later 19:41 Yahoo Finance/other English-title report remains open.
-The owner-approved handoff branch contains separate source-health, installer and
-repository-maintenance commits that are not deployed. Historical checks are preserved
+Updated after PR 8 merge and local repair on 2026-10-24. Production remains `28e7283`.
+The later 19:41 English-title report is now diagnosed as translation provider
+server failure followed by cooldown and the configured original-title fallback.
+The direct-quote/tool repair is implemented locally; its live acceptance remains open.
+See [the current repair record](../handoff/PR8-REPAIR-20261024.md).
+Source-health, installer and repository-maintenance commits in PR 8 are not deployed.
+Historical checks are preserved
 in the [candidate record](README.md) and [translation follow-up](TRANSLATION-FOLLOWUP.md).
 
 ## Workspace And Release
 
-- Worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`.
-- Handoff branch: `work/trendradar-handoff`, based on `28e7283162b58213aee474b02cb492efebbc7fc6`.
-  The owner approved four scoped commits and a stacked PR on 2026-10-24. Inspect
-  branch HEAD/PR for the published revision; the deployment baseline is unchanged.
+- Active repair worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`,
+  branch `fix/pr8-handoff-repairs-20261024`, based on `b700fc6` (same content tree
+  as merged PR 8 commit `a0dd38e`). Changes are local and uncommitted.
+- The original Phase 7 handoff worktree and old dirty workspace remain retained.
 - Latest recorded deployed release: `p7-20261023-28e7283`, from
   [GitHub run 39921046202](https://github.com/senzawapoi/TrendRadarpoi/actions/runs/39921046202).
   The artifact validation and deploy jobs succeeded, and the owner confirmed Chinese
   Story titles and links arrived in the TrendRadar Daily UAT group.
-- PR #7 remains OPEN on `fix/phase7-lark-routing-20261023` at the same `28e7283`
-  head, base `master`. The handoff PR stacks against its head branch, as approved,
-  so only the four follow-up commits enter its diff. Neither PR may be merged by
-  this task. Reassess the stack base if #7 merges later.
-- No current deployment or VPS health check was performed for this handoff review.
+- PR #8 is MERGED as `a0dd38e`. PR #7 remains OPEN on
+  `fix/phase7-lark-routing-20261023` at `a0dd38e`, base `master`.
+  Merged-tree CI run `40039626037` passed all four jobs; it does not validate these
+  new uncommitted repairs. Reassess the stack before the next push/PR.
+- Read-only VPS diagnosis was performed; no production code or service was changed.
 
 ## Translation Defect And Deployed Repair
 
@@ -43,10 +45,13 @@ The owner later confirmed that newly generated Chinese titles and links arrived 
 Lark after deployment run `39921046202`. Translation stays on
 `gemini-3.1-flash-lite`; failures retain original text.
 At 19:41 on 10-23, the owner reported further untranslated Yahoo Finance and other
-headlines. Their canonical metadata, translation outcome, Story and saved batch
-have not been inspected in this handoff task. The cause is unknown: do not assume
-it is either the old publication race or an expected provider fallback. Preserve
-the already sent payload and investigate a read-only evidence chain first.
+headlines. Read-only inspection now links 21 English headlines across the 19:41
+and 19:42 frozen posts to `GEMINI_SERVER_ERROR` followed by `GEMINI_COOLDOWN` at
+11:36:53 UTC. The collector logged 21 terminal fallbacks before Story publication.
+Ten corresponding Stories had later translated metadata when inspected; eleven
+still retained fallback metadata. Later recollection does not update sent messages.
+No publication-race recurrence is evidenced here. Provider reliability and future
+Chinese-title receipt remain live acceptance work; historical batches must stay frozen.
 The median/average regression guard is narrow, not a general semantic guarantee.
 Schema remains v7, with no new dependency or changes to saved delivery snapshots.
 See [translation contract](../intelligence.md#title-translation-before-publication)
@@ -82,13 +87,14 @@ logic were unchanged. See [follow-up evidence](TRANSLATION-FOLLOWUP.md).
 
 ## Resume Order
 
-1. Continue from the owner-reviewed `work/trendradar-handoff` commits and PR;
-   source-health and installer changes are not deployed in `28e7283`.
-2. Check exact-commit installation/CI attached to the stacked PR. Before any future
+1. Continue from `fix/pr8-handoff-repairs-20261024` and the current repair record;
+   source-health, installer and local quote/tool changes are not deployed in `28e7283`.
+2. Obtain scoped commit/push instructions for the local repair. Before any future
    release, resolve the PR #7 base and obtain separate deployment authorization.
    Never treat a dirty-tree test record as clean release evidence.
-3. For the open 19:41 regression, inspect canonical metadata, Story state and
-   saved native payload together. Never rewrite a saved batch or resend a delivered Story.
+3. Before rollout, bootstrap/verify the fixed root-owned installer, then perform
+   exact-build live quote/tool and new-title acceptance. Never rewrite a saved batch
+   or resend a delivered Story to repair language.
 4. Keep source stability, Podcast/Blog recovery, resource observation and at least
    48 healthy hours as separate open work. Backups are local-only; offsite
    backup/recovery remains incomplete. Preserve the accepted B6 skip.

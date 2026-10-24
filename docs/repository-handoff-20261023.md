@@ -5,8 +5,14 @@ This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.
 
 ## Current Git State
 
-- Primary worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`, branch
-  `work/trendradar-handoff`, based on deployed commit `28e7283162b58213aee474b02cb492efebbc7fc6`.
+- Active repair worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`,
+  branch `fix/pr8-handoff-repairs-20261024`, based on `b700fc6`. It has local,
+  uncommitted repairs described in [PR8-REPAIR-20261024.md](handoff/PR8-REPAIR-20261024.md).
+  `b700fc6` and merged PR 8 `a0dd38e` share content tree
+  `07164edf43ab050af34b2369680ac6047959d499`; local network fetch failed, so the
+  existing real commit was used without fabricating merge history.
+- The retained primary handoff worktree is
+  `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`, branch `work/trendradar-handoff`.
 - The owner approved the 56-path inventory, four commits, branch push and stacked
   PR on 2026-10-24. The [workspace audit](handoff/workspace-audit-20261024-review.json)
   is the preserved pre-commit snapshot, not a description of the current Git index.
@@ -16,12 +22,11 @@ This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.
   `39921046202`. Its validation and deployment jobs succeeded; the owner confirmed
   that Chinese Story titles and links arrived in Lark. This is not evidence of
   current live health, source stability, offsite recovery or 48-hour operation.
-- GitHub PR #7 remains open, based on `master`, with head
-  `fix/phase7-lark-routing-20261023` at `28e7283`. The approved handoff PR stacks
-  against that branch to avoid duplicating PR #7's diff. After #7 merges, reassess
-  the base before retargeting; do not merge either PR without explicit approval.
-  Read-only GitHub checks on 2026-10-24 reconfirmed PR #7 OPEN with that head/base,
-  and `master` as the repository default branch.
+- PR #8 was merged by the owner as `a0dd38ecbea50737781241c1244cc3752feeb1cf`.
+  PR #7 remains open, based on `master`, with head `fix/phase7-lark-routing-20261023`
+  at `a0dd38e`. All four merged-tree CI jobs passed in run `40039626037`.
+  This CI is baseline evidence, not evidence for the new local changes. Fetch and
+  reassess the stack before a separately authorized commit/push/PR; do not merge automatically.
 - Old worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-master`, local `main` at
   `5a427aba`, 42 commits ahead of its recorded `origin/main`, with 46 modified and
   479 untracked files. It remains untouched and is an audit source, not a merge base.
@@ -37,7 +42,7 @@ This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.
 | Runtime evidence | Keep local only: `output/`, `test/runtime/`, `.phasegate/` pilot reports, databases/WAL/SHM, logs, UAT descriptors, raw provider payloads, audit scenes, generated archives and cache directories. Never delete the old evidence during reconciliation. |
 | Demo and archive | Exclude `phase-gate-demo/` and `PhaseGate-Demo-v0.1.0.zip`; these are a standalone prototype and generated package, not the real gate. |
 | Secrets and deployment access | Exclude live `.env` files, credentials, SSH/BAT files, private keys and documents containing live values. Keep reviewed empty templates. The historical Feishu task brief already exists in both trees; its encoding damage is historical, not a new secret finding. Current requirements live in PROJECT/REQUIREMENTS. |
-| Deferred Lark patch | Preserve a source-only [reference patch](handoff/deferred-lark-repair.patch) and [porting contract](handoff/deferred-lark-repair.md), without changing active code. The owner previously selected keeping this implementation in the old tree. Do not apply the patch mechanically to the newer model/Worker implementation. |
+| Deferred Lark patch | The owner subsequently authorized local repair after PR 8 merge. Ported against the current model/Worker implementation with new failing regressions first; see the [repair record](handoff/PR8-REPAIR-20261024.md). Preserve the old reference patch as provenance. |
 | Retired channels | Do not restore Bark, webhook, email or other retired senders. Lark remains the only notification transport. |
 
 Six deployment environment templates are unignored via `.gitignore` exceptions;
@@ -51,20 +56,21 @@ SQLite and test sandbox paths are explicitly ignored. Review candidate paths wit
 The 13:41 English-title defect has a deployed repair: commit `28e7283`
 resolved canonical titles before Story publication, was deployed by run
 `39921046202`, and Chinese titles/links were confirmed received at approximately
-16:36. **The later 10-23 19:41 Yahoo Finance/other English-title report remains
-open and has not been diagnosed in this repository reconciliation.** Do not mark
-it resolved using the earlier receipt. Translation uses
+16:36. **The later 10-23 19:41 report was diagnosed read-only on 10-24:** Gemini
+returned a server error, the translation route entered cooldown, and 21 new titles
+used the documented original-title fallback. The frozen posts remained English
+after later translation of ten Stories. Translation uses
 `gemini-3.1-flash-lite`; failures retain original text. The old Gemma failure is
 not the current translation configuration. Historical reports are retained and
 must not be rewritten as if those failures did not occur.
 
-Open gates remain the 19:41 translation report, deferred tool/quoted-context port,
-source health and Podcast/Blog stability, backlog/history review
-where not evidenced, at least 48 hours of healthy operation, and offsite backup and
-restore. No live VPS health query was performed for this handoff. Local tests do not
-close these gates. Preserve the accepted Phase 5 B6 skip.
+The quote/tool port is now implemented and validated locally. Open gates remain
+its exact-build live acceptance, translation provider stability and future receipt,
+source health/Podcast/Blog stability, at least 48 healthy hours, and offsite backup
+and restore. Read-only VPS verification is separate from local code validation;
+no production mutation was made. Preserve the accepted Phase 5 B6 skip.
 
-## Reviewed Handoff Changes
+## Historical PR 8 Handoff Changes And Verification
 
 1. Source health, parser behavior and Podcast/Blog configuration/tests in
    `trendradar/ai_frontier/sources/`, `trendradar/intelligence/runner.py`,
@@ -124,7 +130,7 @@ The required pre-commit review was completed and approved on 2026-10-24. The fir
 three commits are `d1cd72c` (sources), `b8889dc` (deployment) and `464ddd9`
 (PhaseGate); the fourth commits this documentation and evidence. The source
 fingerprints and JUnit here intentionally retain their pre-commit provenance.
-Bind new clean archive/install evidence to the final commit and attach its result
-to the handoff PR. A successful clean install is not VPS acceptance. Future
-implementation/deployment requires its own scoped instruction; this task only
-publishes the approved handoff branch and PR.
+The owner has since merged that handoff as PR #8 and authorized the local repair
+record linked above. Preserve these pre-commit historical fingerprints. Bind future
+clean archive/install evidence to the next committed repair revision. A successful
+clean install is not VPS acceptance; deployment still requires a scoped instruction.
