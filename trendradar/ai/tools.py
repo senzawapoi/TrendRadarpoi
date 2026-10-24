@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import math
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 from typing import Any
 from uuid import UUID
@@ -23,11 +24,34 @@ from trendradar.ai.models import Citation, TimeRange
 from trendradar.ai.retrieval import LocalRetriever, content_item_citation
 from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.research.gateway import ResearchGateway
+from trendradar.research.models import ERROR_CODES as RESEARCH_ERROR_CODES
 from trendradar.research.models import ResearchRequest
 
 MAX_TOOL_RESULT_CHARS = 4_000
 MAX_TOOL_ARGUMENT_CHARS = 8_000
+MAX_TOOL_RANGE_DAYS = 3650
 _PERMISSION_RE = re.compile(r"^[a-z][a-z0-9_.:-]{0,63}$")
+_LOGGER = logging.getLogger(__name__)
+_SEARCH_TOOLS = frozenset({"search_stories", "search_content_items"})
+_TIME_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?"
+    r"(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$"
+)
+_HANDLER_ERROR_CODES = RESEARCH_ERROR_CODES | {
+    "research_unavailable", "handler_failed", "handler_denied", "tool_disabled", "unknown_tool",
+}
+_DENIAL_CODES = frozenset({
+    "permission_denied", "disabled", "tool_disabled", "unknown_tool", "handler_denied",
+    "authentication",
+})
+_ARGUMENT_DETAILS = {
+    "schema_mismatch": "Use the declared argument types, fields and limits.",
+    "range_pair_required": "Supply time_range with both start and end, or omit it entirely.",
+    "range_conflict": "Do not combine time_range with legacy start/end.",
+    "invalid_time": "Use valid ISO 8601 timestamps with an explicit timezone.",
+    "range_order": "time_range.start must be before time_range.end.",
+    "range_too_wide": f"The time range must not exceed {MAX_TOOL_RANGE_DAYS} days.",
+}
 
 
 class ToolError(RuntimeError):
@@ -40,6 +64,10 @@ class ToolDeniedError(ToolError):
 
 class ToolValidationError(ToolDeniedError):
     """Tool arguments do not match the registered exact schema."""
+
+    def __init__(self, message: str = "", *, code: str = "schema_mismatch") -> None:
+        super().__init__(message)
+        self.code = code if code in _ARGUMENT_DETAILS else "schema_mismatch"
 
 
 class ToolPermissionError(ToolDeniedError):
@@ -61,17 +89,19 @@ def _bounded_text(value: Any, *, maximum: int, field_name: str) -> str:
 
 def _utc(value: datetime, field_name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
-        raise ToolValidationError(f"{field_name} must be timezone-aware")
+        raise ToolValidationError(code="invalid_time")
     return value.astimezone(timezone.utc)
 
 
 def _parse_time(value: Any, field_name: str) -> datetime:
     text = _bounded_text(value, maximum=80, field_name=field_name)
+    if not _TIME_RE.fullmatch(text):
+        raise ToolValidationError(code="invalid_time")
     try:
         parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise ToolValidationError(f"{field_name} is invalid") from exc
-    return _utc(parsed, field_name)
+        return _utc(parsed, field_name)
+    except (ValueError, OverflowError) as exc:
+        raise ToolValidationError(code="invalid_time") from exc
 
 
 def _parse_uuid(value: Any, field_name: str) -> str:
@@ -342,13 +372,85 @@ class ToolSpec:
 
 
 def _context_range(arguments: Mapping[str, Any], context: ToolContext) -> TimeRange:
-    start = arguments.get("start")
-    end = arguments.get("end")
-    if start is None and end is None:
-        return context.time_range
-    if start is None or end is None:
-        raise ToolValidationError("start and end must be supplied together")
-    return TimeRange(_parse_time(start, "start"), _parse_time(end, "end"))
+    normalized = _normalize_search_range(arguments)
+    if "time_range" not in normalized:
+        interval = context.time_range
+    else:
+        raw_range = normalized["time_range"]
+        if not isinstance(raw_range, Mapping) or set(raw_range) != {"start", "end"}:
+            raise ToolValidationError(code="range_pair_required")
+        start = _parse_time(raw_range["start"], "start")
+        end = _parse_time(raw_range["end"], "end")
+        if start >= end:
+            raise ToolValidationError(code="range_order")
+        interval = TimeRange(start, end)
+    if interval.end - interval.start > timedelta(days=MAX_TOOL_RANGE_DAYS):
+        raise ToolValidationError(code="range_too_wide")
+    return interval
+
+
+def _normalize_search_range(arguments: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(arguments, Mapping):
+        raise ToolValidationError("arguments must be an object")
+    normalized = dict(arguments)
+    if "start" in normalized or "end" in normalized:
+        if "time_range" in normalized:
+            raise ToolValidationError(code="range_conflict")
+        if "start" not in normalized or "end" not in normalized:
+            raise ToolValidationError(code="range_pair_required")
+        normalized["time_range"] = {
+            "start": normalized.pop("start"), "end": normalized.pop("end"),
+        }
+    return normalized
+
+
+def tool_argument_shape(arguments: Any) -> str:
+    """Audit field presence using fixed labels, without rendering any arguments."""
+    if not isinstance(arguments, Mapping):
+        return "invalid"
+    start, end = "start" in arguments, "end" in arguments
+    if "time_range" in arguments:
+        return "mixed" if start or end else "nested"
+    if start and end:
+        return "legacy"
+    if start:
+        return "start-only"
+    return "end-only" if end else "default"
+
+
+def search_recovery_matches(
+    failed: Mapping[str, Any], corrected: Mapping[str, Any], context: ToolContext,
+) -> bool:
+    """Require the same search and preserve every valid originally supplied bound."""
+    for field_name, default in (("query", ""), ("domain", None)):
+        before, after = failed.get(field_name, default), corrected.get(field_name, default)
+        if isinstance(before, str) and isinstance(after, str):
+            before, after = before.strip(), after.strip()
+        if before != after or (before is not None and not isinstance(before, str)):
+            return False
+    try:
+        interval = _context_range(corrected, context)
+        old_range = failed.get("time_range", failed)
+        if not isinstance(old_range, Mapping):
+            return False
+        has_range = "time_range" in failed or "start" in failed or "end" in failed
+        if has_range and not any(key in corrected for key in ("time_range", "start", "end")):
+            return False
+        if not has_range:
+            return interval == context.time_range
+        if "time_range" in failed and ("start" in failed or "end" in failed):
+            return False  # Conflicting representations leave the original need ambiguous.
+        for field_name in ("start", "end"):
+            if field_name in old_range:
+                try:
+                    original = _parse_time(old_range[field_name], field_name)
+                except ToolValidationError:
+                    continue
+                if original != getattr(interval, field_name):
+                    return False
+    except ToolValidationError:
+        return False
+    return True
 
 
 def _search_stories(context: ToolContext, arguments: Mapping[str, Any]) -> ToolResult:
@@ -541,8 +643,19 @@ def _research_tool(context: ToolContext, arguments: Mapping[str, Any]) -> ToolRe
 def _default_specs() -> tuple[ToolSpec, ...]:
     search_properties = {
         "query": {"type": "string", "maxLength": 500},
-        "start": {"type": "string", "maxLength": 80},
-        "end": {"type": "string", "maxLength": 80},
+        "time_range": {
+            "type": "object",
+            "description": (
+                "Optional complete range; omit to use the server range. Both timestamps "
+                f"need explicit timezones, start < end, at most {MAX_TOOL_RANGE_DAYS} days."
+            ),
+            "properties": {
+                "start": {"type": "string", "minLength": 1, "maxLength": 80},
+                "end": {"type": "string", "minLength": 1, "maxLength": 80},
+            },
+            "required": ["start", "end"],
+            "additionalProperties": False,
+        },
         "domain": {"type": "string", "enum": ["general", "ai", "security"]},
         "limit": {"type": "integer", "minimum": 1, "maximum": 20},
     }
@@ -664,50 +777,84 @@ class ToolRegistry:
         arguments: Mapping[str, Any],
         context: ToolContext,
     ) -> ToolResult:
+        shape = tool_argument_shape(arguments)
         if not isinstance(name, str) or not name.strip():
-            return self._denial(str(name), "unknown_tool")
+            return self._denial("unknown", "unknown_tool", shape=shape)
         spec = self._specs.get(name)
         if spec is None:
-            return self._denial(name, "unknown_tool")
+            return self._denial("unknown", "unknown_tool", shape=shape)
         if not spec.enabled or (context.enabled_tools is not None and name not in context.enabled_tools):
-            return self._denial(name, "tool_disabled")
+            return self._denial(name, "tool_disabled", shape=shape)
         if spec.permission not in context.permissions:
-            return self._denial(name, "permission_denied")
+            return self._denial(name, "permission_denied", shape=shape)
         try:
+            if name in _SEARCH_TOOLS:
+                arguments = _normalize_search_range(arguments)
             normalized = validate_arguments(spec.parameters, arguments)
-        except ToolDeniedError as exc:
-            return self._denial(name, "invalid_arguments", str(exc))
+            if name in _SEARCH_TOOLS:
+                _context_range(normalized, context)
+        except ToolValidationError as exc:
+            return self._denial(name, "invalid_arguments", exc.code, shape=shape)
         try:
             outcome = spec.handler(context, normalized)
             if not isinstance(outcome, ToolResult):
                 raise ToolExecutionError("handler returned an invalid result")
             if outcome.name != name:
                 raise ToolExecutionError("handler result name mismatch")
+            if not outcome.ok:
+                # Handler-controlled exception text and error fields are not an audit API.
+                code = outcome.error_code
+                if code == "invalid_arguments":
+                    return self._denial(name, "invalid_arguments", shape=shape)
+                if not outcome.allowed or code in _DENIAL_CODES:
+                    return self._denial(
+                        name, code if code in _DENIAL_CODES else "handler_denied", shape=shape,
+                    )
+                return self._failure(
+                    name, code if code in _HANDLER_ERROR_CODES else "handler_failed",
+                    shape=shape,
+                )
             return outcome
-        except ToolDeniedError as exc:
-            return self._denial(name, "handler_denied", str(exc))
-        except ToolExecutionError as exc:
-            return self._failure(name, "handler_failed", str(exc))
+        except ToolValidationError as exc:
+            return self._denial(name, "invalid_arguments", exc.code, shape=shape)
+        except ToolDeniedError:
+            return self._denial(name, "handler_denied", shape=shape)
+        except ToolExecutionError:
+            return self._failure(name, "handler_failed", shape=shape)
         except Exception:
-            return self._failure(name, "handler_failed", "tool execution failed")
+            return self._failure(name, "handler_failed", shape=shape)
 
     @staticmethod
-    def _denial(name: str, code: str, detail: str = "") -> ToolResult:
+    def _denial(name: str, code: str, detail: str = "", *, shape: str = "default") -> ToolResult:
+        argument_code = detail if detail in _ARGUMENT_DETAILS else "schema_mismatch"
+        _LOGGER.warning(
+            "tool_attempt_failed tool=%s error=%s shape=%s argument_error=%s",
+            name, code, shape, argument_code if code == "invalid_arguments" else "none",
+        )
+        payload = {"ok": False, "error": code, "retryable": code == "invalid_arguments"}
+        if code == "invalid_arguments":
+            payload.update(argument_error=argument_code, detail=_ARGUMENT_DETAILS[argument_code])
+        else:
+            payload["detail"] = "Tool access was denied; do not retry."
         return ToolResult(
             name=name or "unknown",
             allowed=False,
             success=False,
-            text=_serialize({"ok": False, "error": code, "detail": detail}, maximum=MAX_TOOL_RESULT_CHARS),
+            text=_serialize(payload, maximum=MAX_TOOL_RESULT_CHARS),
             error_code=code,
         )
 
     @staticmethod
-    def _failure(name: str, code: str, detail: str) -> ToolResult:
+    def _failure(name: str, code: str, *, shape: str = "default") -> ToolResult:
+        _LOGGER.warning(
+            "tool_attempt_failed tool=%s error=%s shape=%s argument_error=none", name, code, shape,
+        )
         return ToolResult(
             name=name,
             allowed=True,
             success=False,
-            text=_serialize({"ok": False, "error": code, "detail": detail}, maximum=MAX_TOOL_RESULT_CHARS),
+            text=_serialize({"ok": False, "error": code, "detail": "Tool is unavailable.",
+                             "retryable": False}, maximum=MAX_TOOL_RESULT_CHARS),
             error_code=code,
         )
 
@@ -725,8 +872,8 @@ ToolOutcome = ToolResult
 
 
 __all__ = [
-    "LocalToolRegistry",
     "MAX_TOOL_RESULT_CHARS",
+    "LocalToolRegistry",
     "ToolContext",
     "ToolDeniedError",
     "ToolError",

@@ -10,8 +10,9 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
 
-from trendradar.ai.models import AssistantRequest
+from trendradar.ai.models import AssistantRequest, QuotedMessageContext
 from trendradar.ops.maintenance import read_guard
+from trendradar.utils.logging import log
 
 from .client import FeishuClient, ReplyDelivery
 from .config import FeishuConfig
@@ -65,6 +66,9 @@ def envelope(payload: Any, config: FeishuConfig) -> tuple[FeishuInbound, Any, tu
         message_id=_get(message, "message_id"),
         mentioned=bool(markers),
         created_at=_message_created_at(message),
+        parent_message_id=(
+            "" if _get(message, "parent_id") is None else _get(message, "parent_id")
+        ),
     )
     return inbound, message, markers
 
@@ -168,7 +172,49 @@ class FeishuHandler:
         except (ValueError, TypeError, AttributeError):
             return None
 
+    def _quoted_context(self, event: FeishuInbound) -> QuotedMessageContext | None:
+        if not event.parent_message_id:
+            return None
+        limits = getattr(getattr(self.assistant, "limits", None), "session", None)
+        limit = getattr(limits, "max_input_chars", self.config.max_message_chars)
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            limit = self.config.max_message_chars
+        remaining = min(4000, limit - len(event.text or "[Image attachment]"))
+        if remaining <= 0:
+            context = QuotedMessageContext("input_limit")
+        else:
+            try:
+                result = self.client.get_replied_message(
+                    event.parent_message_id,
+                    chat_id=event.chat_id,
+                    max_chars=remaining,
+                )
+                context = QuotedMessageContext(
+                    result.status,
+                    result.text,
+                    result.message_type,
+                    result.truncated,
+                )
+                if len(context.text) > remaining:
+                    context = replace(context, text=context.text[:remaining], truncated=True)
+            except Exception:
+                context = QuotedMessageContext("unavailable")
+        log.info(
+            "Lark direct reply context",
+            event_tag=stable_digest(event.event_id),
+            status=context.status,
+            truncated=context.truncated,
+        )
+        return context
+
     def respond(self, event: FeishuInbound, binding: SessionBinding) -> FeishuReply:
+        try:
+            assistant_available = bool(getattr(self.assistant, "available", True))
+        except Exception:
+            assistant_available = False
+        if self.assistant is None or not assistant_available:
+            return FeishuReply(event.event_id, SERVICE_FAILURE, degraded=True)
+        quoted_context = self._quoted_context(event)
         try:
             images = resolve_images(event, self.client)
         except ValueError:
@@ -182,8 +228,27 @@ class FeishuHandler:
                 binding.session_id,
                 requested_at=event.received_at,
                 images=images,
+                quoted_context=quoted_context,
             )
-            return render_reply(self.assistant.handle(request), event.event_id)
+            reply = render_reply(self.assistant.handle(request), event.event_id)
+            notice = ""
+            if quoted_context is not None:
+                if quoted_context.status != "available":
+                    notice = (
+                        "Degraded: The directly quoted message is unavailable "
+                        f"({quoted_context.status}); its contents were not read."
+                    )
+                elif quoted_context.truncated:
+                    notice = (
+                        "Degraded: The directly quoted message was truncated to the input limit."
+                    )
+            if notice:
+                reply = replace(
+                    reply,
+                    text=reply.text[: 50_000 - len(notice) - 2] + "\n\n" + notice,
+                    degraded=True,
+                )
+            return reply
         except Exception:
             return FeishuReply(event.event_id, SERVICE_FAILURE, degraded=True)
 

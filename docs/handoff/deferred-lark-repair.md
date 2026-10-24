@@ -1,9 +1,10 @@
 # Deferred Lark Reply and Tool Repair
 
-Status: preserved for review, **not ported or deployed**. Updated 2026-10-24.
-The owner previously chose to keep this repair in the old workspace. This handoff
-does not override that choice. Future sessions can review its source without the
-old chat or local disk using [deferred-lark-repair.patch](deferred-lark-repair.patch).
+Status: **ported and repaired locally after the owner's PR 8 repair instruction;
+not committed or deployed**. Updated 2026-10-24. See the
+[current repair record](PR8-REPAIR-20261024.md) for target-tree validation and remaining gates.
+The earlier preservation-only decision is historical. The retained
+[deferred-lark-repair.patch](deferred-lark-repair.patch) remains unchanged as provenance.
 
 ## Provenance and Target
 
@@ -62,17 +63,20 @@ and omitted images; continue to support current-message images. If the Assistant
 is unavailable, return before lookup/download. Retry saved replies without new
 lookup/model execution, and suppress completed events.
 
-During a future port, reconcile with the current multi-model tool loop, Bot/Worker
-roles, instant Story posts, maintenance/restore guards and durable delivery. The
-old repair did not modify `ledger.py` or the role runner. It requires no schema
-migration; mixed-version Workers are not valid quote-acceptance targets.
+The local port preserves the current multi-model tool loop, Bot/Worker roles,
+instant Story posts, maintenance/restore guards and durable delivery. Additional
+regressions cover quote preservation during model failover and complete structured
+input under provider limits. The parser's hard cap is now 4000 characters, matching
+the core DTO. Neither `ledger.py` nor the role runner changes. No schema migration
+is required; mixed-version Workers are not valid quote-acceptance targets.
 
 ## Evidence and Real Acceptance
 
 The old report records 408 focused tests passing in WSL2 Python 3.10.22, plus
 historical native Windows results. Those are **historical old-tree evidence**;
-the current 1210-test full run does not include the deferred tests. Port with new
-failing tests first, then focused AI/Lark and full Linux regression. Do not count
+the PR 8 baseline's 1212-test full run does not include the deferred tests. The current
+port first reproduced 220 failures / 26 passes on the baseline, then added current
+model-routing regressions. See the current repair record for new validation. Do not count
 the old provider-quota-blocked subagent review as a successful review.
 
 After a separately authorized exact-build test rollout, identify the sole Bot and

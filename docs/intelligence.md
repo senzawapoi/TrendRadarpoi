@@ -295,6 +295,15 @@ tool, routed through a bounded `ResearchGateway`; see [research.md](research.md)
 for its five allowlisted capabilities. It cannot expose arbitrary files, shell,
 dynamic imports, crawler triggers, MCP dispatch or unregistered network tools.
 
+Search schemas expose an optional `time_range` object with both `start` and `end`.
+Legacy top-level pairs remain accepted, but mixed/single bounds, naive timestamps,
+reversed bounds and ranges over 3650 days return `invalid_arguments`. Permission,
+availability and execution failures have distinct sanitized codes. Within the same
+three-call budget, one correction per tool/query/domain is permitted; only visible,
+server-citation-backed results preserving valid original bounds can resolve its
+failure. Empty or unusable results cannot clear an earlier failure, and failed
+attempts remain in the audit trail.
+
 `INTELLIGENCE_ASSISTANT_ENABLED=false` disables only the Assistant. The other
 `INTELLIGENCE_ASSISTANT_*` variables in `.env.example` override bounded operational limits. Set
 `GEMINI_ENABLED=false` or omit `GEMINI_API_KEY` to retain deterministic local answers without model
@@ -347,6 +356,19 @@ Image limits are four images, 4 MiB per image and 8 MiB per request; only bounde
 Lark message resources are downloaded, and image bytes are not persisted.
 The 32-entry worker queue keeps SDK callbacks short. Existing local tool
 allowlists, citations and deterministic Gemini fallback remain authoritative.
+
+Direct replies persist only the optional immediate `parent_id` in the v1 event.
+After authorization, a genuine group mention, maintenance checks and the Worker
+claim/lease, the client reads that exact message once and validates its ID and chat.
+It never follows roots, ancestors or history. Parent text/posts are untrusted data,
+separate from the current question and verified citations. Visible HTTP(S) links
+are retained without page fetching; parent images are not downloaded. Quotes are
+capped at 4000 characters and the remaining Assistant input budget, prioritizing
+the question. Unavailable/truncated context is disclosed. Model failover retains
+the quote and its status; oversized structured input fails closed instead of being
+silently cut. Completed events and saved-reply delivery retries do not read again.
+Live tenant permissions and sole Bot/Worker acceptance remain a deployment gate;
+see [the repair record](handoff/PR8-REPAIR-20261024.md).
 
 Schema v4 adds `feishu_events`; v5 adds `feishu_deliveries`; v6 adds bounded prepared
 event payloads and delivery-attempt tracking for restart recovery. These are forward-only
