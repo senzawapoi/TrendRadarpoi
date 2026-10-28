@@ -427,6 +427,15 @@ class Host:
             self.journal.update("verify", recovery_stage=unit)
             self.start_once(unit, self.config.collector_timeout)
 
+    def verify_sources(self) -> None:
+        report = self.ops("health", "--readiness", "--json", check=False)
+        self.evidence("after-source-refresh", report)
+        reasons = report.get("warnings", []) + report.get("errors", [])
+        if any(str(reason).startswith(("stale_source:", "missing_source_run:",
+                                       "source_unhealthy:", "source_runs_unverified"))
+               for reason in reasons):
+            raise RecoveryError("source readiness remains blocked after refresh")
+
     def start_role(self, role: str) -> None:
         unit = f"trendradar-{role}.service"
         if role == "scheduler":
@@ -456,6 +465,33 @@ class Host:
     def start_timers(self) -> None:
         for unit in self.config.timers:
             self.run(["/usr/bin/systemctl", "start", unit])
+
+    def drain_delivery(self) -> None:
+        # Collectors and timers are still stopped. Reuse the existing scheduler's
+        # durable registration, frozen payload and retry rules; never edit ledgers.
+        # A host's normal timer cadence may be too slow for a recovery backlog.
+        deadline = time.monotonic() + self.config.readiness_timeout
+        while True:
+            report = self.ops("health", "--readiness", "--json", check=False)
+            self.evidence("delivery-drain", report)
+            settings = report.get("config") or {}
+            if not (settings.get("lark_enabled") and settings.get("lark_delivery_enabled")
+                    and settings.get("lark_delivery_mode") == "instant"):
+                return
+            delivery = report.get("instant_delivery") or {}
+            backlog = delivery.get("backlog")
+            failed = delivery.get("failed_batches")
+            if (type(backlog) is not int or backlog < 0 or type(failed) is not int
+                    or failed != 0):
+                raise RecoveryError("delivery drain requires valid counters and no failed batches")
+            if backlog == 0:
+                return
+            remaining = int(deadline - time.monotonic())
+            if remaining <= 0:
+                raise RecoveryError("delivery backlog did not drain within recovery budget")
+            self.start_once("trendradar-scheduler.service",
+                            min(self.config.role_timeout, remaining))
+            time.sleep(1)
 
     def readiness(self) -> None:
         deadline = time.monotonic() + self.config.readiness_timeout
@@ -491,10 +527,16 @@ def recover(config: Config, journal: Journal, host: Host) -> None:
         stage = "sources"
         journal.update("verify", recovery_stage=stage)
         host.refresh_sources()
+        stage = "source_check"
+        journal.update("verify", recovery_stage=stage)
+        host.verify_sources()
         for role in ROLES:
             stage = role
             journal.update("verify", recovery_stage=stage)
             host.start_role(role)
+        stage = "drain"
+        journal.update("verify", recovery_stage=stage)
+        host.drain_delivery()
         stage = "timers"
         host.start_timers()
         stage = "readiness"

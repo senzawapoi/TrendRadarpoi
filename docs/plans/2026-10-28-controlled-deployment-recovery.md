@@ -33,6 +33,20 @@ Files: create `scripts/deploy/recover_release.py`; create `tests/deployment/test
 6. On any failure, record the failing stage, restore maintenance protection and stop units. Do not unlink failed records or perform automatic database rollback.
 7. Cover success/failure ordering, lease loss, interruption, identity checks and journal retention with meaningful tests. Run scoped Ruff and existing deployment/maintenance regressions on native WSL Linux.
 
+### Recovery sequencing follow-up
+
+Verify refreshed source health before starting business roles. Missing, stale or
+failed source evidence must fail closed without relaxing readiness. After serial
+role startup, drain instant delivery through the existing scheduler oneshot while
+collection timers remain stopped. Bound this settling phase by the configured
+readiness timeout, retain its health evidence, and reject invalid counters or
+failed batches. Restore existing timers only after the backlog is empty, then
+perform strict readiness/finalization. Preserve permanent timer cadence, frozen
+payloads, registration identities and resource limits. Add failing regression
+cases for source refusal, drain ordering, progress, failed batches and timeout;
+validate on native Linux before publication. This does not resolve unavailable
+external data access or authorize changing the accepted source scope.
+
 ## Task 3: Publish, bootstrap and execute exact recovery tooling
 
 1. Commit the reviewed recovery tool and evidence contract in the isolated worktree; push for CI and bind its SHA.

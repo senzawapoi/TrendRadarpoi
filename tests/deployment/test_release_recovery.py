@@ -209,8 +209,14 @@ class FakeHost:
     def refresh_sources(self):
         self.event("sources")
 
+    def verify_sources(self):
+        self.event("source_check")
+
     def start_role(self, role):
         self.event(role)
+
+    def drain_delivery(self):
+        self.event("drain")
 
     def readiness(self):
         self.event("readiness")
@@ -228,16 +234,18 @@ def test_recovery_serializes_starts_and_only_finalizes_after_readiness(scene):
     journal = recovery.Journal(config, failed)
     host = FakeHost(config)
     recovery.recover(config, journal, host)
-    assert host.events == ["stop", "snapshot", "clear", "sources", "bot", "worker",
-                           "scheduler", "timers", "readiness", "finalize"]
+    assert host.events == ["stop", "snapshot", "clear", "sources", "source_check",
+                           "bot", "worker", "scheduler", "drain", "timers",
+                           "readiness", "finalize"]
     assert not (config.control / "deploy-in-progress.json").exists()
     assert not (config.control / "restore-guard.json").exists()
     assert json.loads(journal.path.read_text())["state"] == "complete"
     assert (config.control / "deploy-failed-deploy.json").exists()
 
 
-@pytest.mark.parametrize("stage", ["stop", "snapshot", "clear", "sources", "bot", "worker",
-                                  "scheduler", "timers", "readiness", "finalize"])
+@pytest.mark.parametrize("stage", ["stop", "snapshot", "clear", "sources", "source_check",
+                                  "bot", "worker", "scheduler", "drain", "timers",
+                                  "readiness", "finalize"])
 def test_failure_reestablishes_guard_and_stops_roles_without_rollback(scene, stage):
     config, failed = scene
     journal = recovery.Journal(config, failed)
@@ -341,6 +349,80 @@ def test_oneshot_waits_for_actual_job_completion(scene, monkeypatch):
     host.start_once("trendradar-collect-ai.service", 120)
     assert commands[-1] == (["/usr/bin/systemctl", "start", "trendradar-collect-ai.service"],
                             {"timeout": 120})
+
+
+@pytest.mark.parametrize("reason", ["source_unhealthy:example", "stale_source:example",
+                                   "missing_source_run:example", "source_runs_unverified"])
+def test_unhealthy_sources_refuse_before_delivery(scene, monkeypatch, reason):
+    config, failed = scene
+    host = recovery.Host(config, recovery.Journal(config, failed))
+    reports = []
+    monkeypatch.setattr(host, "ops", lambda *args, **kwargs: {
+        "status": "unhealthy", "errors": ["missing_heartbeat:bot", reason],
+    })
+    monkeypatch.setattr(host, "evidence", lambda label, report: reports.append(label))
+    with pytest.raises(recovery.RecoveryError, match="source readiness"):
+        host.verify_sources()
+    assert reports == ["after-source-refresh"]
+
+
+def test_source_verification_does_not_require_not_yet_started_roles(scene, monkeypatch):
+    config, failed = scene
+    host = recovery.Host(config, recovery.Journal(config, failed))
+    monkeypatch.setattr(host, "ops", lambda *args, **kwargs: {
+        "status": "unhealthy", "errors": ["missing_heartbeat:bot", "missing_heartbeat:worker"],
+    })
+    monkeypatch.setattr(host, "evidence", lambda *args: None)
+    host.verify_sources()
+
+
+def instant_report(backlog, failed=0):
+    return {"config": {"lark_enabled": True, "lark_delivery_enabled": True,
+                       "lark_delivery_mode": "instant"},
+            "instant_delivery": {"backlog": backlog, "failed_batches": failed}}
+
+
+def test_recovery_drains_registered_scheduler_work_before_restoring_timers(scene, monkeypatch):
+    config, failed = scene
+    host = recovery.Host(config, recovery.Journal(config, failed))
+    reports = iter([instant_report(41), instant_report(21), instant_report(0)])
+    calls = []
+    monkeypatch.setattr(host, "ops", lambda *args, **kwargs: next(reports))
+    monkeypatch.setattr(host, "evidence", lambda *args: None)
+    monkeypatch.setattr(host, "start_once", lambda unit, timeout: calls.append(unit))
+    monkeypatch.setattr(recovery.time, "sleep", lambda seconds: None)
+    host.drain_delivery()
+    assert calls == ["trendradar-scheduler.service"] * 2
+
+
+@pytest.mark.parametrize("report", [instant_report(-1), instant_report(True),
+                                   instant_report("20"), instant_report(20, failed=1)])
+def test_delivery_drain_rejects_invalid_or_failed_state(scene, monkeypatch, report):
+    config, failed = scene
+    host = recovery.Host(config, recovery.Journal(config, failed))
+    monkeypatch.setattr(host, "ops", lambda *args, **kwargs: report)
+    monkeypatch.setattr(host, "evidence", lambda *args: None)
+    monkeypatch.setattr(host, "start_once", lambda *args: pytest.fail("must not send"))
+    with pytest.raises(recovery.RecoveryError):
+        host.drain_delivery()
+
+
+def test_delivery_drain_has_a_deadline_and_retains_backlog(scene, monkeypatch):
+    config, failed = scene
+    host = recovery.Host(replace(config, readiness_timeout=30), recovery.Journal(config, failed))
+    clock = [0.0]
+    calls = []
+    monkeypatch.setattr(recovery.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(recovery.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(host, "ops", lambda *args, **kwargs: instant_report(20))
+    monkeypatch.setattr(host, "evidence", lambda *args: None)
+    def slow_tick(unit, timeout):
+        calls.append((unit, timeout))
+        clock[0] += 30
+    monkeypatch.setattr(host, "start_once", slow_tick)
+    with pytest.raises(recovery.RecoveryError, match="delivery backlog did not drain"):
+        host.drain_delivery()
+    assert calls == [("trendradar-scheduler.service", 30)]
 
 
 def test_atomic_journal_preserves_old_marker_when_replace_fails(scene, monkeypatch):
