@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-stopped_at: PR 8 merged; local quote/tool repairs implemented; production remains 28e7283 and operational gates remain open
-last_updated: "2026-10-24"
-last_activity: 2026-10-24 -- owner authorized local PR 8 handoff repairs; provider fallback diagnosed and quote/tool fixes validated locally
+stopped_at: a20f2d8 installed but readiness failed; production quiesced under maintenance; controlled recovery in development
+last_updated: "2026-10-28"
+last_activity: 2026-10-28 -- failed deployment preserved; roles quiesced; forward recovery controller and regressions in progress
 progress:
   total_phases: 9
   completed_phases: 7
@@ -25,12 +25,12 @@ owns worktree reconciliation, pending changes and the maintainer PR sequence.
 Roadmap completion counts are unchanged; one successful release and receipt do
 not close source stability, 48-hour operation or offsite recovery.
 
-- Active worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`.
-- Repair branch: `fix/pr8-handoff-repairs-20261024`, based on `b700fc6`, whose tree matches PR 8 merge `a0dd38e`. Changes remain local and uncommitted.
-- Recorded VPS release: `p7-20261023-28e7283`, GitHub run 39921046202; the owner confirmed Chinese titles and links arrived in Lark.
-- PR 8 source-health/installer follow-ups are merged, not deployed. PR 7 remains open; merged-tree CI run 40039626037 passed all four jobs.
-- Read-only VPS diagnosis identified Gemini server failure plus cooldown and 21 original-title fallbacks for 19:41/19:42. Frozen messages are unchanged; provider stability needs live observation.
-- The old reference quote/tool repair is now adapted locally with additional model-failover/input-boundary regressions. See [current repair evidence](../docs/handoff/PR8-REPAIR-20261024.md).
+- Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`, branch `fix/deploy-recovery-20261028`, based on `241cefb`.
+- Application repair `a20f2d8` is committed and merged by PR 9 into the Phase 7 branch as `241cefb`; PR 7 remains open.
+- Current VPS target: `p7-20261027-a20f2d8`, installed but **not activated successfully**. The last successful release was `p7-20261023-28e7283`.
+- Deployment run `40493521142`: exact artifact validation passed, deployment readiness failed. The failed transaction and restore guard remain intact; all managed roles/timers are stopped.
+- 428 completed batches, 6698 delivery registrations and 8 completed events match pre-deployment fingerprints; no database restore or frozen-message rewrite occurred.
+- Owner authorization for commit/deployment and continuation remains active. The recovery tool has passed 1503 full Linux tests (6 skips) and 59 focused checks; publication and live recovery are pending. See [current deployment checkpoint](../docs/handoff/DEPLOY-A20F2D8-20261028.md).
 
 ## Verification And Next Work
 
@@ -53,13 +53,9 @@ passed 51 cases. Historical counts above belong to
 the prior translation repair; use [current evidence](../docs/handoff-validation-20261024.json)
 for this handoff candidate. No new native Windows tests are required.
 
-1. Continue from the local repair branch and current repair evidence. Obtain scoped
-   commit/push instructions, fetch the stack, then bind clean CI/install evidence
-   to the resulting commit. Historical inventories remain snapshots.
-2. If later deploying follow-up changes, use the protected exact-commit release
-   flow. Do not rewrite saved delivery snapshots or resend delivered Stories.
-3. Continue source-health/Podcast/Blog stability work and 48-hour healthy
-   observation. Offsite backup/recovery remains unaccepted.
+1. Complete the controlled forward-recovery tool and Linux regressions. Preserve the original failed transaction; never fake its controller lease or delete the fence.
+2. Publish the exact tested tool through a fixed root-owned entry. Require strict readiness/finalization and immutable-message fingerprint checks before recording recovery success.
+3. Resume real quote/tool UAT, source-health/Podcast/Blog work and 48 healthy hours after service recovery. Long main-collector lock starvation and offsite recovery remain open.
 
 ## Durable Decisions
 

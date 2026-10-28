@@ -1,32 +1,25 @@
 # TrendRadarpoi Repository Handoff
 
-Updated: 2026-10-24. Start here when ChatGPT Work or Codex resumes this repository.
+Updated: 2026-10-28. Start here when ChatGPT Work or Codex resumes this repository.
 This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.md).
 
 ## Current Git State
 
-- Active repair worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`,
-  branch `fix/pr8-handoff-repairs-20261024`, based on `b700fc6`. It has local,
-  uncommitted repairs described in [PR8-REPAIR-20261024.md](handoff/PR8-REPAIR-20261024.md).
-  `b700fc6` and merged PR 8 `a0dd38e` share content tree
-  `07164edf43ab050af34b2369680ac6047959d499`; local network fetch failed, so the
-  existing real commit was used without fabricating merge history.
-- The retained primary handoff worktree is
-  `C:/Users/DELL/Desktop/TrendRadarpoi-phase7-fix-20261023`, branch `work/trendradar-handoff`.
-- The owner approved the 56-path inventory, four commits, branch push and stacked
-  PR on 2026-10-24. The [workspace audit](handoff/workspace-audit-20261024-review.json)
-  is the preserved pre-commit snapshot, not a description of the current Git index.
-  Use `git log 28e7283..HEAD` and the handoff PR for exact published revision and CI.
-  No merge or deployment is authorized by this handoff.
-- The last recorded production release is `p7-20261023-28e7283`, GitHub run
-  `39921046202`. Its validation and deployment jobs succeeded; the owner confirmed
-  that Chinese Story titles and links arrived in Lark. This is not evidence of
-  current live health, source stability, offsite recovery or 48-hour operation.
-- PR #8 was merged by the owner as `a0dd38ecbea50737781241c1244cc3752feeb1cf`.
-  PR #7 remains open, based on `master`, with head `fix/phase7-lark-routing-20261023`
-  at `a0dd38e`. All four merged-tree CI jobs passed in run `40039626037`.
-  This CI is baseline evidence, not evidence for the new local changes. Fetch and
-  reassess the stack before a separately authorized commit/push/PR; do not merge automatically.
+- Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`,
+  branch `fix/deploy-recovery-20261028`, based on `241cefb`. The controller has passed 1503 full Linux tests (6 skips), with 59 focused checks;
+  the [deployment checkpoint](handoff/DEPLOY-A20F2D8-20261028.md) are local work.
+- Original repair worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`,
+  branch `fix/pr8-handoff-repairs-20261024`, clean application commit `a20f2d8`.
+- PR 9 merged into `fix/phase7-lark-routing-20261023` as `241cefb`; its content tree
+  equals `a20f2d8`. PR 7 remains OPEN, base master. Do not automatically merge it.
+- Application CI `40089562197` passed four jobs. Exact clean artifact validation in
+  deploy run `40493521142` passed; VPS deployment failed readiness after installation.
+- VPS current is `p7-20261027-a20f2d8`, under maintenance with roles/timers stopped.
+  The last successful version was `p7-20261023-28e7283`; do not describe it as live now.
+- User authorization for committing and deploying these repairs and continuing
+  recovery is explicit. Preserve failed records and the business-boundary fence.
+- The primary handoff tree `TrendRadarpoi-phase7-fix-20261023`, original dirty tree,
+  runtime data and all historical pre-commit inventories remain retained.
 - Old worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-master`, local `main` at
   `5a427aba`, 42 commits ahead of its recorded `origin/main`, with 46 modified and
   479 untracked files. It remains untouched and is an audit source, not a merge base.

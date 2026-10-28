@@ -116,6 +116,7 @@ jobs:
             tests/deployment/test_offsite_backup.py \
             tests/deployment/test_offsite_processes.py \
             tests/deployment/test_release_inputs.py \
+            tests/deployment/test_release_recovery.py \
             tests/deployment/test_remaining_gap_assertions.py \
             tests/deployment/test_runtime_guards.py \
             tests/deployment/test_restore_permissions_linux.py \

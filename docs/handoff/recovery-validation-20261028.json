@@ -1,0 +1,43 @@
+{
+  "base_commit": "241cefbcba7a11bd8032833172eb2b7bc5fc94d8",
+  "application_commit": "a20f2d8191c66fce858049dd1462406a9f7797fc",
+  "compared_paths": 615,
+  "source_mismatches": [],
+  "files": {
+    "scripts/deploy/recover_release.py": "6974b177e0cf1b14bee0c09524b72131908126d9052adf426aac67f221fd77cf",
+    "scripts/deploy/trendradar-recover-release": "3e1ed41035cf30cb8b50a40f6ba67a7b39998fe4e3538a13a9e6d907f89b0e39",
+    "tests/deployment/test_release_recovery.py": "0b4585c94309cb3cc9d3e66eeced5cf2642e5e8e1b2891d40e9da2bc5c93054e",
+    ".github/workflows/phase7-ci.yml": "fe24e7feb60b5bbe5e2e379a2957becd5e0ae94e698930c027b5770b9ef1d3fb"
+  },
+  "tests": {
+    "recovery-final": {
+      "junit": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "59",
+        "time": "19.734",
+        "timestamp": "2026-10-28T01:16:11.735400+08:00",
+        "hostname": "Gawrt"
+      },
+      "junit_sha256": "5831de196d798a46957849a6ed5caa9f13db19ca8cf0d23a2f690c950c2774af",
+      "log_sha256": "e7dbb110f02d8aa85f0f2acbc02a136ff13f0d83c891357772cb1d15f69842fd"
+    },
+    "full": {
+      "junit": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "6",
+        "tests": "1509",
+        "time": "578.183",
+        "timestamp": "2026-10-28T01:17:46.198482+08:00",
+        "hostname": "Gawrt"
+      },
+      "junit_sha256": "711b040151755ebead2a2210771d19c90ab3085f7c1f811b6ee304c9e9563a39",
+      "log_sha256": "480ca3bf4a11bf037fffb3a983d6c65d5aa4107d4af38df37d349f0abac8402c"
+    }
+  },
+  "scope": "Local Linux tests; production recovery is not yet executed. The final commit adds only evidence/doc updates after the verified source snapshot."
+}
