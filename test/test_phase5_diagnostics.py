@@ -61,18 +61,18 @@ def setup(tmp_path):
     ledger.close()
 
 
-def test_mixed_event_is_correlated_without_content_and_replay_does_not_call_model(setup):
+def test_mixed_event_is_correlated_without_content_and_replay_does_not_call_model_or_resend(setup):
     handler, ops, provider = setup
     records = []
     original = FeishuHandler.process
     with diagnostics(records.append):
         prepared = handler.prepare(payload())
         assert handler.process(*prepared) == "sent"
-        assert handler.handle(payload()) == "sent"
+        assert handler.handle(payload()) == "already_delivered"
     assert FeishuHandler.process is original
     assert provider.call_count == 1
     assert ops.download_image.call_count == 1
-    assert ops.reply.call_count == 2
+    assert ops.reply.call_count == 1
     assert len({row["event_token"] for row in records}) == 1
     assert records[0]["message_type"] == "post"
     assert records[0]["text_chars"] == len(QUESTION)

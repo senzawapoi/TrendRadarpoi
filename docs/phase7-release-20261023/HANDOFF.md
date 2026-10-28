@@ -1,29 +1,28 @@
 # Phase 7 Current Handoff
 
-Updated after PR 8 merge and local repair on 2026-10-24. Production remains `28e7283`.
-The later 19:41 English-title report is now diagnosed as translation provider
-server failure followed by cooldown and the configured original-title fallback.
-The direct-quote/tool repair is implemented locally; its live acceptance remains open.
-See [the current repair record](../handoff/PR8-REPAIR-20261024.md).
-Source-health, installer and repository-maintenance commits in PR 8 are not deployed.
-Historical checks are preserved
-in the [candidate record](README.md) and [translation follow-up](TRANSLATION-FOLLOWUP.md).
+Updated 2026-10-28 (Asia/Shanghai). **Production is in protected maintenance.**
+Application repair `a20f2d8` is committed, pushed and merged via PR 9; the installed
+`p7-20261027-a20f2d8` candidate failed readiness. It is not a successful deployment.
+The previous successful release was `p7-20261023-28e7283`.
+See [the current deployment checkpoint](../handoff/DEPLOY-A20F2D8-20261028.md) for
+transaction identity, evidence, preserved records and recovery progress.
 
 ## Workspace And Release
 
-- Active repair worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`,
-  branch `fix/pr8-handoff-repairs-20261024`, based on `b700fc6` (same content tree
-  as merged PR 8 commit `a0dd38e`). Changes are local and uncommitted.
-- The original Phase 7 handoff worktree and old dirty workspace remain retained.
-- Latest recorded deployed release: `p7-20261023-28e7283`, from
-  [GitHub run 39921046202](https://github.com/senzawapoi/TrendRadarpoi/actions/runs/39921046202).
-  The artifact validation and deploy jobs succeeded, and the owner confirmed Chinese
-  Story titles and links arrived in the TrendRadar Daily UAT group.
-- PR #8 is MERGED as `a0dd38e`. PR #7 remains OPEN on
-  `fix/phase7-lark-routing-20261023` at `a0dd38e`, base `master`.
-  Merged-tree CI run `40039626037` passed all four jobs; it does not validate these
-  new uncommitted repairs. Reassess the stack before the next push/PR.
-- Read-only VPS diagnosis was performed; no production code or service was changed.
+- Recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`,
+  branch `fix/deploy-recovery-20261028`, based on `241cefb`.
+- The original repair, handoff and dirty workspaces remain retained.
+- PR 9 merged as `241cefb`; its tree equals `a20f2d8`. PR 7 remains OPEN on the
+  Phase 7 branch, with base master. Do not merge it automatically.
+- Original application CI run `40089562197` passed all four jobs. Deployment run
+  `40493521142` validated the exact clean archive, then failed readiness on VPS.
+- The active failed transaction crossed the business boundary. Guard and archive
+  are retained; roles/timers are stopped. Automatic database rollback is forbidden.
+- Recovery controller changes are published in PR 10. Permission fix `19f4f14` passed
+  1504 Linux checks / 6 skips and all four CI jobs. Sequencing fix `5a46399` passed
+  160 focused checks, 1517 canonical tests / 6 skips and four CI jobs. Read the latest local
+  `output/DEPLOY-CONTINUATION-20261028.md` before operating production. Historical
+  runtime details below are snapshots, not a live-status API.
 
 ## Translation Defect And Deployed Repair
 
@@ -87,17 +86,15 @@ logic were unchanged. See [follow-up evidence](TRANSLATION-FOLLOWUP.md).
 
 ## Resume Order
 
-1. Continue from `fix/pr8-handoff-repairs-20261024` and the current repair record;
-   source-health, installer and local quote/tool changes are not deployed in `28e7283`.
-2. Obtain scoped commit/push instructions for the local repair. Before any future
-   release, resolve the PR #7 base and obtain separate deployment authorization.
-   Never treat a dirty-tree test record as clean release evidence.
-3. Before rollout, bootstrap/verify the fixed root-owned installer, then perform
-   exact-build live quote/tool and new-title acceptance. Never rewrite a saved batch
-   or resend a delivered Story to repair language.
-4. Keep source stability, Podcast/Blog recovery, resource observation and at least
-   48 healthy hours as separate open work. Backups are local-only; offsite
-   backup/recovery remains incomplete. Preserve the accepted B6 skip.
+1. Resume from the recovery branch and current deployment checkpoint. Re-read the
+   failed transaction and unit states before any production action.
+2. Complete recovery tests, bind the tool to a commit, and use the fixed trusted
+   entry. Do not forge controller identity or remove pending records.
+3. Require exact-release readiness/finalization, live heartbeat checks and unchanged
+   historical-message fingerprints. Then perform real quote/tool and new-title UAT.
+4. Keep source stability, long collector lock starvation, Podcast/Blog recovery,
+   resource observation, 48 healthy hours and offsite backup/recovery separately open.
+   Preserve the accepted B6 skip.
 
 Earlier records include VPS text/image replies, Story receipt, reconnect and local
 restore checks. Those observations do not close the translated-title gate or prove

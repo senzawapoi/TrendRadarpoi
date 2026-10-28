@@ -1,0 +1,139 @@
+{
+  "base_commit": "241cefbcba7a11bd8032833172eb2b7bc5fc94d8",
+  "application_commit": "a20f2d8191c66fce858049dd1462406a9f7797fc",
+  "compared_paths": 615,
+  "source_mismatches": [],
+  "files": {
+    "scripts/deploy/recover_release.py": "6974b177e0cf1b14bee0c09524b72131908126d9052adf426aac67f221fd77cf",
+    "scripts/deploy/trendradar-recover-release": "3e1ed41035cf30cb8b50a40f6ba67a7b39998fe4e3538a13a9e6d907f89b0e39",
+    "tests/deployment/test_release_recovery.py": "0b4585c94309cb3cc9d3e66eeced5cf2642e5e8e1b2891d40e9da2bc5c93054e",
+    ".github/workflows/phase7-ci.yml": "fe24e7feb60b5bbe5e2e379a2957becd5e0ae94e698930c027b5770b9ef1d3fb"
+  },
+  "tests": {
+    "recovery-final": {
+      "junit": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "59",
+        "time": "19.734",
+        "timestamp": "2026-10-28T01:16:11.735400+08:00",
+        "hostname": "Gawrt"
+      },
+      "junit_sha256": "5831de196d798a46957849a6ed5caa9f13db19ca8cf0d23a2f690c950c2774af",
+      "log_sha256": "e7dbb110f02d8aa85f0f2acbc02a136ff13f0d83c891357772cb1d15f69842fd"
+    },
+    "full": {
+      "junit": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "6",
+        "tests": "1509",
+        "time": "578.183",
+        "timestamp": "2026-10-28T01:17:46.198482+08:00",
+        "hostname": "Gawrt"
+      },
+      "junit_sha256": "711b040151755ebead2a2210771d19c90ab3085f7c1f811b6ee304c9e9563a39",
+      "log_sha256": "480ca3bf4a11bf037fffb3a983d6c65d5aa4107d4af38df37d349f0abac8402c"
+    }
+  },
+  "scope": "Historical validation is retained below. Code validation and production acceptance are separate; latest operational continuation is kept locally.",
+  "permission_followup": {
+    "base_commit": "56c3f7bcfd0139057b7f603f119eaad317adac52",
+    "files": {
+      "scripts/deploy/recover_release.py": "51c0493afa1cad87c3275fc1793b9e778a934d86c7d0023ad965aad36e8dd460",
+      "tests/deployment/test_release_recovery.py": "044ba26562e95ed4048fb607fbdad991f04b087c3a3060eae204f7072bcaba1e"
+    },
+    "focused": {
+      "passed": 147,
+      "seconds": 21.92,
+      "junit_sha256": "481ab381a537f5b5d8517065e006dbc02d0a1dae03b2c87529dc5e10e3cf22fc"
+    },
+    "full_status": "passed",
+    "source": "/var/lib/trendradar-recovery-permissions-20261028/source",
+    "root_guard_reproduction": "red before administrative caller fix; green after fix; root still rejects unauthorized deployment fence",
+    "tool_commit": "19f4f142c161c97ec03137dc058b5d80703fdb58",
+    "full": {
+      "passed": 1504,
+      "skipped": 6,
+      "junit_sha256": "14081ba8911f594882c9227d6d942ff33841a990c5da54386bf42681782c0659",
+      "log_sha256": "b03a14f53fe300119fcfc1ee55f759de26ce8c99df04a9a6c7a56c142e062030",
+      "seconds": 716.55
+    },
+    "ci_run_id": 40647555406,
+    "ci_conclusion": "success"
+  },
+  "sequencing_followup": {
+    "tool_commit": "5a4639929a9b7d851067a0a057d594020bfc2435",
+    "tool_tree": "fe5e0bb570ba3fe6f70272426bf4e5b528885671",
+    "files": {
+      "scripts/deploy/recover_release.py": "a15b41045f8b2a777bb3f6027e626ccc80743b5cf5f77262dfac400f4799e692",
+      "tests/deployment/test_release_recovery.py": "9def0afc3d95a9e8ccfb9d92462d05832cb418609fbf43c7e6687d5c6788d7b5",
+      "docs/plans/2026-10-28-controlled-deployment-recovery.md": "7bec62d9e2178757a2c3aa1374e36ecc89b4ed0c42ea7e2b3e2265fab1d01db7"
+    },
+    "focused": {
+      "passed": 160,
+      "seconds": 22.25,
+      "junit_sha256": "c59775634131fd0e2326fae3d7c673d0b9468ff6be9640552fb5b27273cfc32c"
+    },
+    "full_status": "canonical_tests_passed",
+    "ci_run_id": 40706577978,
+    "ci_conclusion": "success",
+    "scope": "Source refusal before business roles; bounded durable delivery drain before timer restoration. No permanent cadence or readiness relaxation.",
+    "canonical_tests": {
+      "passed": 1517,
+      "skipped": 6,
+      "failed": 0
+    },
+    "phasegate": {
+      "passed": 51,
+      "failed": 0
+    },
+    "ci_jobs": [
+      {
+        "id": 122880223595,
+        "name": "privileged-linux (3.12)",
+        "conclusion": "success"
+      },
+      {
+        "id": 122880224190,
+        "name": "offline (3.10)",
+        "conclusion": "success"
+      },
+      {
+        "id": 122880224209,
+        "name": "privileged-linux (3.10)",
+        "conclusion": "success"
+      },
+      {
+        "id": 122880224324,
+        "name": "offline (3.12)",
+        "conclusion": "success"
+      }
+    ],
+    "broad_root_run": {
+      "passed": 1572,
+      "failed": 1,
+      "skipped": 6,
+      "seconds": 823.86,
+      "reason": "Legacy diagnostics expected duplicate resend; retained failing scene, then corrected test contract only.",
+      "junit_sha256": "59bd63badb7912515e41f0c02fd21376063bbea54214edf45ef1f9a66ba02b12",
+      "log_sha256": "e2a1120e3c81f4f11e4cee38bfcc54835723762416342d6d6143c606dff1659e"
+    },
+    "source_binding": {
+      "tracked_paths": 616,
+      "against_commit": "5a4639929a9b7d851067a0a057d594020bfc2435",
+      "only_followup_difference": "test/test_phase5_diagnostics.py"
+    },
+    "diagnostics_followup": {
+      "passed": 5,
+      "seconds": 0.87,
+      "source_sha256": "e88d0627edc76389e0e7426166fd59534526b13fc787676047cee9727805c4d6",
+      "junit_sha256": "30e2c5d6a435eafc70b2f56fa0d9a8217747595a9ae0fd0c765e5afbd25b9c0d",
+      "log_sha256": "320eb1a84c1b10ee7cab107f165cf1af7ff5ddf056494ed03c0759885f58af00"
+    },
+    "initial_red_log_sha256": "8925820cb3603b0c2d7ad68f20f7837295eb452fe996dbbc38dc57d4f30cd613"
+  }
+}

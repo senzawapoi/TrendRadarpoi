@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+exec /usr/bin/python3 /usr/local/libexec/trendradar/load_environment.py \
+  /etc/trendradar/common.env /usr/local/libexec/trendradar/recover_release.py "$@"
