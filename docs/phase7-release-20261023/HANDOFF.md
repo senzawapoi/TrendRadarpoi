@@ -18,8 +18,9 @@ transaction identity, evidence, preserved records and recovery progress.
   `40493521142` validated the exact clean archive, then failed readiness on VPS.
 - The active failed transaction crossed the business boundary. Guard and archive
   are retained; roles/timers are stopped. Automatic database rollback is forbidden.
-- New recovery tooling is in local development. Commit/deployment authorization
-  already exists; successful recovery and live acceptance still need evidence.
+- Recovery tool 56c3f7b passed CI and was installed; its first run failed at guard clear.
+  A real root/service UID regression now covers the permission repair; revalidation is running.
+  Authorization remains active. Recovery and live acceptance still need evidence.
 
 ## Translation Defect And Deployed Repair
 

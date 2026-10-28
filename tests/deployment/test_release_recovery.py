@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import sys
 import tarfile
 import time
@@ -353,3 +354,52 @@ def test_atomic_journal_preserves_old_marker_when_replace_fails(scene, monkeypat
         journal.begin()
     assert journal.active.read_bytes() == original
     assert not list(config.control.glob(".deploy-in-progress.json.*"))
+
+
+@pytest.mark.skipif(os.geteuid() != 0, reason="requires actual root/service UID permissions")
+def test_recovery_clears_installer_root_owned_guard_through_authorized_admin_api(scene):
+    import pwd
+
+    config, failed = scene
+    nobody = pwd.getpwnam("nobody")
+    config = replace(config, service_user="nobody", service_gid=nobody.pw_gid)
+    for parent in (config.control.parent, *list(config.control.parent.parents)[:2]):
+        parent.chmod(0o755)
+    os.chown(config.control, nobody.pw_uid, nobody.pw_gid)
+    config.control.chmod(0o750)
+    guard = config.control / "restore-guard.json"
+    guard.chmod(0o600)  # install_release.sh's failed-readiness guard is created by root.
+    assert guard.stat().st_uid == 0
+    executable = config.target / "venv/bin/python"
+    executable.parent.mkdir(parents=True)
+    # Only package import selection is shimmed. UID, file permissions, the live
+    # controller fence and the application's administrative clear API are real.
+    root = Path(__file__).resolve().parents[2]
+    executable.write_text(
+        f"#!{sys.executable}\nimport sys\nsys.path.insert(0, {str(root)!r})\n"
+        "from trendradar.ops.__main__ import main\nraise SystemExit(main(sys.argv[4:]))\n"
+    )
+    executable.chmod(0o755)
+    journal = recovery.Journal(config, failed)
+    journal.begin()
+    host = recovery.Host(config, journal)
+    host.environment["TRENDRADAR_CONTROL_DIR"] = str(config.control)
+    with pytest.raises(recovery.RecoveryError, match="status 2"):
+        host.clear_guard()  # Root still cannot bypass an unauthorized deployment fence.
+    assert guard.exists()
+    journal.update("resume")
+    journal.start_lease()
+    try:
+        probe = subprocess.run(
+            ["/usr/sbin/runuser", "-u", "nobody", "--", str(executable), "-I", "-m",
+             "trendradar.ops", "maintenance", "clear", "--database", str(config.database)],
+            env=host.environment, capture_output=True, text=True, timeout=30,
+        )
+        assert probe.returncode == 1
+        assert "PermissionError" in probe.stderr
+        assert guard.exists()
+        host.clear_guard()
+        assert not guard.exists()
+        assert journal.active.exists()  # The deployment fence still protects the recovery.
+    finally:
+        journal.stop_lease()

@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-stopped_at: a20f2d8 installed but readiness failed; production quiesced under maintenance; controlled recovery in development
+stopped_at: forward recovery failed at root-owned guard clear; production quiesced; permission fix under revalidation
 last_updated: "2026-10-28"
-last_activity: 2026-10-28 -- failed deployment preserved; roles quiesced; forward recovery controller and regressions in progress
+last_activity: 2026-10-28 -- recovery 56c3f7b passed CI but failed resume; real UID permission regression reproduced and fixed
 progress:
   total_phases: 9
   completed_phases: 7
@@ -30,7 +30,7 @@ not close source stability, 48-hour operation or offsite recovery.
 - Current VPS target: `p7-20261027-a20f2d8`, installed but **not activated successfully**. The last successful release was `p7-20261023-28e7283`.
 - Deployment run `40493521142`: exact artifact validation passed, deployment readiness failed. The failed transaction and restore guard remain intact; all managed roles/timers are stopped.
 - 428 completed batches, 6698 delivery registrations and 8 completed events match pre-deployment fingerprints; no database restore or frozen-message rewrite occurred.
-- Owner authorization for commit/deployment and continuation remains active. The recovery tool has passed 1503 full Linux tests (6 skips) and 59 focused checks; publication and live recovery are pending. See [current deployment checkpoint](../docs/handoff/DEPLOY-A20F2D8-20261028.md).
+- Owner authorization for commit/deployment and continuation remains active. Recovery tool 56c3f7b passed its local tests and all four CI jobs, then failed live guard clear. The permission repair passed 147 focused checks; full revalidation is running. See [current deployment checkpoint](../docs/handoff/DEPLOY-A20F2D8-20261028.md).
 
 ## Verification And Next Work
 

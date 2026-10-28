@@ -341,11 +341,14 @@ class Host:
             raise RecoveryError(f"recovery subprocess failed with status {process.returncode}")
         return stdout
 
-    def ops(self, *args: str, timeout: int = 60, check: bool = True) -> dict[str, Any]:
-        output = self.run([
-            "/usr/sbin/runuser", "-u", self.config.service_user, "--",
+    def ops(self, *args: str, timeout: int = 60, check: bool = True,
+            service: bool = True) -> dict[str, Any]:
+        command = [
             str(self.config.target / "venv/bin/python"), "-I", "-m", "trendradar.ops", *args,
-        ], timeout=timeout, check=check)
+        ]
+        if service:
+            command = ["/usr/sbin/runuser", "-u", self.config.service_user, "--", *command]
+        output = self.run(command, timeout=timeout, check=check)
         value = json.loads(output)
         if not isinstance(value, dict):
             raise RecoveryError("operations command returned invalid evidence")
@@ -378,7 +381,11 @@ class Host:
                         "--release-id", self.config.release_id, timeout=300)
 
     def clear_guard(self) -> None:
-        result = self.ops("maintenance", "clear", "--database", str(self.config.database))
+        # Failed readiness in the installer can leave a root-owned 0600 guard.
+        # Clear it through the existing guarded administrative API as the root
+        # controller; database and business operations still use the service UID.
+        result = self.ops("maintenance", "clear", "--database", str(self.config.database),
+                          service=False)
         if result.get("cleared") is not True:
             raise RecoveryError("maintenance guard was not explicitly cleared")
 

@@ -39,5 +39,20 @@
       "log_sha256": "480ca3bf4a11bf037fffb3a983d6c65d5aa4107d4af38df37d349f0abac8402c"
     }
   },
-  "scope": "Local Linux tests; production recovery is not yet executed. The final commit adds only evidence/doc updates after the verified source snapshot."
+  "scope": "Local Linux tests; production recovery is not yet executed. The final commit adds only evidence/doc updates after the verified source snapshot.",
+  "permission_followup": {
+    "base_commit": "56c3f7bcfd0139057b7f603f119eaad317adac52",
+    "files": {
+      "scripts/deploy/recover_release.py": "51c0493afa1cad87c3275fc1793b9e778a934d86c7d0023ad965aad36e8dd460",
+      "tests/deployment/test_release_recovery.py": "044ba26562e95ed4048fb607fbdad991f04b087c3a3060eae204f7072bcaba1e"
+    },
+    "focused": {
+      "passed": 147,
+      "seconds": 21.92,
+      "junit_sha256": "481ab381a537f5b5d8517065e006dbc02d0a1dae03b2c87529dc5e10e3cf22fc"
+    },
+    "full_status": "running",
+    "source": "/var/lib/trendradar-recovery-permissions-20261028/source",
+    "root_guard_reproduction": "red before administrative caller fix; green after fix; root still rejects unauthorized deployment fence"
+  }
 }
