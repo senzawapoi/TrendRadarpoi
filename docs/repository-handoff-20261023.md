@@ -6,8 +6,11 @@ This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.
 ## Current Git State
 
 - Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`,
-  branch `fix/deploy-recovery-20261028`, based on `241cefb`. The controller has passed 1503 full Linux tests (6 skips), with 59 focused checks;
-  the [deployment checkpoint](handoff/DEPLOY-A20F2D8-20261028.md) are local work.
+  branch `fix/deploy-recovery-20261028`, based on `241cefb`. Controller changes are
+  published in PR 10. Permission fix `19f4f14` passed 1504 Linux checks / 6 skips
+  and four CI jobs. Sequencing fix `5a46399` passed 160 focused checks,
+  1517 canonical tests / 6 skips and four CI jobs. Latest operational continuation is in local
+  `output/DEPLOY-CONTINUATION-20261028.md`.
 - Original repair worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-pr8-repair-20261024`,
   branch `fix/pr8-handoff-repairs-20261024`, clean application commit `a20f2d8`.
 - PR 9 merged into `fix/phase7-lark-routing-20261023` as `241cefb`; its content tree
@@ -60,8 +63,9 @@ must not be rewritten as if those failures did not occur.
 The quote/tool port is now implemented and validated locally. Open gates remain
 its exact-build live acceptance, translation provider stability and future receipt,
 source health/Podcast/Blog stability, at least 48 healthy hours, and offsite backup
-and restore. Read-only VPS verification is separate from local code validation;
-no production mutation was made. Preserve the accepted Phase 5 B6 skip.
+and restore. Historical read-only VPS verification is separate from subsequent deployment
+work and local code validation; consult the local continuation receipt for current
+operational evidence. Preserve the accepted Phase 5 B6 skip.
 
 ## Historical PR 8 Handoff Changes And Verification
 

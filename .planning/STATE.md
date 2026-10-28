@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-stopped_at: forward recovery failed at root-owned guard clear; production quiesced; permission fix under revalidation
+stopped_at: recovery controller validated; deployment prerequisites recorded in local output
 last_updated: "2026-10-28"
-last_activity: 2026-10-28 -- recovery 56c3f7b passed CI but failed resume; real UID permission regression reproduced and fixed
+last_activity: 2026-10-28 -- permission fix validated; source precheck and delivery drain published in PR 10
 progress:
   total_phases: 9
   completed_phases: 7
@@ -30,7 +30,7 @@ not close source stability, 48-hour operation or offsite recovery.
 - Current VPS target: `p7-20261027-a20f2d8`, installed but **not activated successfully**. The last successful release was `p7-20261023-28e7283`.
 - Deployment run `40493521142`: exact artifact validation passed, deployment readiness failed. The failed transaction and restore guard remain intact; all managed roles/timers are stopped.
 - 428 completed batches, 6698 delivery registrations and 8 completed events match pre-deployment fingerprints; no database restore or frozen-message rewrite occurred.
-- Owner authorization for commit/deployment and continuation remains active. Recovery tool 56c3f7b passed its local tests and all four CI jobs, then failed live guard clear. The permission repair passed 147 focused checks; full revalidation is running. See [current deployment checkpoint](../docs/handoff/DEPLOY-A20F2D8-20261028.md).
+- Owner authorization for commit/deployment and continuation remains active. Recovery tool code is published in PR 10. Permission fix `19f4f14` passed 1504 Linux checks / 6 skips and four CI jobs. Sequencing fix `5a46399` passed 160 focused checks, 1517 canonical tests / 6 skips, and four CI jobs. Operational continuation is recorded locally in `output/DEPLOY-CONTINUATION-20261028.md`; code checks do not establish live acceptance.
 
 ## Verification And Next Work
 
@@ -53,7 +53,7 @@ passed 51 cases. Historical counts above belong to
 the prior translation repair; use [current evidence](../docs/handoff-validation-20261024.json)
 for this handoff candidate. No new native Windows tests are required.
 
-1. Complete the controlled forward-recovery tool and Linux regressions. Preserve the original failed transaction; never fake its controller lease or delete the fence.
+1. Use the validated sequencing controller after completing the deployment prerequisites in the local continuation receipt. Preserve the original failed transaction; never fake its controller lease or delete the fence.
 2. Publish the exact tested tool through a fixed root-owned entry. Require strict readiness/finalization and immutable-message fingerprint checks before recording recovery success.
 3. Resume real quote/tool UAT, source-health/Podcast/Blog work and 48 healthy hours after service recovery. Long main-collector lock starvation and offsite recovery remain open.
 
