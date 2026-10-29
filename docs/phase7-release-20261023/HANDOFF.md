@@ -1,23 +1,26 @@
 # Phase 7 Current Handoff
 
-Updated 2026-10-28 (Asia/Shanghai). **Production is in protected maintenance.**
-Application repair `a20f2d8` is committed, pushed and merged via PR 9; the installed
-`p7-20261027-a20f2d8` candidate failed readiness. It is not a successful deployment.
-The previous successful release was `p7-20261023-28e7283`.
-See [the current deployment checkpoint](../handoff/DEPLOY-A20F2D8-20261028.md) for
-transaction identity, evidence, preserved records and recovery progress.
+Owner scope amendment (2026-10-29): temporarily suspend Reddit and X/Nitter; retain their definitions and history. Remove only their required-source entries in the external production configuration, keep all other readiness requirements, and reintroduce both sources only after access is verified. See [source suspension plan](../plans/2026-10-29-temporary-source-suspension.md). This decision permits controlled recovery; it does not establish recovery success.
+
+Updated 2026-10-29 (Asia/Shanghai). Application repair `a20f2d8` is committed,
+pushed and merged via PR 9. Its initial deployment readiness failure is retained
+in the [historical deployment checkpoint](../handoff/DEPLOY-A20F2D8-20261028.md).
+Current operational evidence and active work are in local
+`output/DEPLOY-CONTINUATION-20261028.md`; re-read that file and live units before
+acting. Historical maintenance snapshots must not be treated as current state.
+Full Phase 7 acceptance remains open.
 
 ## Workspace And Release
 
 - Recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`,
-  branch `fix/deploy-recovery-20261028`, based on `241cefb`.
+  branch `fix/phase7-source-scope-20261029`, based on PR 10 merge `31ce870`.
 - The original repair, handoff and dirty workspaces remain retained.
 - PR 9 merged as `241cefb`; its tree equals `a20f2d8`. PR 7 remains OPEN on the
   Phase 7 branch, with base master. Do not merge it automatically.
 - Original application CI run `40089562197` passed all four jobs. Deployment run
   `40493521142` validated the exact clean archive, then failed readiness on VPS.
-- The active failed transaction crossed the business boundary. Guard and archive
-  are retained; roles/timers are stopped. Automatic database rollback is forbidden.
+- The original failed transaction crossed the business boundary; retain its archive
+  and follow current operational evidence. Automatic database rollback is forbidden.
 - Recovery controller changes are published in PR 10. Permission fix `19f4f14` passed
   1504 Linux checks / 6 skips and all four CI jobs. Sequencing fix `5a46399` passed
   160 focused checks, 1517 canonical tests / 6 skips and four CI jobs. Read the latest local
@@ -86,10 +89,10 @@ logic were unchanged. See [follow-up evidence](TRANSLATION-FOLLOWUP.md).
 
 ## Resume Order
 
-1. Resume from the recovery branch and current deployment checkpoint. Re-read the
-   failed transaction and unit states before any production action.
-2. Complete recovery tests, bind the tool to a commit, and use the fixed trusted
-   entry. Do not forge controller identity or remove pending records.
+1. Resume from this branch and the local operational continuation. Re-read active
+   work, transaction archives and unit states before any production action.
+2. Continue the recorded operation, not an old recovery command. Use fixed trusted
+   entries; never forge controller identity or remove pending records.
 3. Require exact-release readiness/finalization, live heartbeat checks and unchanged
    historical-message fingerprints. Then perform real quote/tool and new-title UAT.
 4. Keep source stability, long collector lock starvation, Podcast/Blog recovery,
@@ -126,3 +129,57 @@ protected runtime/evidence paths. Automatic approval review rejected deletion
 with `blocked by policy`; no caches were removed or alternate deletion attempted.
 Documentation links and diff whitespace were checked. No application test rerun,
 provider call, live restart or deployment was needed for these documentation edits.
+
+## Source Scope Candidate Validation (2026-10-29)
+
+Configuration candidate `8a7ef3c` changes only the Reddit/X enabled booleans.
+Source/health checks: 114 passed. Git-blob-verified native Linux installer/input
+checks: 177 passed. CI run `40816038495`: four jobs passed. Native canonical
+regression: 1516 passed, 1 failed, 6 skipped; the all-writers systemd fixture hit
+SQLite `unable to open database file`. Its unchanged isolated rerun passed, but
+root cause remains unresolved and the original failure is retained. This is not
+a fully green local regression. PR 11 remains DRAFT / OPEN; do not auto-merge.
+See local `output/source-scope-validation-20261029.json` for exact evidence.
+
+## Fixture And Timer Override Repairs (2026-10-30)
+
+Branch `fix/phase7-quiesce-fixture-timer-20261030` from `5e0f28c`; plan Tasks 1-2
+only. Evidence: local `output/fixture-timer-20261030/`.
+
+- All-writers root cause: the synthetic Scheduler died at 15:56:11.150 with
+  `SQLITE_CANTOPEN` while the fixture's root `_probe` read the service database.
+  A root SQLite reader recreates missing WAL/SHM before chowning them; with 100 ms
+  writers the WAL is usually absent. Reproduced: 7 `SQLITE_CANTOPEN` and
+  5 `SQLITE_READONLY` writer failures in 60 s with a root prober, 0 with a uid-65534
+  prober; a root-owned `-wal` deterministically gives the exact message. Production
+  installer/recovery root database calls run only while units are stopped.
+  Test-only fix: root `_probe` reads through a uid-65534 helper. New regression
+  failed before and passed after; quiesce module 14 passed; all-writers 5/5 reruns.
+- Health and scheduler timers: an empty `OnUnitActiveSec=` reset also removes
+  `OnBootSec=`; with no activation base the timer stays `active (elapsed)`,
+  `NextElapseUSecMonotonic=infinity` (reproduced on systemd 255). Tracked drop-ins in
+  `deploy/systemd/overrides/` add `OnActiveSec=30s`; real-systemd tests cover first
+  start, stop/start, reload and unit unload/reload for both (6 passed). Installer
+  management of drop-ins was not added.
+- The new module was added to the privileged CI selection after the first native
+  full run failed `test_ci_acceptance_scope` (1 failed / 1520 passed / 6 skipped;
+  retained). Final native full run on the committed tree: 1524 passed, 6 skipped,
+  2 dependency warnings, 735.81 s. Changed-file Ruff and `git diff --check` passed.
+- VPS, 2026-10-29 23:50 CST, owner-authorized: replaced only
+  `/etc/systemd/system/trendradar-health.timer.d/50-every-5-min.conf`
+  (`47857651…` -> `f14b750a…`) under `deploy.lock`; backup and receipt in
+  `/var/lib/trendradar/control/health-timer-rearm-20261030/`. Effective triggers are
+  `OnActiveUSec=30s` + `OnUnitActiveUSec=5min`; the restarted timer fired at
+  23:51:09, then periodically at 23:56:10 and 00:01:10, each run successful and
+  healthy, with a next trigger armed. Application release unchanged.
+- Scheduler timer, owner-authorized, 2026-10-30 00:31 CST: the same reset-only shape
+  (`8371f28f…`) was replaced by the committed template (`7f6ffaf7…`, commit `16ac855`)
+  under `deploy.lock`; receipt in `/var/lib/trendradar/control/scheduler-timer-rearm-20261030/`.
+  The restarted timer fired at 00:31:40, then periodically at 00:36:41 and 00:41:41;
+  every tick succeeded, health stayed healthy with backlog 0.
+- Commits `0965048` (fixture) and `16ac855` (overrides) are pushed on
+  `fix/phase7-quiesce-fixture-timer-20261030`; the stacked PR against PR 11's branch
+  was not opened by the agent (tool permission denied), so CI has not run on it.
+- Still open: the 2026-10-29 evening closeout failed at `trusted_file()` on
+  `common.env.after-recovery` before any write; `common.env` still has the
+  temporary restart intent (`8aa17d00…`). It was not changed here.

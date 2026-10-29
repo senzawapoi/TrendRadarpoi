@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import signal
 import sqlite3
 import subprocess
@@ -77,6 +78,14 @@ def _states(sandbox: Path) -> dict[str, dict[str, str]]:
 
 def _probe(database: str | Path) -> dict[str, list[int]]:
     path = Path(database)
+    if os.geteuid() == 0:
+        # Root recreates missing WAL/SHM before chowning them; a writer opening in
+        # that window exits with SQLITE_CANTOPEN. Read as the owner, like the installer.
+        result = subprocess.run([sys.executable, "-B", str(SELF), "probe", str(path)],
+                                user=65534, group=65534, extra_groups=[], umask=0o077,
+                                env=SAFE_ENV, capture_output=True, text=True, timeout=30)
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)
     if not path.exists():
         return {}
     with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as connection:
@@ -264,6 +273,9 @@ def _writer(sandbox: Path, role: str) -> int:
 def _helper_main() -> int:
     action, directory, *args = sys.argv[1:]
     sandbox = Path(directory)
+    if action == "probe":
+        print(json.dumps(_probe(sandbox)))
+        return 0
     if action == "writer":
         return _writer(sandbox, args[0])
     if action == "start-check":
@@ -686,6 +698,53 @@ def test_snapshot_backed_rollback_keeps_real_writers_stopped_and_restores_active
     assert not (scope.sandbox / "control/restore-guard.json").exists()
     for unit in scope.config["managed"]:
         assert _properties(unit)["ActiveState"] == ("active" if unit in active else "inactive")
+
+
+def test_root_boundary_probe_reads_service_database_as_service_uid(monkeypatch):
+    # The retained all-writers failure: a root reader recreated WAL sidecars and
+    # chowned them only afterwards, so a writer opening in between exited 1.
+    sandbox = Path(tempfile.mkdtemp(prefix="p7-quiesce-probe-", dir="/var/lib"))
+    try:
+        sandbox.chmod(0o755)
+        runtime = sandbox / "runtime"
+        runtime.mkdir(mode=0o750)
+        os.chown(runtime, 65534, 65534)
+        database = runtime / "intelligence.db"
+        with closing(sqlite3.connect(database)) as connection, connection:
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("CREATE TABLE quiesce_probe "
+                               "(role TEXT PRIMARY KEY, starts INTEGER, writes INTEGER)")
+            connection.execute("INSERT INTO quiesce_probe VALUES ('scheduler',1,2)")
+        os.chown(database, 65534, 65534)
+        database.chmod(0o600)
+        sidecars = [Path(f"{database}-wal"), Path(f"{database}-shm")]
+        assert not any(path.exists() for path in sidecars)
+        with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as connection:
+            connection.execute("SELECT count(*) FROM quiesce_probe").fetchone()
+            assert all(path.exists() for path in sidecars)
+        for path in sidecars:
+            path.unlink()
+        os.close(os.open(sidecars[0], os.O_CREAT | os.O_RDWR, 0o600))
+        writer = subprocess.run(
+            [sys.executable, "-B", "-c",
+             "import sqlite3,sys\n"
+             "try:\n"
+             "    with sqlite3.connect(sys.argv[1], timeout=10) as connection:\n"
+             "        connection.execute('UPDATE quiesce_probe SET writes=writes+1')\n"
+             "except sqlite3.OperationalError as error:\n"
+             "    print(error)\n", str(database)],
+            user=65534, group=65534, extra_groups=[], env=SAFE_ENV,
+            capture_output=True, text=True, timeout=30)
+        assert writer.stdout.strip() == "unable to open database file", writer
+        sidecars[0].unlink()
+
+        def root_connect(*_args, **_kwargs):
+            raise AssertionError("fixture opened a service database as root")
+
+        monkeypatch.setattr(sqlite3, "connect", root_connect)
+        assert _probe(database) == {"scheduler": [1, 2]}
+    finally:
+        shutil.rmtree(sandbox)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,14 @@
 # TrendRadarpoi Repository Handoff
 
-Updated: 2026-10-28. Start here when ChatGPT Work or Codex resumes this repository.
+Owner scope amendment (2026-10-29): temporarily suspend Reddit and X/Nitter; retain their definitions and history. Remove only their required-source entries in the external production configuration, keep all other readiness requirements, and reintroduce both sources only after access is verified. See [source suspension plan](plans/2026-10-29-temporary-source-suspension.md). This decision permits controlled recovery; it does not establish recovery success.
+
+Updated: 2026-10-29. Start here when ChatGPT Work or Codex resumes this repository.
 This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.md).
 
 ## Current Git State
 
 - Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`,
-  branch `fix/deploy-recovery-20261028`, based on `241cefb`. Controller changes are
+  branch `fix/phase7-source-scope-20261029`, based on PR 10 merge `31ce870`. Controller changes are
   published in PR 10. Permission fix `19f4f14` passed 1504 Linux checks / 6 skips
   and four CI jobs. Sequencing fix `5a46399` passed 160 focused checks,
   1517 canonical tests / 6 skips and four CI jobs. Latest operational continuation is in local
@@ -17,8 +19,9 @@ This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.
   equals `a20f2d8`. PR 7 remains OPEN, base master. Do not automatically merge it.
 - Application CI `40089562197` passed four jobs. Exact clean artifact validation in
   deploy run `40493521142` passed; VPS deployment failed readiness after installation.
-- VPS current is `p7-20261027-a20f2d8`, under maintenance with roles/timers stopped.
-  The last successful version was `p7-20261023-28e7283`; do not describe it as live now.
+- Application candidate is `p7-20261027-a20f2d8`. Refresh operational status from
+  local `output/DEPLOY-CONTINUATION-20261028.md` and live units; the original
+  maintenance snapshot does not establish current service state.
 - User authorization for committing and deploying these repairs and continuing
   recovery is explicit. Preserve failed records and the business-boundary fence.
 - The primary handoff tree `TrendRadarpoi-phase7-fix-20261023`, original dirty tree,

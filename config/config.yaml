@@ -511,7 +511,8 @@ ai_frontier:
     # Reddit 公开 API（免 Key）
     # 覆盖：学术研究 / 开源模型 / 公司动态 / AI 应用
     reddit:
-      enabled: true
+      # Temporarily suspended by owner on 2026-10-29; restore required-source checks with access.
+      enabled: false
       subreddits:
         - "MachineLearning"    # 学术研究 & 论文讨论
         - "LocalLLaMA"         # 开源模型部署（Llama/Qwen/DeepSeek 等）
@@ -605,7 +606,8 @@ ai_frontier:
     # 涵盖：顶级 AI 实验室 / 创业公司 / 关键研究者 / 行业领袖 / follow-builders AI builders
     # 最佳实践：账号越多覆盖越全，但会增加抓取时间；按需注释掉不关心的账号
     x_nitter:
-      enabled: true
+      # Temporarily suspended by owner on 2026-10-29; restore required-source checks with access.
+      enabled: false
       accounts:
         # ===== 顶级 AI 实验室 & 公司官方账号（新模型/新产品发布第一手来源）=====
         - "openai"              # OpenAI
