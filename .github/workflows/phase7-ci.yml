@@ -125,6 +125,7 @@ jobs:
             tests/deployment/test_restore_recovery.py \
             tests/deployment/test_systemd_contract_linux.py \
             tests/deployment/test_systemd_quiesce_linux.py \
+            tests/deployment/test_timer_rearm_linux.py \
             tests/integrations/feishu/test_phase7_roles.py \
             -q -p no:cacheprovider --tb=short
       - name: Actual empty-venv artifact installation outside checkout
