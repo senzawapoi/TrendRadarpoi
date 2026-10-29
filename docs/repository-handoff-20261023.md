@@ -2,7 +2,7 @@
 
 Owner scope amendment (2026-10-29): temporarily suspend Reddit and X/Nitter; retain their definitions and history. Remove only their required-source entries in the external production configuration, keep all other readiness requirements, and reintroduce both sources only after access is verified. See [source suspension plan](plans/2026-10-29-temporary-source-suspension.md). This decision permits controlled recovery; it does not establish recovery success.
 
-Updated: 2026-10-28. Start here when ChatGPT Work or Codex resumes this repository.
+Updated: 2026-10-29. Start here when ChatGPT Work or Codex resumes this repository.
 This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.md).
 
 ## Current Git State
@@ -19,8 +19,9 @@ This document complements the [Phase 7 handoff](phase7-release-20261023/HANDOFF.
   equals `a20f2d8`. PR 7 remains OPEN, base master. Do not automatically merge it.
 - Application CI `40089562197` passed four jobs. Exact clean artifact validation in
   deploy run `40493521142` passed; VPS deployment failed readiness after installation.
-- VPS current is `p7-20261027-a20f2d8`, under maintenance with roles/timers stopped.
-  The last successful version was `p7-20261023-28e7283`; do not describe it as live now.
+- Application candidate is `p7-20261027-a20f2d8`. Refresh operational status from
+  local `output/DEPLOY-CONTINUATION-20261028.md` and live units; the original
+  maintenance snapshot does not establish current service state.
 - User authorization for committing and deploying these repairs and continuing
   recovery is explicit. Preserve failed records and the business-boundary fence.
 - The primary handoff tree `TrendRadarpoi-phase7-fix-20261023`, original dirty tree,

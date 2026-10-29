@@ -2,12 +2,13 @@
 
 Owner scope amendment (2026-10-29): temporarily suspend Reddit and X/Nitter; retain their definitions and history. Remove only their required-source entries in the external production configuration, keep all other readiness requirements, and reintroduce both sources only after access is verified. See [source suspension plan](../plans/2026-10-29-temporary-source-suspension.md). This decision permits controlled recovery; it does not establish recovery success.
 
-Updated 2026-10-28 (Asia/Shanghai). **Production is in protected maintenance.**
-Application repair `a20f2d8` is committed, pushed and merged via PR 9; the installed
-`p7-20261027-a20f2d8` candidate failed readiness. It is not a successful deployment.
-The previous successful release was `p7-20261023-28e7283`.
-See [the current deployment checkpoint](../handoff/DEPLOY-A20F2D8-20261028.md) for
-transaction identity, evidence, preserved records and recovery progress.
+Updated 2026-10-29 (Asia/Shanghai). Application repair `a20f2d8` is committed,
+pushed and merged via PR 9. Its initial deployment readiness failure is retained
+in the [historical deployment checkpoint](../handoff/DEPLOY-A20F2D8-20261028.md).
+Current operational evidence and active work are in local
+`output/DEPLOY-CONTINUATION-20261028.md`; re-read that file and live units before
+acting. Historical maintenance snapshots must not be treated as current state.
+Full Phase 7 acceptance remains open.
 
 ## Workspace And Release
 
@@ -18,8 +19,8 @@ transaction identity, evidence, preserved records and recovery progress.
   Phase 7 branch, with base master. Do not merge it automatically.
 - Original application CI run `40089562197` passed all four jobs. Deployment run
   `40493521142` validated the exact clean archive, then failed readiness on VPS.
-- The active failed transaction crossed the business boundary. Guard and archive
-  are retained; roles/timers are stopped. Automatic database rollback is forbidden.
+- The original failed transaction crossed the business boundary; retain its archive
+  and follow current operational evidence. Automatic database rollback is forbidden.
 - Recovery controller changes are published in PR 10. Permission fix `19f4f14` passed
   1504 Linux checks / 6 skips and all four CI jobs. Sequencing fix `5a46399` passed
   160 focused checks, 1517 canonical tests / 6 skips and four CI jobs. Read the latest local
@@ -88,10 +89,10 @@ logic were unchanged. See [follow-up evidence](TRANSLATION-FOLLOWUP.md).
 
 ## Resume Order
 
-1. Resume from the recovery branch and current deployment checkpoint. Re-read the
-   failed transaction and unit states before any production action.
-2. Complete recovery tests, bind the tool to a commit, and use the fixed trusted
-   entry. Do not forge controller identity or remove pending records.
+1. Resume from this branch and the local operational continuation. Re-read active
+   work, transaction archives and unit states before any production action.
+2. Continue the recorded operation, not an old recovery command. Use fixed trusted
+   entries; never forge controller identity or remove pending records.
 3. Require exact-release readiness/finalization, live heartbeat checks and unchanged
    historical-message fingerprints. Then perform real quote/tool and new-title UAT.
 4. Keep source stability, long collector lock starvation, Podcast/Blog recovery,
@@ -128,3 +129,14 @@ protected runtime/evidence paths. Automatic approval review rejected deletion
 with `blocked by policy`; no caches were removed or alternate deletion attempted.
 Documentation links and diff whitespace were checked. No application test rerun,
 provider call, live restart or deployment was needed for these documentation edits.
+
+## Source Scope Candidate Validation (2026-10-29)
+
+Configuration candidate `8a7ef3c` changes only the Reddit/X enabled booleans.
+Source/health checks: 114 passed. Git-blob-verified native Linux installer/input
+checks: 177 passed. CI run `40816038495`: four jobs passed. Native canonical
+regression: 1516 passed, 1 failed, 6 skipped; the all-writers systemd fixture hit
+SQLite `unable to open database file`. Its unchanged isolated rerun passed, but
+root cause remains unresolved and the original failure is retained. This is not
+a fully green local regression. PR 11 remains DRAFT / OPEN; do not auto-merge.
+See local `output/source-scope-validation-20261029.json` for exact evidence.

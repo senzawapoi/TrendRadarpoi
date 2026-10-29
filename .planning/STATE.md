@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-stopped_at: recovery controller validated; deployment prerequisites recorded in local output
+stopped_at: source scope committed; current operational continuation and remaining gates recorded locally
 last_updated: "2026-10-29"
-last_activity: 2026-10-29 -- owner authorized temporary Reddit/X suspension; controlled recovery remains pending
+last_activity: 2026-10-29 -- source suspension validation recorded; refresh live state from local continuation
 progress:
   total_phases: 9
   completed_phases: 7
@@ -29,9 +29,8 @@ not close source stability, 48-hour operation or offsite recovery.
 
 - Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`, branch `fix/phase7-source-scope-20261029`, based on PR 10 merge `31ce870`.
 - Application repair `a20f2d8` is committed and merged by PR 9 into the Phase 7 branch as `241cefb`; PR 7 remains open.
-- Current VPS target: `p7-20261027-a20f2d8`, installed but **not activated successfully**. The last successful release was `p7-20261023-28e7283`.
-- Deployment run `40493521142`: exact artifact validation passed, deployment readiness failed. The failed transaction and restore guard remain intact; all managed roles/timers are stopped.
-- 428 completed batches, 6698 delivery registrations and 8 completed events match pre-deployment fingerprints; no database restore or frozen-message rewrite occurred.
+- Application candidate: `p7-20261027-a20f2d8`. The initial deployment run `40493521142` validated the artifact and failed readiness; that failure remains historical evidence.
+- Read local `output/DEPLOY-CONTINUATION-20261028.md` and recheck live units before operating. Earlier maintenance/role-state snapshots are not current-state assertions. Preserve failed transaction archives and immutable-message evidence.
 - Owner authorization for commit/deployment and continuation remains active. Recovery tool code is published in PR 10. Permission fix `19f4f14` passed 1504 Linux checks / 6 skips and four CI jobs. Sequencing fix `5a46399` passed 160 focused checks, 1517 canonical tests / 6 skips, and four CI jobs. Operational continuation is recorded locally in `output/DEPLOY-CONTINUATION-20261028.md`; code checks do not establish live acceptance.
 
 ## Verification And Next Work
@@ -55,8 +54,8 @@ passed 51 cases. Historical counts above belong to
 the prior translation repair; use [current evidence](../docs/handoff-validation-20261024.json)
 for this handoff candidate. No new native Windows tests are required.
 
-1. Use the validated sequencing controller after completing the deployment prerequisites in the local continuation receipt. Preserve the original failed transaction; never fake its controller lease or delete the fence.
-2. Publish the exact tested tool through a fixed root-owned entry. Require strict readiness/finalization and immutable-message fingerprint checks before recording recovery success.
+1. Resume the exact active operation recorded in the local continuation receipt; do not launch another recovery from a historical command. Preserve original failures and never fake controller leases or remove a fence.
+2. Verify current source freshness, timer deadlines, role identity, strict readiness and immutable-message fingerprints. A healthy recovery receipt does not establish continuing health.
 3. Resume real quote/tool UAT, source-health/Podcast/Blog work and 48 healthy hours after service recovery. Long main-collector lock starvation and offsite recovery remain open.
 
 ## Durable Decisions
