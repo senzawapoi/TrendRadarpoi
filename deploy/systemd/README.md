@@ -10,6 +10,14 @@ existing schedules. Keep only one production scheduler for each collection
 and notification scope. Validate syntax with `systemd-analyze verify` on a
 Linux host, then run the role `--check` commands before enabling services.
 
+`overrides/` holds project-owned drop-ins; copy each to the matching
+`/etc/systemd/system/<unit>.d/` path, run `systemctl daemon-reload`, restart the
+timer, and confirm `systemctl show <timer> --property=TimersMonotonic` lists the
+expected triggers with a finite `NextElapseUSecMonotonic`. An empty
+`OnUnitActiveSec=` resets every base timer expression, including `OnBootSec=`;
+without `OnActiveSec=` the timer stays `active (elapsed)` with no next trigger
+after a boot or fresh unit load. Review any other local drop-in for that pattern.
+
 The Bot and Worker share the same explicit `INTELLIGENCE_DB_PATH`. All service
 units join `trendradar.slice`; review its initial resource limits against the
 target VPS before enabling them. Bot owns the
