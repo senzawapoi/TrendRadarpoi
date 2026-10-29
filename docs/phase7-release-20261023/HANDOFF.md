@@ -140,3 +140,46 @@ SQLite `unable to open database file`. Its unchanged isolated rerun passed, but
 root cause remains unresolved and the original failure is retained. This is not
 a fully green local regression. PR 11 remains DRAFT / OPEN; do not auto-merge.
 See local `output/source-scope-validation-20261029.json` for exact evidence.
+
+## Fixture And Timer Override Repairs (2026-10-30)
+
+Branch `fix/phase7-quiesce-fixture-timer-20261030` from `5e0f28c`; plan Tasks 1-2
+only. Evidence: local `output/fixture-timer-20261030/`.
+
+- All-writers root cause: the synthetic Scheduler died at 15:56:11.150 with
+  `SQLITE_CANTOPEN` while the fixture's root `_probe` read the service database.
+  A root SQLite reader recreates missing WAL/SHM before chowning them; with 100 ms
+  writers the WAL is usually absent. Reproduced: 7 `SQLITE_CANTOPEN` and
+  5 `SQLITE_READONLY` writer failures in 60 s with a root prober, 0 with a uid-65534
+  prober; a root-owned `-wal` deterministically gives the exact message. Production
+  installer/recovery root database calls run only while units are stopped.
+  Test-only fix: root `_probe` reads through a uid-65534 helper. New regression
+  failed before and passed after; quiesce module 14 passed; all-writers 5/5 reruns.
+- Health and scheduler timers: an empty `OnUnitActiveSec=` reset also removes
+  `OnBootSec=`; with no activation base the timer stays `active (elapsed)`,
+  `NextElapseUSecMonotonic=infinity` (reproduced on systemd 255). Tracked drop-ins in
+  `deploy/systemd/overrides/` add `OnActiveSec=30s`; real-systemd tests cover first
+  start, stop/start, reload and unit unload/reload for both (6 passed). Installer
+  management of drop-ins was not added.
+- The new module was added to the privileged CI selection after the first native
+  full run failed `test_ci_acceptance_scope` (1 failed / 1520 passed / 6 skipped;
+  retained). Final native full run on the committed tree: 1524 passed, 6 skipped,
+  2 dependency warnings, 735.81 s. Changed-file Ruff and `git diff --check` passed.
+- VPS, 2026-10-29 23:50 CST, owner-authorized: replaced only
+  `/etc/systemd/system/trendradar-health.timer.d/50-every-5-min.conf`
+  (`47857651…` -> `f14b750a…`) under `deploy.lock`; backup and receipt in
+  `/var/lib/trendradar/control/health-timer-rearm-20261030/`. Effective triggers are
+  `OnActiveUSec=30s` + `OnUnitActiveUSec=5min`; the restarted timer fired at
+  23:51:09, then periodically at 23:56:10 and 00:01:10, each run successful and
+  healthy, with a next trigger armed. Application release unchanged.
+- Scheduler timer, owner-authorized, 2026-10-30 00:31 CST: the same reset-only shape
+  (`8371f28f…`) was replaced by the committed template (`7f6ffaf7…`, commit `16ac855`)
+  under `deploy.lock`; receipt in `/var/lib/trendradar/control/scheduler-timer-rearm-20261030/`.
+  The restarted timer fired at 00:31:40, then periodically at 00:36:41 and 00:41:41;
+  every tick succeeded, health stayed healthy with backlog 0.
+- Commits `0965048` (fixture) and `16ac855` (overrides) are pushed on
+  `fix/phase7-quiesce-fixture-timer-20261030`; the stacked PR against PR 11's branch
+  was not opened by the agent (tool permission denied), so CI has not run on it.
+- Still open: the 2026-10-29 evening closeout failed at `trusted_file()` on
+  `common.env.after-recovery` before any write; `common.env` still has the
+  temporary restart intent (`8aa17d00…`). It was not changed here.
