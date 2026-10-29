@@ -43,7 +43,7 @@ def parse_environment(path: Path) -> dict[str, str]:
             if any(char in value for char in ("'", '"', "\\")):
                 raise ValueError(f"unsupported EnvironmentFile escaping at line {number}")
         if key not in PATH_KEYS and not key.startswith((
-            "INTELLIGENCE_", "AI_FRONTIER_", "TRENDRADAR_", "LARK_",
+            "INTELLIGENCE_", "AI_FRONTIER_", "TRENDRADAR_", "LARK_", "GEMINI_",
         )):
             raise ValueError(f"EnvironmentFile key is not allowed: {key}")
         values[key] = value

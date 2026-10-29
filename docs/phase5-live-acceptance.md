@@ -1,6 +1,6 @@
 # Phase 5 真实验收与调试流程
 
-状态：真实验收尚未整体通过；现场记录截至 2026-10-11，运行契约维护至 2026-10-14。
+范围：Windows Phase 5 验收流程，现场记录截至 2026-10-11；以下用例不作为当前 VPS 状态。后续部署、翻译修复和剩余验收见[当前交接](phase7-release-20261023/HANDOFF.md)。示例按当前 schema 与模型选择规则校准，历史现场数据不改写。
 后续持久化恢复修复见 [Phase 1-6 修复审计](phase1-6-fix-audit.md)；文档整理不补造现场证据。
 实际结果以 [05-LIVE-UAT.md](../.planning/phases/05-feishu-assistant/05-LIVE-UAT.md) 为准；本文是操作手册，不是全部用例已通过的证明。
 
@@ -117,7 +117,7 @@ with IntelligenceStorage(path) as storage:
 '@ | python -
 ```
 
-当前预期 `schema 6`、`content_items 2 stories 2`。两个 `example.invalid` 链接刻意不可访问，验收只核对引用与库中证据一致，不把它们当真实新闻。当天完成本轮测试；跨日验收日报时重新准备一个独立测试目录，避免数据时间窗口干扰。旧 schema 5 取证保留为历史，不覆盖原库来更新数字。
+新建测试库预期 `schema 7`、`content_items 2 stories 2`。两个 `example.invalid` 链接刻意不可访问，验收只核对引用与库中证据一致，不把它们当真实新闻。当天完成本轮测试；跨日验收日报时重新准备一个独立测试目录，避免数据时间窗口干扰。旧 schema 5/6 取证保留为历史，不覆盖原库来更新数字。
 
 确认没有指向 `output/intelligence.db` 后才进入真实联调。
 
@@ -145,6 +145,7 @@ $allowedOpenId = Read-Host 'Test user open_id'
 $env:LARK_IDENTITY_FIELDS = @{open_id = @($allowedOpenId)} | ConvertTo-Json -Compress
 $env:GEMINI_MODEL = Read-Host 'Account-verified Gemini model ID supporting images and tools'
 if ([string]::IsNullOrWhiteSpace($env:GEMINI_MODEL)) { throw 'Explicit Gemini model ID required' }
+$env:GEMINI_MODELS = $env:GEMINI_MODEL
 $env:LARK_ENABLED = 'true'
 $env:GEMINI_ENABLED = 'true'
 $env:LARK_ALLOWED_CHAT_TYPES = 'p2p'
@@ -154,7 +155,7 @@ python -m trendradar.integrations.lark --config config/config.yaml --check
 
 必须看到 `Lark configuration is ready; no network or storage was accessed.`。只看退出码 0 不够，关闭路径也返回 0。此检查不验证密钥、SDK 在线行为、模型可用性、租户权限或 SQLite 是否可写。
 
-默认模型配置是 `gemini-2.0-flash`，不能据此假设当前账号可调用。显式填写实际确认支持文本、图片和工具的模型 ID。默认单请求超时 30 秒、最多尝试 3 次，另有退避、排队、工具轮次与消息发送；不要把 30 秒当整轮问答的总时限。
+默认推理顺序为 `gemini-3.8-flash`、`gemini-3.5-flash-lite`、`gemini-3.1-flash-lite`，不能据此假设账号均可调用。该单模型对照示例同时设置优先级更高的 `GEMINI_MODELS`；正式轮询配置见[模型说明](../README.md#模型与翻译)。模型超时、工具轮次、排队和发送共同影响整轮耗时，不能用一次请求超时推断整轮时限。
 
 ```powershell
 python -m trendradar.integrations.lark --config config/config.yaml
@@ -305,6 +306,7 @@ $windowStart = $shanghai.AddMinutes(2)
 $windowEnd = $shanghai.AddMinutes(12)
 if ($windowEnd.Date -ne $shanghai.Date) { throw 'Choose a test window within one Shanghai day' }
 $env:LARK_DELIVERY_TARGET = Read-Host 'Dedicated test chat_id'
+$env:LARK_DELIVERY_MODE = 'daily'
 $env:LARK_DELIVERY_TIME = $windowStart.ToString('HH:mm')
 $env:LARK_DELIVERY_END = $windowEnd.ToString('HH:mm')
 $env:LARK_DELIVERY_ENABLED = 'true'

@@ -196,6 +196,39 @@ class ToolCallSummary:
         }
 
 
+@dataclass(frozen=True, slots=True, repr=False)
+class QuotedMessageContext:
+    """Bounded untrusted material, separate from instructions and local citations."""
+
+    status: str
+    text: str = ""
+    message_type: str = ""
+    truncated: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.status, str) or self.status not in {
+            "available", "unavailable", "permission_denied", "not_found", "timeout",
+            "invalid_response", "unsupported", "cross_chat", "mismatched_message",
+            "too_large", "input_limit",
+        }:
+            raise ValueError("invalid quoted message status")
+        text = _text(self.text, "quoted text", maximum=4000, required=False)
+        if self.status != "available" and text:
+            raise ValueError("unavailable quoted message cannot contain text")
+        if self.status == "available" and not text:
+            raise ValueError("available quoted message must contain text")
+        if not isinstance(self.truncated, bool):
+            raise ValueError("invalid quoted message truncation flag")
+        object.__setattr__(self, "text", text)
+        object.__setattr__(self, "message_type", _text(
+            self.message_type, "quoted message type", maximum=32, required=False,
+        ))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"status": self.status, "text": self.text,
+                "message_type": self.message_type, "truncated": self.truncated}
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class AssistantRequest:
     """Validated user input accepted by the core Assistant."""
@@ -206,6 +239,7 @@ class AssistantRequest:
     session_id: str | None
     requested_at: datetime
     images: tuple[ImagePart, ...]
+    quoted_context: QuotedMessageContext | None
 
     def __init__(
         self,
@@ -217,6 +251,7 @@ class AssistantRequest:
         *,
         now: datetime | None = None,
         images: tuple[ImagePart, ...] = (),
+        quoted_context: QuotedMessageContext | None = None,
     ) -> None:
         if requested_at is not None and now is not None and requested_at != now:
             raise ValueError("requested_at and now disagree")
@@ -231,6 +266,9 @@ class AssistantRequest:
             session_id = _text(session_id, "session_id", maximum=256)
         object.__setattr__(self, "session_id", session_id)
         object.__setattr__(self, "requested_at", _utc(timestamp, "requested_at"))
+        if quoted_context is not None and not isinstance(quoted_context, QuotedMessageContext):
+            raise ValueError("quoted_context must be a QuotedMessageContext")
+        object.__setattr__(self, "quoted_context", quoted_context)
 
     @property
     def now(self) -> datetime:
@@ -403,6 +441,7 @@ __all__ = [
     "AssistantReply",
     "AssistantRequest",
     "Citation",
+    "QuotedMessageContext",
     "TimeRange",
     "ToolCallSummary",
     "TruncationState",

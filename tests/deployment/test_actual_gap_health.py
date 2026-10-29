@@ -114,6 +114,8 @@ def test_heartbeat_identity_and_exact_age_boundary(runtime, monkeypatch, age, re
         path = directory / f"{role}.json"
         payload = json.loads(path.read_text())
         payload["updated_at"] = (now - timedelta(seconds=age)).isoformat()
+        payload.pop("boot_id", None)
+        payload.pop("updated_boottime_ns", None)
         payload["release_id"] = release
         path.write_text(json.dumps(payload))
     if not present:
@@ -198,6 +200,8 @@ def test_backup_gate_binds_receipt_and_data_age(runtime, monkeypatch, age, recei
     import hashlib
 
     from trendradar.ops.backup import create_snapshot
+
+    monkeypatch.setenv("TRENDRADAR_OFFSITE_ENABLED", "true")
 
     database, config = runtime
     backup_root = database.parent.parent / "backups"

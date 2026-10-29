@@ -12,9 +12,26 @@ node_modules/
 *.tmp
 *.swp
 
+# Runtime databases and SQLite sidecars
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+test/runtime/
+
+# Private key material
+*.pem
+*.key
+*.p12
+*.pfx
+
 # Environment files
 .env
 .env.local
+*.env
 *.env.*
 !.env.example
 !deploy/config/*.env.example
@@ -53,6 +70,8 @@ Thumbs.db
 # TrendRadar specific
 output/
 .windsurf/
+.phasegate/
+.phase-gate/
 
 # Backup files
 *.bak

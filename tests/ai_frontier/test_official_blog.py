@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from trendradar.ai_frontier.sources.official_blog import OfficialBlogSource
 
 SAMPLE_HTML = """
@@ -85,3 +87,39 @@ def test_parse_listing_allows_missing_time():
     items = src._parse_listing(site, '<a href="/blog/post">Post</a>')
     assert len(items) == 1
     assert items[0].published_at is None
+
+
+def test_current_engineering_cards_exclude_navigation_and_keep_dates():
+    site = {"name": "Engineering", "url": "https://www.anthropic.com/engineering",
+            "include_patterns": ["anthropic.com/research/"], "article_selector": "article"}
+    html = '''<nav><article><a href="/research/team">Research team</a></article></nav>
+    <article><div><time>Oct 13, 2026</time></div>
+    <div><h3><a href="/research/example">Engineering headline</a></h3></div></article>'''
+    items = OfficialBlogSource({})._parse_listing(site, html)
+    assert len(items) == 1
+    assert items[0].title == "Engineering headline"
+    assert items[0].published_at.isoformat() == "2026-10-13T00:00:00+00:00"
+
+
+def test_resource_card_title_is_separate_from_date_type_and_summary():
+    site = {"name": "Claude", "url": "https://claude.com/resources/articles/",
+            "include_patterns": ["claude.com/resources/articles/"],
+            "article_selector": 'a[class*="ResourceCard"][href]'}
+    html = '''<a class="ResourceCard__card" href="example">
+    <span>Article</span><span>Oct 22, 2026</span><h3>Only the headline</h3>
+    <p>A distinct summary.</p></a>'''
+    item = OfficialBlogSource({})._parse_listing(site, html)[0]
+    assert item.title == "Only the headline"
+    assert item.summary == "A distinct summary."
+    assert item.url == "https://claude.com/resources/articles/example"
+    assert item.published_at.isoformat() == "2026-10-22T00:00:00+00:00"
+
+
+def test_missing_expected_article_cards_is_visible_parse_failure():
+    from trendradar.ai_frontier.sources.base import SourceFetchError
+
+    with pytest.raises(SourceFetchError, match="article_cards_missing"):
+        OfficialBlogSource({})._safe_parse_listing(
+            {"url": "https://example.com", "article_selector": "article"},
+            "<html><h1>Access denied</h1></html>",
+        )

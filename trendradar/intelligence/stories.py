@@ -105,6 +105,9 @@ class StoryService:
         *,
         persist: bool = True,
     ) -> StoryBatchResult:
+        from trendradar.intelligence.translation import title_translation_pending
+
+        items = [item for item in items if not title_translation_pending(item)]
         if not items:
             return StoryBatchResult(stories=[])
         incoming_ids = {item.id for item in items}
@@ -192,6 +195,8 @@ class StoryService:
         )
 
     def _context_items(self, items: list[ContentItem]) -> list[ContentItem]:
+        from trendradar.intelligence.translation import title_translation_pending
+
         by_id = {item.id: item for item in items}
         window = timedelta(hours=self.clustering_config.time_window_hours)
         for domain in sorted({item.domain for item in items}):
@@ -203,7 +208,10 @@ class StoryService:
         cve_ids = {cve_id for item in items for cve_id in security_cve_ids(item)}
         for stored in self.storage.list_security_items_by_cves(cve_ids):
             by_id[stored.id] = stored
-        return sorted(by_id.values(), key=lambda item: (event_time(item), item.id))
+        return sorted(
+            (item for item in by_id.values() if not title_translation_pending(item)),
+            key=lambda item: (event_time(item), item.id),
+        )
 
     def _generate(self, cluster: Cluster, items: list[ContentItem]) -> Story:
         self._add_observation_context(cluster)

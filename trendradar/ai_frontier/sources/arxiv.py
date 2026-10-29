@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import feedparser
 
 from trendradar.ai_frontier._http import make_session, request_with_retry
-from trendradar.ai_frontier.sources.base import AIItem, AISource
+from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
 ARXIV_API_URL = "http://export.arxiv.org/api/query"
@@ -43,6 +43,7 @@ class ArXivSource(AISource):
         )
 
     async def fetch(self) -> list[AIItem]:
+        self._fetch_errors.clear()
         if not self.enabled:
             return []
 
@@ -55,19 +56,21 @@ class ArXivSource(AISource):
                 timeout=self.timeout,
             )
             if resp is None:
-                return []
+                raise SourceFetchError("request_failed")
             if resp.status != 200:
                 log.warning("ArXiv 抓取失败", status=resp.status)
-                await resp.release()
-                return []
+                resp.release()
+                raise SourceFetchError(f"http_{resp.status}")
             text = await resp.text()
-            await resp.release()
+            resp.release()
 
         # feedparser 是 CPU 密集操作，移到线程池避免阻塞事件循环
         return await asyncio.to_thread(self._parse_feed, text)
 
     def _parse_feed(self, text: str) -> list[AIItem]:
         parsed = feedparser.parse(text)
+        if not parsed.version or (parsed.bozo and not parsed.entries):
+            raise SourceFetchError("invalid_feed")
         items: list[AIItem] = []
 
         for entry in parsed.entries:

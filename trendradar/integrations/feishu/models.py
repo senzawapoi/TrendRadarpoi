@@ -95,6 +95,7 @@ class FeishuInbound:
     received_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     payload_version: int = 1
     created_at: datetime | None = None
+    parent_message_id: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "event_id", sanitize_id(self.event_id, maximum=256))
@@ -113,6 +114,12 @@ class FeishuInbound:
         object.__setattr__(self, "chat_type", chat_type)
         object.__setattr__(self, "chat_id", sanitize_id(self.chat_id, name="chat_id"))
         object.__setattr__(self, "message_id", sanitize_id(self.message_id, name="message_id"))
+        parent = _text(self.parent_message_id, "parent_message_id", maximum=256, required=False)
+        if parent:
+            parent = sanitize_id(parent, name="parent_message_id")
+            if parent == self.message_id:
+                raise ValueError("message cannot reply to itself")
+        object.__setattr__(self, "parent_message_id", parent)
         object.__setattr__(self, "text", _text(self.text, "text", maximum=50_000, required=False))
         if len(self.media) > 4 or any(not isinstance(item, FeishuMediaPart) for item in self.media):
             raise ValueError("media exceeds its limit")
@@ -150,6 +157,7 @@ class FeishuInbound:
             "received_at": self.received_at.isoformat(),
             "payload_version": self.payload_version,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "parent_message_id": self.parent_message_id,
         }
 
     @classmethod
@@ -182,6 +190,7 @@ class FeishuInbound:
                     datetime.fromisoformat(str(value["created_at"]))
                     if value.get("created_at") else None
                 ),
+                parent_message_id=value.get("parent_message_id", ""),
             )
         except (TypeError, ValueError, AttributeError) as exc:
             raise ValueError("invalid durable event") from exc

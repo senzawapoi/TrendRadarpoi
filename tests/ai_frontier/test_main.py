@@ -7,7 +7,6 @@ from pathlib import Path
 from trendradar.ai_frontier.__main__ import (
     _deep_merge,
     _default_config,
-    _resolve_bark_url,
     load_ai_frontier_config,
 )
 
@@ -64,21 +63,3 @@ ai_frontier:
     assert cfg["sources"]["x_nitter"]["enabled"] is False
     assert cfg["sources"]["arxiv"]["enabled"] is True  # 默认保留
     assert cfg["sources"]["youtube_podcast"]["enabled"] is True
-
-
-def test_resolve_bark_url_prefers_env(monkeypatch):
-    monkeypatch.setenv("BARK_URL", "https://api.day.app/env_key/")
-    cfg = {"push": {"bark_url": "https://api.day.app/cfg_key/"}}
-    assert _resolve_bark_url(cfg) == "https://api.day.app/env_key/"
-
-
-def test_resolve_bark_url_uses_config_when_no_env(monkeypatch):
-    monkeypatch.delenv("BARK_URL", raising=False)
-    cfg = {"push": {"bark_url": "https://api.day.app/cfg_key/"}}
-    assert _resolve_bark_url(cfg) == "https://api.day.app/cfg_key/"
-
-
-def test_resolve_bark_url_empty_when_none(monkeypatch):
-    monkeypatch.delenv("BARK_URL", raising=False)
-    cfg = {"push": {"bark_url": ""}}
-    assert _resolve_bark_url(cfg) == ""

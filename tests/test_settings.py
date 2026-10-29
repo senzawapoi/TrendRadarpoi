@@ -183,6 +183,8 @@ ai:
     assert settings.gemini_config == {
         "enabled": False,
         "model": "env-model",
+        "models": ("env-model",),
+        "model_cooldown_seconds": 60.0,
         "timeout_seconds": 120.0,
         "max_attempts": 1,
         "retry_backoff_seconds": 0.0,
@@ -208,6 +210,8 @@ ai:
     assert yaml_only.gemini_config == {
         "enabled": True,
         "model": "yaml-model",
+        "models": ("yaml-model",),
+        "model_cooldown_seconds": 60.0,
         "timeout_seconds": 12.5,
         "max_attempts": 2,
         "retry_backoff_seconds": 0.25,
@@ -420,9 +424,10 @@ rss:
     assert config["INTELLIGENCE"]["ASSISTANT"]["enabled"] is True
     assert config["INTELLIGENCE"]["ASSISTANT"]["max_tool_calls"] == 3
     assert config["AI"]["GEMINI"]["enabled"] is True
-    assert config["AI"]["GEMINI"]["model"] == "gemini-2.0-flash"
+    assert config["AI"]["GEMINI"]["model"] == "gemini-3.8-flash"
     assert "api_key" not in config["AI"]["GEMINI"]
-    assert config["BARK_URL"] == "env-bark"
+    assert "BARK_URL" not in config
+    assert "NOTIFICATION_ENABLED" not in config
 
 
 def test_ai_frontier_run_uses_configured_database_path(
@@ -549,7 +554,8 @@ def test_env_example_contains_only_empty_secret_placeholders() -> None:
         "GEMINI_API_KEY",
         "FEISHU_APP_ID",
         "FEISHU_APP_SECRET",
-        "FEISHU_WEBHOOK_URL",
+        "LARK_APP_ID",
+        "LARK_APP_SECRET",
         "S3_SECRET_ACCESS_KEY",
     ):
         assert secret_name in values

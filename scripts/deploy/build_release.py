@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import io
 import re
 import tarfile
 from datetime import datetime, timezone
@@ -12,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 EXCLUDED_DIRS = {
     ".git", ".venv", "venv", "output", "dist", "build", "__pycache__",
-    ".pytest_cache", ".ruff_cache", "runtime",
+    ".pytest_cache", ".ruff_cache", "runtime", ".superpowers",
 }
 EXCLUDED_SUFFIXES = {".pyc", ".db", ".db-wal", ".db-shm", ".log"}
 
@@ -40,6 +41,16 @@ def _release_paths() -> list[Path]:
     return paths
 
 
+def _archive_bytes(path: Path) -> bytes:
+    payload = path.read_bytes()
+    shebang = payload.split(b"\n", 1)[0].rstrip(b"\r")
+    if path.suffix == ".sh" or shebang in {
+        b"#!/bin/bash", b"#!/bin/sh", b"#!/usr/bin/env bash", b"#!/usr/bin/env sh",
+    }:
+        return payload.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return payload
+
+
 def _release_id(value: str) -> str:
     normalized = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip(".-")
     return normalized[:120] or "release"
@@ -60,8 +71,9 @@ def build_release(output_dir: Path, release_id: str | None = None) -> Path:
             info.uid = info.gid = 0
             info.uname = info.gname = ""
             if info.isreg():
-                with path.open("rb") as stream:
-                    archive.addfile(info, stream)
+                payload = _archive_bytes(path)
+                info.size = len(payload)
+                archive.addfile(info, io.BytesIO(payload))
             else:
                 archive.addfile(info)
     return artifact

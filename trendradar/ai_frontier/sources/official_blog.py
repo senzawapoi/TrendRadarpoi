@@ -12,8 +12,8 @@ from urllib.parse import urljoin, urlparse
 import aiohttp
 from bs4 import BeautifulSoup
 
-from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
-from trendradar.ai_frontier.sources.base import AIItem, AISource
+from trendradar.ai_frontier._http import make_session, request_with_retry
+from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
 
@@ -32,7 +32,7 @@ class OfficialBlogSource(AISource):
         name = (site.get("name") or "Official Blog").strip()
         url = (site.get("url") or "").strip()
         if not url:
-            return []
+            raise SourceFetchError("missing_url")
 
         resp = await request_with_retry(
             session,
@@ -43,15 +43,17 @@ class OfficialBlogSource(AISource):
             timeout=self.timeout,
         )
         if resp is None:
-            return []
+            raise SourceFetchError("request_failed")
         if resp.status != 200:
             log.warning("官方博客状态异常", site_name=name, status=resp.status)
-            await resp.release()
-            return []
-        html_text = await resp.text()
-        await resp.release()
-
-        return await asyncio.to_thread(self._safe_parse_listing, site, html_text)
+            resp.release()
+            raise SourceFetchError(f"http_{resp.status}")
+        try:
+            html_text = await resp.text()
+            resolved_site = site | {"url": str(resp.url)}
+        finally:
+            resp.release()
+        return await asyncio.to_thread(self._safe_parse_listing, resolved_site, html_text)
 
     def _safe_parse_listing(self, site: dict, html_text: str) -> list[AIItem]:
         """包裹 _parse_listing，单站 HTML 异常不影响整体抓取。"""
@@ -59,27 +61,38 @@ class OfficialBlogSource(AISource):
         try:
             return self._parse_listing(site, html_text)
         except Exception as exc:
-            log.warning("官方博客解析失败", site_name=name, error=str(exc))
-            return []
+            log.warning("官方博客解析失败", site_name=name, error=type(exc).__name__)
+            if isinstance(exc, SourceFetchError):
+                raise
+            raise SourceFetchError("parse_failed") from exc
 
     def _parse_listing(self, site: dict, html_text: str) -> list[AIItem]:
         """从博客列表页提取文章链接。"""
         name = (site.get("name") or "Official Blog").strip()
         base_url = (site.get("url") or "").strip()
         include_patterns = site.get("include_patterns") or []
-        base_host = urlparse(base_url).netloc
+        base_host = (urlparse(base_url).hostname or "").removeprefix("www.")
         base_parsed = urlparse(base_url)
         base_path = base_parsed.path.rstrip("/") or "/"
         listing_url = base_parsed._replace(query="", fragment="").geturl().rstrip("/")
         soup = BeautifulSoup(html_text, "html.parser")
+        selector = site.get("article_selector")
+        cards = soup.select(selector) if selector else [soup]
+        if selector and not cards:
+            raise SourceFetchError("article_cards_missing")
+        candidates = [(card, link) for card in cards
+                      for link in ([card] if card.name == "a" else card.find_all("a", href=True))]
 
         seen: set[str] = set()
         items: list[AIItem] = []
-        for link in soup.find_all("a", href=True):
+        for card, link in candidates:
+            if link.find_parent(["nav", "header", "footer"]):
+                continue
             href = (link.get("href") or "").strip()
             url = urljoin(base_url, href)
             parsed = urlparse(url)
-            if parsed.netloc and parsed.netloc != base_host:
+            if (parsed.scheme not in {"http", "https"}
+                    or (parsed.hostname or "").removeprefix("www.") != base_host):
                 continue
             clean_url = parsed._replace(query="", fragment="").geturl().rstrip("/")
             if clean_url == listing_url:
@@ -91,14 +104,18 @@ class OfficialBlogSource(AISource):
             if include_patterns and not any(pattern in clean_url for pattern in include_patterns):
                 continue
 
-            title = link.get_text(" ", strip=True)
+            heading = link.find(["h1", "h2", "h3", "h4"])
+            if heading is None:
+                heading = link.find_parent(["h1", "h2", "h3", "h4"])
+            title = heading.get_text(" ", strip=True) if heading else link.get_text(" ", strip=True)
             if not title:
                 title = self._nearby_title(link)
             if not title:
                 continue
 
-            pub_dt = self._nearby_time(link)
-            summary = self._nearby_summary(link)
+            container = card if selector else self._card(link)
+            pub_dt = self._nearby_time(container)
+            summary = self._nearby_summary(container)
             seen.add(clean_url)
             items.append(
                 AIItem(
@@ -114,7 +131,14 @@ class OfficialBlogSource(AISource):
             if len(items) >= self.max_items_per_site:
                 break
 
+        if selector and not items:
+            raise SourceFetchError("article_links_missing")
         return items
+
+    def _card(self, link):
+        if link.find(["h1", "h2", "h3", "h4"]):
+            return link
+        return link.find_parent("article") or link.find_parent(["li", "div", "section"]) or link
 
     def _nearby_title(self, link) -> str:
         """从链接附近的标题元素兜底提取标题。"""
@@ -124,25 +148,26 @@ class OfficialBlogSource(AISource):
         heading = container.find(["h1", "h2", "h3"])
         return heading.get_text(" ", strip=True) if heading else ""
 
-    def _nearby_summary(self, link) -> str:
+    def _nearby_summary(self, container) -> str:
         """从链接附近提取短摘要。"""
-        container = link.find_parent(["article", "li", "div", "section"])
-        if not container:
-            return ""
         paragraph = container.find("p")
         if not paragraph:
             return ""
         summary = paragraph.get_text(" ", strip=True)
         return summary[:397] + "..." if len(summary) > 400 else summary
 
-    def _nearby_time(self, link) -> datetime | None:
+    def _nearby_time(self, container) -> datetime | None:
         """从链接附近的 time 标签解析发布时间。"""
-        container = link.find_parent(["article", "li", "div", "section"]) or link
         time_tag = container.find("time") if hasattr(container, "find") else None
         raw = ""
         if time_tag:
             raw = (time_tag.get("datetime") or time_tag.get_text(" ", strip=True) or "").strip()
         if not raw:
+            # Some publisher cards render their date as a metadata span.
+            for tag in container.find_all("span"):
+                parsed = self._parse_datetime(tag.get_text(" ", strip=True))
+                if parsed is not None:
+                    return parsed
             return None
         return self._parse_datetime(raw)
 
@@ -151,19 +176,27 @@ class OfficialBlogSource(AISource):
         try:
             dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
         except ValueError:
+            for pattern in ("%b %d, %Y", "%B %d, %Y"):
+                try:
+                    return datetime.strptime(raw, pattern).replace(tzinfo=timezone.utc)
+                except ValueError:
+                    continue
             return None
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
 
     async def fetch(self) -> list[AIItem]:
+        self._fetch_errors.clear()
         if not self.enabled or not self.sites:
             return []
 
         log.info(f"抓取 Official Blogs ({len(self.sites)} sites)")
         async with make_session(total_timeout=self.timeout, max_per_host=4) as session:
             coros = [self._fetch_site(session, site) for site in self.sites]
-            results = await run_with_concurrency(coros, limit=4)
+            results = await self._gather(
+                coros, [site.get("name", "blog") for site in self.sites], limit=4,
+            )
 
         merged: list[AIItem] = []
         for result in results:

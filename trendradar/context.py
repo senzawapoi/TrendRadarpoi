@@ -16,13 +16,6 @@ from trendradar.core import (
     read_all_today_titles,
     save_titles_to_file,
 )
-from trendradar.notification import (
-    NotificationDispatcher,
-    PushRecordManager,
-    render_dingtalk_content,
-    render_feishu_content,
-    split_content_into_batches,
-)
 from trendradar.report import (
     clean_title,
     generate_html_report,
@@ -331,98 +324,6 @@ class AppContext:
         )
 
     # === 通知内容渲染 ===
-
-    def render_feishu(
-        self,
-        report_data: dict,
-        update_info: dict | None = None,
-        mode: str = "daily",
-    ) -> str:
-        """渲染飞书内容"""
-        return render_feishu_content(
-            report_data=report_data,
-            update_info=update_info,
-            mode=mode,
-            separator=self.config.get("FEISHU_MESSAGE_SEPARATOR", "---"),
-            reverse_content_order=self.config.get("REVERSE_CONTENT_ORDER", False),
-            get_time_func=self.get_time,
-        )
-
-    def render_dingtalk(
-        self,
-        report_data: dict,
-        update_info: dict | None = None,
-        mode: str = "daily",
-    ) -> str:
-        """渲染钉钉内容"""
-        return render_dingtalk_content(
-            report_data=report_data,
-            update_info=update_info,
-            mode=mode,
-            reverse_content_order=self.config.get("REVERSE_CONTENT_ORDER", False),
-            get_time_func=self.get_time,
-        )
-
-    def split_content(
-        self,
-        report_data: dict,
-        format_type: str,
-        update_info: dict | None = None,
-        max_bytes: int | None = None,
-        mode: str = "daily",
-        rss_items: list | None = None,
-        rss_new_items: list | None = None,
-    ) -> list[str]:
-        """分批处理消息内容（支持热榜+RSS合并）
-
-        Args:
-            report_data: 报告数据
-            format_type: 格式类型
-            update_info: 更新信息
-            max_bytes: 最大字节数
-            mode: 报告模式
-            rss_items: RSS 统计条目列表
-            rss_new_items: RSS 新增条目列表
-
-        Returns:
-            分批后的消息内容列表
-        """
-        return split_content_into_batches(
-            report_data=report_data,
-            format_type=format_type,
-            update_info=update_info,
-            max_bytes=max_bytes,
-            mode=mode,
-            batch_sizes={
-                "dingtalk": self.config.get("DINGTALK_BATCH_SIZE", 20000),
-                "feishu": self.config.get("FEISHU_BATCH_SIZE", 29000),
-                "default": self.config.get("MESSAGE_BATCH_SIZE", 4000),
-            },
-            feishu_separator=self.config.get("FEISHU_MESSAGE_SEPARATOR", "---"),
-            reverse_content_order=self.config.get("REVERSE_CONTENT_ORDER", False),
-            get_time_func=self.get_time,
-            rss_items=rss_items,
-            rss_new_items=rss_new_items,
-            timezone=self.config.get("TIMEZONE", "Asia/Shanghai"),
-            display_mode=self.display_mode,
-        )
-
-    # === 通知发送 ===
-
-    def create_notification_dispatcher(self) -> NotificationDispatcher:
-        """创建通知调度器"""
-        return NotificationDispatcher(
-            config=self.config,
-            get_time_func=self.get_time,
-            split_content_func=self.split_content,
-        )
-
-    def create_push_manager(self) -> PushRecordManager:
-        """创建推送记录管理器"""
-        return PushRecordManager(
-            storage_backend=self.get_storage_manager(),
-            get_time_func=self.get_time,
-        )
 
     # === 资源清理 ===
 

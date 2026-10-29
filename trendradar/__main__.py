@@ -166,6 +166,7 @@ def _run_main():
             NarrativeLimits,
             SecurityNarrativeAnalyzer,
         )
+        from trendradar.ai.translator import build_translation_client
         from trendradar.context import AppContext
         from trendradar.core import load_config
         from trendradar.core.settings import load_settings
@@ -177,7 +178,10 @@ def _run_main():
             fetch_rss_with_adapters,
             open_intelligence_storage,
         )
-        from trendradar.intelligence.translation import translate_news_items_canonically
+        from trendradar.intelligence.translation import (
+            CanonicalTitleTranslator,
+            translate_news_items_canonically,
+        )
         from trendradar.services.translation_service import TranslationService
         from trendradar.storage.base import (
             NewsItem,
@@ -195,7 +199,9 @@ def _run_main():
         # 初始化翻译服务
         settings = load_settings(fallback_to_empty=True)
         gemini_client = build_gemini_client(settings)
-        translator = TranslationService(gemini_client=gemini_client)
+        translator = TranslationService(
+            gemini_api_key="", gemini_client=build_translation_client(settings)
+        )
         if translator.translation_tools:
             log.success("Gemini 双语翻译服务就绪")
         else:
@@ -262,6 +268,10 @@ def _run_main():
         proxy_url = config.get("PROXY_URL", "")
         translated_count = 0
         canonical_translation_cache = {}
+        title_translator = CanonicalTitleTranslator(
+            translator.batch_translate_titles if translator.translation_tools else None,
+            legacy_cache=canonical_translation_cache,
+        )
         total_hot_titles = 0
 
         # 读取报告模式（daily / current / incremental）
@@ -303,6 +313,7 @@ def _run_main():
                     storage=intelligence_storage,
                     story_wording_client=story_wording_client,
                     digest_analyzer=digest_analyzer,
+                    title_translator=title_translator,
                 )
                 results, id_to_name, _title_info = convert_news_data_to_results(hot_news_data)
                 failed_ids = hot_news_data.failed_ids
@@ -326,7 +337,7 @@ def _run_main():
 
                 if hot_news_items:
                     log.info("翻译热榜数据", count=len(hot_news_items))
-                    hot_translated = translate_news_items_canonically(
+                    translate_news_items_canonically(
                         hot_news_items,
                         lambda items: translator.translate_news_items(
                             items,
@@ -334,6 +345,7 @@ def _run_main():
                         ),
                         cache=canonical_translation_cache,
                     )
+                    hot_translated = sum(bool(item.title_translated) for item in hot_news_items)
                     translated_count += hot_translated
                     log.success("热榜翻译完成", translated=hot_translated, total=len(hot_news_items))
 
@@ -402,6 +414,8 @@ def _run_main():
                     max_items=feed_config.get("max_items", 50),
                     enabled=feed_config.get("enabled", True),
                     max_age_days=max_age_days,
+                    transport=feed_config.get("transport", "aiohttp"),
+                    format=feed_config.get("format", "feed"),
                 )
                 if feed.id and feed.url and feed.enabled:
                     feeds.append(feed)
@@ -430,6 +444,7 @@ def _run_main():
                         storage=intelligence_storage,
                         story_wording_client=story_wording_client,
                         digest_analyzer=digest_analyzer,
+                        title_translator=title_translator,
                         request_interval=rss_config.get("REQUEST_INTERVAL", 2000),
                         timeout=rss_config.get("TIMEOUT", 15),
                         use_proxy=rss_config.get("USE_PROXY", False),
@@ -470,7 +485,7 @@ def _run_main():
                                 news_item._canonical_content_id = canonical_id
 
                         log.info("翻译 RSS 数据", count=len(rss_news_items))
-                        rss_translated = translate_news_items_canonically(
+                        translate_news_items_canonically(
                             rss_news_items,
                             lambda items: translator.translate_news_items(
                                 items,
@@ -478,6 +493,7 @@ def _run_main():
                             ),
                             cache=canonical_translation_cache,
                         )
+                        rss_translated = sum(bool(item.title_translated) for item in rss_news_items)
                         translated_count += rss_translated
                         log.success("RSS 翻译完成", translated=rss_translated, total=len(rss_news_items))
 
@@ -608,44 +624,6 @@ def _run_main():
         if html_file:
             log.success("HTML 报告已生成", file=html_file)
 
-        # 发送通知
-        log.info("发送通知")
-        # 增量模式：如果没有新增标题且非首次抓取，跳过通知
-        skip_notification = False
-        if report_mode == "incremental":
-            has_hot_new = bool(new_titles and any(new_titles.values()))
-            has_rss_new = bool(rss_new_stats)
-            is_first = storage_manager.is_first_crawl_today()
-            if not is_first and not has_hot_new and not has_rss_new:
-                skip_notification = True
-                log.info("增量模式：无新增内容，跳过通知")
-
-        report_data = ctx.prepare_report(
-            stats=hot_stats,
-            failed_ids=all_failed,
-            new_titles=new_titles,
-            id_to_name=all_id_to_name,
-            mode=report_mode,
-        )
-        dispatcher = ctx.create_notification_dispatcher()
-
-        if skip_notification:
-            notify_results = {}
-        else:
-            notify_results = dispatcher.dispatch_all(
-                report_data=report_data,
-                report_type="热点新闻分析",
-                mode=report_mode,
-                html_file_path=html_file,
-                rss_items=rss_stats,
-                rss_new_items=rss_new_stats,
-            )
-
-        if notify_results:
-            for channel, success in notify_results.items():
-                log.info("通知发送结果", channel=channel, success=success)
-        else:
-            log.warning("未配置通知渠道或无内容推送")
 
         # 清理资源
         ctx.cleanup()

@@ -1,6 +1,6 @@
 # AI Frontier - AI 前沿资讯聚合
 
-独立的 AI 前沿资讯聚合子系统，并行抓取全球 AI 相关的最新动态，自动翻译并推送到 Bark。
+独立的 AI 前沿资讯聚合子系统，抓取全球 AI 最新动态，使用 Gemini 3.1 Flash Lite 翻译并生成报告。新增 Story 由 Lark Scheduler 统一投递。
 
 ## 数据源
 
@@ -22,9 +22,8 @@
 # 1. 安装依赖
 pip install -r requirements.txt
 
-# 2. （可选）设置翻译与推送密钥
+# 2. （可选）设置翻译密钥
 export GEMINI_API_KEY="your_gemini_key"
-export BARK_URL="https://api.day.app/your_device_key/"
 
 # 3. 运行
 python -m trendradar.ai_frontier
@@ -32,22 +31,19 @@ python -m trendradar.ai_frontier
 
 执行后将会：
 1. 并发抓取 7 类源的最新内容
-2. 按 `(source, url)` 去重，过滤 24h 外的旧条目
-3. 最佳努力写入统一 `output/intelligence.db`，并继续写入兼容权威 `output/ai_frontier.db`
-4. 按分数阈值过滤 + 翻译英文标题为中文
+2. 过滤新鲜度并按统一规则去重；兼容输出保留 `(source, url)` 去重
+3. 最佳努力写入统一 `output/intelligence.db`，解析所有新鲜候选标题的翻译结果后生成 Story；pending 条目暂不发布
+4. 继续写入兼容权威 `output/ai_frontier.db`，按分数阈值及报告数量限制筛选，复用已有译文
 5. 保存 HTML 报告到 `output/ai_frontier/YYYY-MM-DD/HH-MM.html`
-6. 推送 markdown 摘要到 Bark
+6. 新增 Story 等待独立 Lark Scheduler 投递；采集器不直接发送
 
-### GitHub Actions 自动运行
+### 生产调度
 
-`.github/workflows/ai-frontier.yml` 已配置每 2 小时触发一次。
+VPS 的 `trendradar-collect-ai.timer` 每 2 小时运行一次，与主采集共用进程锁，串行执行。`.github/workflows/ai-frontier.yml` 仅保留手动诊断，避免重复调度。
 
-**无需额外配置 Secrets**：直接复用主仓库已有的 `GEMINI_API_KEY` 与 `BARK_URL`（与 `crawler.yml` 共用同名 secret）。
+翻译使用 `gemini-3.1-flash-lite`，共享 `GEMINI_API_KEY`。失败直接保留原文，不回退 Gemma；推理模型列表不影响翻译。
 
-Bark URL 解析优先级：
-1. `secrets.BARK_URL`（Actions 环境变量）
-2. `config.yaml` 的 `ai_frontier.push.bark_url`（独立专用，可选）
-3. `config.yaml` 的 `notification.channels.bark.url`（回退到主系统已配置的 Bark）
+成功译文按原标题、模型及策略匹配后可跨重启复用；失败结果在同次报告中不再调用模型，后续采集可重试。HTML 条数上限不限制 Story 候选翻译，首次运行的翻译量可能增加。统一层关闭或不可用时保留旧报告路径。完整边界见[翻译契约](../../docs/intelligence.md#title-translation-before-publication)。
 
 ## 配置
 
@@ -55,7 +51,7 @@ Bark URL 解析优先级：
 - 数据源启用/禁用
 - ArXiv 分类、Reddit 子版块、HN 关键词、X 账号、Podcast、Blog 列表
 - 分数阈值（HN points / Reddit upvotes / GitHub stars；Podcast/Blog 默认不过滤）
-- 单次推送最大条数
+- 单次 HTML 报告最大条数（兼容配置名 `push.max_items_per_push`）
 - Nitter 实例列表（镜像失效时自动回退）
 
 ## 架构
@@ -76,13 +72,12 @@ trendradar/ai_frontier/
 ├── storage.py           # 独立 SQLite: output/ai_frontier.db
 ├── detector.py          # 分数过滤 + 分组
 ├── translator.py        # 批量翻译（复用 TranslationService.batch_translate_titles）
-├── renderer.py          # markdown + HTML 渲染
-└── pusher.py            # 独立 Bark 推送器
+└── renderer.py          # Markdown + HTML 渲染
 ```
 
 ## 与主系统的关系
 
-- **兼容独立**：保留独立数据库、Actions 和 Bark 推送链路
+- **兼容独立**：保留独立数据库、手动 Actions 和 HTML 报告
 - **共享能力**：复用统一 Adapter/ContentItem、核心 `TranslationService` 与 `utils/logging`
 - **可独立开关**：`ai_frontier.enabled: false` 即可关闭，不影响主系统
 

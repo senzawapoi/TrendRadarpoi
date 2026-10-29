@@ -12,8 +12,8 @@ import re
 import aiohttp
 from bs4 import BeautifulSoup
 
-from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
-from trendradar.ai_frontier.sources.base import AIItem, AISource
+from trendradar.ai_frontier._http import make_session, request_with_retry
+from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
 TRENDING_URL = "https://github.com/trending"
@@ -57,13 +57,13 @@ class GitHubTrendingSource(AISource):
             max_attempts=2, timeout=self.timeout,
         )
         if resp is None:
-            return []
+            raise SourceFetchError("request_failed")
         if resp.status != 200:
             log.warning(f"GitHub Trending [{language}] 状态异常", status=resp.status)
-            await resp.release()
-            return []
+            resp.release()
+            raise SourceFetchError(f"http_{resp.status}")
         html_text = await resp.text()
-        await resp.release()
+        resp.release()
 
         # BeautifulSoup 是 CPU 密集操作，移到线程池
         return await asyncio.to_thread(self._parse_html, html_text, language)
@@ -152,6 +152,7 @@ class GitHubTrendingSource(AISource):
         return items
 
     async def fetch(self) -> list[AIItem]:
+        self._fetch_errors.clear()
         if not self.enabled or not self.languages:
             return []
 
@@ -160,7 +161,7 @@ class GitHubTrendingSource(AISource):
             total_timeout=self.timeout, user_agent=USER_AGENT,
         ) as session:
             coros = [self._fetch_language(session, lang) for lang in self.languages]
-            results = await run_with_concurrency(coros, limit=4)
+            results = await self._gather(coros, self.languages, limit=4)
 
         seen: set[str] = set()
         merged: list[AIItem] = []

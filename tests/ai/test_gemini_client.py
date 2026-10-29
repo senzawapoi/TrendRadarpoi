@@ -16,7 +16,6 @@ from trendradar.ai import (
     GeminiMessage,
     GeminiRateLimitError,
     GeminiRequestError,
-    GeminiResponseError,
     GeminiResult,
     GeminiTimeoutError,
     GeminiToolCall,
@@ -24,6 +23,7 @@ from trendradar.ai import (
     GeminiUnavailableError,
     GeminiUsage,
 )
+from trendradar.ai.client import DEFAULT_GEMINI_MODEL, DEFAULT_GEMINI_MODELS
 
 
 def _response(
@@ -121,9 +121,9 @@ def test_chat_summary_and_analyze_share_one_generation_boundary() -> None:
     assert client.analyze("evidence").text == "analysis"
 
     assert [call["model"] for call in sdk.models.calls] == [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash",
+        DEFAULT_GEMINI_MODEL,
+        DEFAULT_GEMINI_MODEL,
+        DEFAULT_GEMINI_MODEL,
     ]
     assert "system_instruction" not in sdk.models.calls[0]["config"]
     assert "Summarize" in sdk.models.calls[1]["config"]["system_instruction"]
@@ -202,7 +202,7 @@ def test_request_and_response_are_normalized_without_sdk_values() -> None:
     )
 
     assert result.text == "answer"
-    assert result.model == "gemini-effective"
+    assert result.model == DEFAULT_GEMINI_MODEL
     assert result.finish_reason == "STOP"
     assert result.usage == GeminiUsage(
         input_tokens=11,
@@ -211,7 +211,10 @@ def test_request_and_response_are_normalized_without_sdk_values() -> None:
         cached_tokens=3,
     )
     assert result.tool_calls == (
-        GeminiToolCall(name="lookup", arguments={"story_id": "story-1"}, call_id="c-1"),
+        GeminiToolCall(
+            name="lookup", arguments={"story_id": "story-1"}, call_id="c-1",
+            model=DEFAULT_GEMINI_MODEL,
+        ),
     )
     assert sdk.models.calls[0]["contents"] == [
         {"role": "user", "parts": [{"text": "question"}]},
@@ -344,18 +347,17 @@ def test_input_keeps_recent_messages_within_limit_and_output_is_truncated() -> N
         _response("", function_calls=[SimpleNamespace(name="lookup", args="bad")]),
     ],
 )
-def test_empty_or_malformed_responses_are_terminal(response: Any) -> None:
-    sdk = FakeSdkClient(response, _response("must not retry"))
+def test_empty_or_malformed_responses_switch_model(response: Any) -> None:
+    sdk = FakeSdkClient(response, _response("recovered"))
     client = GeminiClient(_config(max_attempts=2), client=sdk)
 
-    with pytest.raises(GeminiResponseError) as caught:
-        client.chat("question")
+    result = client.chat("question")
+    assert result.text == "recovered"
+    assert result.model == DEFAULT_GEMINI_MODELS[1]
+    assert [call["model"] for call in sdk.models.calls] == list(DEFAULT_GEMINI_MODELS[:2])
 
-    assert caught.value.retryable is False
-    assert len(sdk.models.calls) == 1
 
-
-def test_retryable_failure_uses_bounded_exponential_backoff() -> None:
+def test_retryable_failure_switches_models_without_backoff() -> None:
     sdk = FakeSdkClient(TimeoutError("private request"), RuntimeError("private payload"), _response("ok"))
     clock = FakeClock()
     client = GeminiClient(
@@ -366,8 +368,8 @@ def test_retryable_failure_uses_bounded_exponential_backoff() -> None:
     )
 
     assert client.chat("private prompt").text == "ok"
-    assert clock.sleeps == [0.5, 1.0]
-    assert len(sdk.models.calls) == 3
+    assert clock.sleeps == []
+    assert [call["model"] for call in sdk.models.calls] == list(DEFAULT_GEMINI_MODELS)
 
 
 class StatusError(Exception):

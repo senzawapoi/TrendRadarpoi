@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ from typing import Any, Protocol
 
 from .config import LARK_API_DOMAIN
 from .models import FeishuMediaPart, stable_digest
+from .reply_context import MAX_RESPONSE_BYTES, ReplyContext, parse_reply_content, quote_limit
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,9 @@ class FeishuOperations(Protocol):
     def reply(self, message_id: str, text: str) -> bool: ...
     def send(self, target: str, text: str, *, message_uuid: str | None = None) -> bool: ...
     def download_image(self, message_id: str, resource_key: str) -> FeishuMediaPart | None: ...
+    def get_message(self, message_id: str) -> Any:
+        """Return the SDK-shaped response: code, success(), raw, data.items[]."""
+        ...
 
 
 class FeishuClient:
@@ -86,6 +91,38 @@ class FeishuClient:
         except Exception:
             return None
 
+    def get_replied_message(
+        self, parent_message_id: str | None, *, chat_id: str, max_chars: int = 4000,
+    ) -> ReplyContext:
+        """Read just the direct parent after caller authorization, never roots or attachments."""
+        if parent_message_id is None or parent_message_id == "":
+            return ReplyContext("absent")
+        if not all(
+            isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,256}", value)
+            for value in (parent_message_id, chat_id)
+        ):
+            return ReplyContext("invalid_response")
+        if not quote_limit(max_chars):
+            return ReplyContext("input_limit")
+        operation = getattr(self._operations, "get_message", None)
+        if not callable(operation):
+            return ReplyContext("unavailable")
+        try:
+            response = operation(parent_message_id)
+        except (TimeoutError, PermissionError) as exc:
+            return ReplyContext("timeout" if isinstance(exc, TimeoutError) else "permission_denied")
+        except (ValueError, RecursionError):
+            return ReplyContext("invalid_response")
+        except Exception as exc:
+            from requests.exceptions import Timeout
+
+            return ReplyContext("timeout" if isinstance(exc, Timeout) else "unavailable")
+        try:
+            return _message_context(response, parent_message_id, chat_id, max_chars)
+        except Exception:
+            # Provider model failures never log raw bodies, identities, URLs or exception text.
+            return ReplyContext("invalid_response")
+
     @classmethod
     def from_credentials(
         cls,
@@ -136,6 +173,13 @@ class _SdkOperations:
             .build()
         )
 
+    def get_message(self, message_id: str) -> Any:
+        from lark_oapi.api.im.v1 import GetMessageRequest
+
+        request = GetMessageRequest.builder().message_id(message_id).build()
+        # Preserve this client's configured SDK timeout; no retries or ancestor traversal.
+        return self._client.im.v1.message.get(request)
+
     def reply(self, message_id: str, text: str) -> bool:
         return self.reply_result(message_id, text).delivered
 
@@ -173,11 +217,14 @@ class _SdkOperations:
     def send(self, target: str, text: str, *, message_uuid: str | None = None) -> bool:
         from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
+        from .post import message_content
+
+        message_type, content = message_content(text)
         builder = (
             CreateMessageRequestBody.builder()
             .receive_id(target)
-            .msg_type("text")
-            .content(json.dumps({"text": text}, ensure_ascii=False))
+            .msg_type(message_type)
+            .content(content)
         )
         if message_uuid:
             builder.uuid(message_uuid)
@@ -226,6 +273,71 @@ class _SdkOperations:
                     return None
                 data.extend(chunk)
         return FeishuMediaPart(resource_key=resource_key, data=bytes(data))
+
+
+def _message_context(
+    response: Any, parent_message_id: str, chat_id: str, max_chars: int,
+) -> ReplyContext:
+    if response is None:
+        return ReplyContext("invalid_response")
+    raw = getattr(response, "raw", None)
+    status = getattr(raw, "status_code", None)
+    if status in {401, 403}:
+        return ReplyContext("permission_denied")
+    if status in {404, 410}:
+        return ReplyContext("not_found")
+    if status in {408, 504}:
+        return ReplyContext("timeout")
+    if type(status) is not int:
+        return ReplyContext("invalid_response")
+    code = getattr(response, "code", None)
+    if status == 400 and type(code) is int:
+        # GetMessage's documented permission/visibility/deletion errors use HTTP 400.
+        if code in {230027, 230002, 230013, 230050}:
+            return ReplyContext("permission_denied")
+        if code == 230110:
+            return ReplyContext("not_found")
+    if not 200 <= status < 300:
+        return ReplyContext("unavailable")
+    if type(code) is not int:
+        return ReplyContext("invalid_response")
+    if code == 99991672:
+        return ReplyContext("permission_denied")
+    if code != 0:
+        return ReplyContext("unavailable")
+    if response.success() is not True:
+        return ReplyContext("invalid_response")
+    content = getattr(raw, "content", None)
+    if not isinstance(content, bytes | str):
+        return ReplyContext("invalid_response")
+    # SDK 1.7.3 has already buffered/decoded this response; this is a post-SDK bound.
+    if len(content) > MAX_RESPONSE_BYTES or (
+        isinstance(content, str) and len(content.encode("utf-8")) > MAX_RESPONSE_BYTES
+    ):
+        return ReplyContext("too_large", truncated=True)
+    items = getattr(getattr(response, "data", None), "items", None)
+    if not isinstance(items, list):
+        return ReplyContext("invalid_response")
+    if not items:
+        return ReplyContext("not_found")
+    if len(items) != 1:
+        return ReplyContext("invalid_response")
+    message = items[0]
+    returned_id = getattr(message, "message_id", None)
+    returned_chat = getattr(message, "chat_id", None)
+    if not isinstance(returned_id, str) or not isinstance(returned_chat, str):
+        return ReplyContext("invalid_response")
+    if returned_id != parent_message_id:
+        return ReplyContext("mismatched_message")
+    if returned_chat != chat_id:
+        return ReplyContext("cross_chat")
+    if getattr(message, "deleted", None) is True:
+        return ReplyContext("not_found")
+    return parse_reply_content(
+        getattr(message, "msg_type", None),
+        getattr(getattr(message, "body", None), "content", None),
+        max_chars=max_chars,
+    )
 
 
 __all__ = ["FeishuClient", "FeishuOperations"]

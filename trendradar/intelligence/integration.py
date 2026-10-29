@@ -10,6 +10,7 @@ from typing import Any
 from trendradar.intelligence.pipeline import persist_adapter_results_best_effort
 from trendradar.intelligence.runner import AdapterRunner, run_newsnow_adapters
 from trendradar.intelligence.storage import IntelligenceStorage
+from trendradar.intelligence.translation import CanonicalTitleTranslator
 from trendradar.sources.base import AdapterResult
 from trendradar.sources.newsnow import NewsNowAdapter
 from trendradar.sources.rss import RSSAdapter
@@ -87,6 +88,7 @@ def fetch_newsnow_with_adapters(
     storage: IntelligenceStorage | None = None,
     story_wording_client: object | None = None,
     digest_analyzer: object | None = None,
+    title_translator: CanonicalTitleTranslator | None = None,
 ) -> NewsData:
     """Fetch NewsNow serially and return the exact legacy NewsData grouping."""
     timestamp = _utc_now(collected_at)
@@ -112,6 +114,7 @@ def fetch_newsnow_with_adapters(
         storage,
         wording_client=story_wording_client,
         digest_analyzer=digest_analyzer,
+        title_translator=title_translator,
     )
     return _project_news(
         results,
@@ -158,6 +161,7 @@ def fetch_rss_with_adapters(
     storage: IntelligenceStorage | None = None,
     story_wording_client: object | None = None,
     digest_analyzer: object | None = None,
+    title_translator: CanonicalTitleTranslator | None = None,
     **fetcher_options: object,
 ) -> RSSData:
     """Fetch RSS feeds through bounded per-feed adapters and project to RSSData."""
@@ -174,6 +178,7 @@ def fetch_rss_with_adapters(
         storage,
         wording_client=story_wording_client,
         digest_analyzer=digest_analyzer,
+        title_translator=title_translator,
     )
     return _project_rss(
         results,

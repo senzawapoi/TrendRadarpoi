@@ -1,6 +1,6 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-10-14 (workspace topology reconciliation)
+**Analysis Date:** 2026-10-23 (workspace topology reconciliation)
 
 ## Directory Layout
 
@@ -20,7 +20,6 @@ TrendRadarpoi-master/
 │   ├── storage/                # SQLite/local/S3 persistence
 │   ├── services/               # Application services, currently translation
 │   ├── report/                 # HTML/report generation
-│   ├── notification/           # Multi-channel rendering and delivery
 │   ├── ai_frontier/            # Independent AI-source subsystem
 │   └── utils/                  # Time, URL, and logging helpers
 ├── mcp_server/                 # FastMCP interface, services, tools, validators
@@ -28,7 +27,7 @@ TrendRadarpoi-master/
 ├── docs/README.md              # Task-oriented documentation navigation
 ├── docs/intelligence.md        # Intelligence, Assistant, Feishu and rollback guide
 ├── config/                     # Tracked runtime and feed configuration
-├── .github/workflows/          # Scheduled crawl and image build automation
+├── .github/workflows/          # CI/release, manual crawl diagnostics and image builds
 ├── docker/                     # Container images, compose, and process scripts
 ├── deploy/                     # Linux systemd units, environment templates and fixed installer entry
 ├── scripts/deploy/             # Release, trusted environment loader, preflight and offsite helpers
@@ -47,7 +46,7 @@ TrendRadarpoi-master/
 
 **`trendradar/core/models/`, `trendradar/sources/`, and `trendradar/intelligence/`:**
 - Purpose: normalize all existing sources to `ContentItem`, retain provenance, build/rank Stories, and project records back to legacy contracts.
-- Contains: compatibility conversions, adapters, bounded runner, deduplication, schema-v6 SQLite,
+- Contains: compatibility conversions, adapters, bounded runner, deduplication, schema-v7 SQLite,
   Story processing, translation propagation, Assistant/Feishu persistence, and explicit backfill.
 - Key files: `trendradar/core/models/content.py`, `trendradar/sources/base.py`, `trendradar/intelligence/storage.py`.
 
@@ -96,7 +95,7 @@ TrendRadarpoi-master/
 - `config/config.yaml`: runtime settings and source definitions.
 - `config/frequency_words.txt`: keyword matching rules.
 - `pyproject.toml`: build and static-analysis settings.
-- `.github/workflows/*.yml`: production schedules and secret injection.
+- `.github/workflows/*.yml`: CI/release and manual diagnostics; production collection uses VPS timers.
 
 **Core Logic:**
 - `trendradar/core/analyzer.py`: hot/RSS frequency and rank analysis.
@@ -107,7 +106,7 @@ TrendRadarpoi-master/
 - `trendradar/domains/security/`: Security collection, analysis, and report generation.
 - `trendradar/storage/base.py`: core stored record dataclasses and backend contract.
 - `trendradar/ai_frontier/sources/base.py`: AI Frontier item and source contract.
-- `trendradar/notification/dispatcher.py`: multi-channel dispatch policy.
+- `trendradar/integrations/feishu/instant.py`: durable instant Story delivery.
 
 **Testing:**
 - `tests/ai/test_*.py`: core Gemini, consumer, Session, retrieval, Assistant, and tool tests.
@@ -147,8 +146,8 @@ TrendRadarpoi-master/
 **Feishu bot:**
 - Incoming WebSocket transport, identity checks, and reply orchestration belong in the
   `trendradar/integrations/feishu/` package.
-- Keep legacy webhook notifications in `trendradar/notification/`; application-bot replies and
-  daily delivery use the Feishu integration's SDK client and durable ledgers.
+- Lark is the only notification transport. Replies, instant posts and optional daily
+  delivery use the compatible Feishu integration's SDK client and durable ledgers.
 
 **Security intelligence and research:**
 - Security collectors/analyzers/reports: `trendradar/domains/security/`, with source adapters in

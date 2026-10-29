@@ -84,7 +84,7 @@ def test_first_install_and_upgrade_snapshots_use_actual_service_uid(tmp_path):
         "os.setgroups([]); os.setgid(65534); os.setuid(65534); "
         "root=Path(sys.argv[1]); "
         "db=sqlite3.connect(root/'intelligence.db'); "
-        "assert db.execute('PRAGMA user_version').fetchone()[0]==6; "
+        "assert db.execute('PRAGMA user_version').fetchone()[0]==7; "
         "assert db.execute('PRAGMA journal_mode=WAL').fetchone()[0]=='wal'; "
         "db.execute('CREATE TABLE service_probe (value TEXT)'); "
         "db.execute(\"INSERT INTO service_probe VALUES ('service-write')\"); db.commit(); db.close(); "

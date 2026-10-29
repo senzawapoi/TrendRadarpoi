@@ -44,7 +44,7 @@ def _display_title(item: AIItem) -> str:
 
 
 def render_markdown(items: list[AIItem], total_new: int | None = None) -> str:
-    """生成 markdown 正文（用于 Bark/IM 推送）"""
+    """生成按来源分组的 Markdown 正文。"""
     if not items:
         return "🔕 AI 前沿：本次无新增"
 

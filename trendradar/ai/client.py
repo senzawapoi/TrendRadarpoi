@@ -2,20 +2,29 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
+import re
 import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from trendradar.utils.logging import log
+
 from .errors import (
+    GeminiAuthenticationError,
     GeminiConfigurationError,
+    GeminiCooldownError,
     GeminiError,
+    GeminiModelUnavailableError,
     GeminiRateLimitError,
     GeminiRequestError,
     GeminiResponseError,
+    GeminiServerError,
     GeminiTimeoutError,
     GeminiUnavailableError,
 )
@@ -24,7 +33,9 @@ from .media import ImagePart, validate_images
 if TYPE_CHECKING:
     from trendradar.core.settings import RuntimeSettings
 
-DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+DEFAULT_GEMINI_MODELS = ("gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
+DEFAULT_GEMINI_MODEL = DEFAULT_GEMINI_MODELS[0]
+DEFAULT_MODEL_COOLDOWN_SECONDS = 60.0
 DEFAULT_TIMEOUT_SECONDS = 30.0
 DEFAULT_MAX_ATTEMPTS = 3
 DEFAULT_RETRY_BACKOFF_SECONDS = 1.0
@@ -44,8 +55,11 @@ MIN_INPUT_CHARS = 1
 MAX_INPUT_CHARS = 200_000
 MIN_OUTPUT_CHARS = 1
 MAX_OUTPUT_CHARS = 50_000
-MAX_RETRY_DELAY_SECONDS = 60.0
 MAX_THOUGHT_SIGNATURE_BYTES = 64 * 1024
+
+# Shared across core clients in this process, isolated by credential and model. Keys never log.
+_MODEL_COOLDOWNS: dict[tuple[bytes, str], float] = {}
+_MODEL_COOLDOWNS_LOCK = threading.Lock()
 
 SUMMARY_INSTRUCTION = (
     "Summarize the supplied text concisely. Preserve material facts and do not invent evidence."
@@ -84,6 +98,13 @@ def _require_non_empty(value: Any, *, maximum: int | None = None) -> str:
     return normalized
 
 
+def _require_model(value: Any) -> str:
+    model = _require_non_empty(value, maximum=256)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", model):
+        raise GeminiConfigurationError()
+    return model
+
+
 def _require_number(
     value: Any,
     *,
@@ -115,6 +136,7 @@ class GeminiToolCall:
     arguments: Mapping[str, Any] = field(default_factory=dict)
     call_id: str | None = None
     thought_signature: bytes | None = field(default=None, repr=False)
+    model: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", _require_non_empty(self.name, maximum=128))
@@ -137,6 +159,8 @@ class GeminiToolCall:
         ):
             raise GeminiConfigurationError()
         object.__setattr__(self, "thought_signature", signature)
+        if self.model is not None:
+            object.__setattr__(self, "model", _require_model(self.model))
 
     def __repr__(self) -> str:
         return (
@@ -291,20 +315,37 @@ class GeminiConfig:
 
     api_key: str | None = field(default=None, repr=False)
     enabled: bool = True
-    model: str = DEFAULT_GEMINI_MODEL
+    model: str | None = None
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
     max_attempts: int = DEFAULT_MAX_ATTEMPTS
     retry_backoff_seconds: float = DEFAULT_RETRY_BACKOFF_SECONDS
     min_request_interval_seconds: float = DEFAULT_MIN_REQUEST_INTERVAL_SECONDS
     max_input_chars: int = DEFAULT_MAX_INPUT_CHARS
     max_output_chars: int = DEFAULT_MAX_OUTPUT_CHARS
+    models: tuple[str, ...] | None = None
+    model_cooldown_seconds: float = DEFAULT_MODEL_COOLDOWN_SECONDS
 
     def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
             raise GeminiConfigurationError()
         key = str(self.api_key or "").strip() or None
         object.__setattr__(self, "api_key", key)
-        object.__setattr__(self, "model", _require_non_empty(self.model, maximum=256))
+        if self.model is not None:
+            _require_model(self.model)
+        candidates = self.models
+        if candidates is None:
+            candidates = (self.model,) if self.model is not None else DEFAULT_GEMINI_MODELS
+        if isinstance(candidates, str | bytes) or not isinstance(candidates, Sequence):
+            raise GeminiConfigurationError()
+        models = tuple(dict.fromkeys(_require_model(model) for model in candidates))
+        if not models:
+            raise GeminiConfigurationError()
+        object.__setattr__(self, "models", models)
+        object.__setattr__(self, "model", models[0])
+        object.__setattr__(
+            self, "model_cooldown_seconds",
+            _require_number(self.model_cooldown_seconds, minimum=0, maximum=3600),
+        )
         object.__setattr__(
             self,
             "timeout_seconds",
@@ -419,6 +460,7 @@ class GeminiClient:
         self._client_lock = threading.Lock()
         self._rate_lock = threading.Lock()
         self._last_request_at: float | None = None
+        self._credential_id = hashlib.sha256((config.api_key or "").encode()).digest()
 
     @property
     def config(self) -> GeminiConfig:
@@ -435,6 +477,17 @@ class GeminiClient:
     def __repr__(self) -> str:
         return f"GeminiClient(config={self._config!r}, initialized={self.initialized!r})"
 
+    def for_model(self, model: str) -> GeminiClient:
+        """Reuse the lazy SDK transport with an independent single-model route."""
+        if self.config.models == (model,) and self.config.max_attempts == 1:
+            return self
+        return GeminiClient(
+            replace(self.config, model=model, models=(model,), max_attempts=1),
+            client_factory=lambda **_kwargs: self._get_client(),
+            clock=self._clock,
+            sleeper=self._sleeper,
+        )
+
     def chat(
         self,
         messages: str | Sequence[GeminiMessage],
@@ -443,6 +496,8 @@ class GeminiClient:
         tools: Sequence[GeminiToolDefinition] = (),
         response_schema: Mapping[str, Any] | type[Any] | None = None,
         response_mime_type: str | None = None,
+        continuation_model: str | None = None,
+        fallback_messages: Sequence[GeminiMessage] | None = None,
     ) -> GeminiResult:
         """Generate a conversational response from provider-neutral messages."""
         normalized = self._coerce_messages(messages)
@@ -453,6 +508,8 @@ class GeminiClient:
             response_schema=response_schema,
             response_mime_type=response_mime_type,
             temperature=0.3,
+            continuation_model=continuation_model,
+            fallback_messages=fallback_messages,
         )
 
     def summary(
@@ -513,8 +570,9 @@ class GeminiClient:
         response_schema: Mapping[str, Any] | type[Any] | None = None,
         response_mime_type: str | None = None,
         temperature: float,
+        continuation_model: str | None = None,
+        fallback_messages: Sequence[GeminiMessage] | None = None,
     ) -> GeminiResult:
-        client = self._get_client()
         bounded_messages = self._bound_messages(messages)
         contents = [self._provider_message(message) for message in bounded_messages]
         generation_config = self._generation_config(
@@ -524,31 +582,120 @@ class GeminiClient:
             response_mime_type=response_mime_type,
             temperature=temperature,
         )
+        origins = {call.model for message in messages for call in message.tool_calls if call.model}
+        if len(origins) > 1 or (origins and continuation_model not in {*origins, None}):
+            raise GeminiConfigurationError()
+        if continuation_model is None:
+            continuation_model = next(iter(origins), None)
+        has_tools = any(message.tool_calls or message.role == "tool" for message in messages)
+        if has_tools and continuation_model is None:
+            # Legacy manually constructed tool transcripts stay on the explicit primary model.
+            continuation_model = self.config.model
+        if continuation_model is not None and continuation_model not in self.config.models:
+            raise GeminiConfigurationError()
 
-        for attempt in range(self._config.max_attempts):
-            self._wait_for_request_slot()
+        fallback_contents = None
+        fallback_config = None
+        if fallback_messages is not None:
+            fallback = self._coerce_messages(fallback_messages)
+            if any(message.tool_calls or message.role == "tool" for message in fallback):
+                raise GeminiConfigurationError()
+            # Reconstructed evidence must arrive pre-budgeted; prefix truncation can corrupt it.
+            if sum(len(message.content) for message in fallback) > self.config.max_input_chars:
+                raise GeminiConfigurationError()
+            fallback_contents = [self._provider_message(m) for m in self._bound_messages(fallback)]
+            fallback_config = self._generation_config(
+                system_instruction=system_instruction,
+                tools=(),
+                response_schema=response_schema,
+                response_mime_type=response_mime_type,
+                temperature=temperature,
+            )
+        candidates = self.config.models
+        if continuation_model is not None:
+            candidates = (continuation_model,)
+            if fallback_contents is not None:
+                candidates += tuple(m for m in self.config.models if m != continuation_model)
+        client = self._get_client()
+        if not self._available_models(candidates):
+            log.warning("Gemini routing unavailable", error_code=GeminiCooldownError.code)
+            raise GeminiCooldownError()
+        self._wait_for_request_slot()
+        attempted: set[str] = set()
+        mapped_error: GeminiError = GeminiCooldownError()
+        while len(attempted) < min(3, self.config.max_attempts):
+            model = self._next_model(candidates, attempted)
+            if model is None:
+                break
+            rebuilding = continuation_model is not None and model != continuation_model
+            started = self._clock()
             try:
                 response = client.models.generate_content(
-                    model=self._config.model,
-                    contents=contents,
-                    config=generation_config,
+                    model=model,
+                    contents=fallback_contents if rebuilding else contents,
+                    config=fallback_config if rebuilding else generation_config,
                 )
-                return self._normalize_response(response)
+                result = self._normalize_response(response, model=model)
+                if rebuilding and result.tool_calls:
+                    raise GeminiResponseError()
+                if (
+                    generation_config.get("response_mime_type") == "application/json"
+                    and not result.tool_calls
+                ):
+                    json_text = result.text
+                    if json_text.startswith("```") and json_text.endswith("```"):
+                        lines = json_text.splitlines()[1:-1]
+                        if lines and lines[0].strip().casefold() in {"json", "javascript"}:
+                            lines = lines[1:]
+                        json_text = "\n".join(lines)
+                    try:
+                        json.loads(json_text)
+                    except (TypeError, ValueError):
+                        raise GeminiResponseError() from None
             except GeminiError as error:
                 mapped_error = error
             except Exception as error:
                 mapped_error = self._map_provider_error(error)
-
-            if not mapped_error.retryable or attempt + 1 >= self._config.max_attempts:
+            else:
+                log.info("Gemini request completed", model=model,
+                         elapsed_ms=round(max(0, self._clock() - started) * 1000, 1))
+                return result
+            log.warning("Gemini request failed", model=model,
+                        elapsed_ms=round(max(0, self._clock() - started) * 1000, 1),
+                        error_code=mapped_error.code)
+            if not mapped_error.retryable:
                 raise mapped_error from None
-            retry_delay = min(
-                MAX_RETRY_DELAY_SECONDS,
-                self._config.retry_backoff_seconds * (2**attempt),
-            )
-            if retry_delay > 0:
-                self._sleeper(retry_delay)
+            self._cool_down(model)
+        if not attempted:
+            log.warning("Gemini routing unavailable", error_code=GeminiCooldownError.code)
+        raise mapped_error from None
 
-        raise GeminiRequestError()
+    def _available_models(self, models: Sequence[str]) -> tuple[str, ...]:
+        with _MODEL_COOLDOWNS_LOCK:
+            now = self._clock()
+            for key, until in list(_MODEL_COOLDOWNS.items()):
+                if until <= now:
+                    del _MODEL_COOLDOWNS[key]
+            return tuple(m for m in models if (self._credential_id, m) not in _MODEL_COOLDOWNS)
+
+    def _next_model(self, models: Sequence[str], attempted: set[str]) -> str | None:
+        """Select each dispatch against current cooldowns; skips do not spend the call budget."""
+        with _MODEL_COOLDOWNS_LOCK:
+            now = self._clock()
+            for model in models:
+                if model in attempted:
+                    continue
+                if _MODEL_COOLDOWNS.get((self._credential_id, model), float("-inf")) > now:
+                    continue
+                attempted.add(model)
+                return model
+        return None
+
+    def _cool_down(self, model: str) -> None:
+        until = self._clock() + self.config.model_cooldown_seconds
+        key = (self._credential_id, model)
+        with _MODEL_COOLDOWNS_LOCK:
+            _MODEL_COOLDOWNS[key] = max(until, _MODEL_COOLDOWNS.get(key, until))
 
     def _get_client(self) -> Any:
         if not self._config.enabled or not self._config.api_key:
@@ -576,15 +723,24 @@ class GeminiClient:
     def _default_client_factory(*, api_key: str, timeout_seconds: float) -> Any:
         try:
             from google import genai
+            from google.genai import types
         except (ImportError, AttributeError):
             raise GeminiUnavailableError() from None
         return genai.Client(
             api_key=api_key,
-            http_options={"timeout": max(1, int(timeout_seconds * 1_000))},
+            vertexai=False,
+            http_options=types.HttpOptions(
+                base_url="https://generativelanguage.googleapis.com",
+                timeout=max(1, int(timeout_seconds * 1_000)),
+                retry_options=types.HttpRetryOptions(attempts=1),
+            ),
         )
 
     def _bound_messages(self, messages: Sequence[GeminiMessage]) -> tuple[GeminiMessage, ...]:
-        validate_images(tuple(image for message in messages for image in message.images))
+        try:
+            validate_images(tuple(image for message in messages for image in message.images))
+        except (ValueError, TypeError):
+            raise GeminiConfigurationError() from None
         remaining = self._config.max_input_chars
         bounded_reversed: list[GeminiMessage] = []
         for message in reversed(messages):
@@ -720,7 +876,7 @@ class GeminiClient:
                 self._sleeper(delay)
             self._last_request_at = request_at
 
-    def _normalize_response(self, response: Any) -> GeminiResult:
+    def _normalize_response(self, response: Any, *, model: str) -> GeminiResult:
         if response is None:
             raise GeminiResponseError()
         try:
@@ -755,13 +911,12 @@ class GeminiClient:
         usage_value = _read_value(response, "usage_metadata", "usageMetadata")
         usage = self._normalize_usage(usage_value) if usage_value is not None else None
         finish_reason = self._finish_reason(response)
-        model = _primitive_text(_read_value(response, "model_version", "modelVersion"))
         return GeminiResult(
             text=text,
-            model=model or self._config.model,
+            model=model,
             finish_reason=finish_reason,
             usage=usage,
-            tool_calls=calls,
+            tool_calls=tuple(replace(call, model=model) for call in calls),
             truncated=truncated,
         )
 
@@ -862,6 +1017,19 @@ class GeminiClient:
             return error
         class_names = {item.__name__.lower() for item in type(error).__mro__}
         status = GeminiClient._status_code(error)
+        details = _read_value(error, "details")
+        payload = _read_value(details, "error") or details
+        reason_details = _read_value(payload, "details")
+        reasons = (
+            [reason for item in reason_details if isinstance(reason := _read_value(item, "reason"), str)]
+            if isinstance(reason_details, list | tuple) else set()
+        )
+        if (
+            status in {401, 403}
+            or _read_value(error, "status") in ("UNAUTHENTICATED", "PERMISSION_DENIED")
+            or set(reasons).intersection({"API_KEY_INVALID", "API_KEY_EXPIRED", "API_KEY_SERVICE_BLOCKED"})
+        ):
+            return GeminiAuthenticationError()
         if isinstance(error, TimeoutError) or any("timeout" in name for name in class_names):
             return GeminiTimeoutError()
         if status == 408:
@@ -871,6 +1039,10 @@ class GeminiClient:
             for name in class_names
         ):
             return GeminiRateLimitError()
+        if status in {404, 410}:
+            return GeminiModelUnavailableError()
+        if status is not None and 500 <= status < 600:
+            return GeminiServerError()
         if status is not None and 400 <= status < 500:
             return GeminiRequestError(retryable=False)
         if isinstance(error, ImportError):
@@ -923,6 +1095,8 @@ def build_gemini_client(
             for name in (
                 "enabled",
                 "model",
+                "models",
+                "model_cooldown_seconds",
                 "timeout_seconds",
                 "max_attempts",
                 "retry_backoff_seconds",
@@ -946,6 +1120,7 @@ def build_gemini_client(
 __all__ = [
     "ANALYSIS_INSTRUCTION",
     "DEFAULT_GEMINI_MODEL",
+    "DEFAULT_GEMINI_MODELS",
     "GeminiClient",
     "GeminiConfig",
     "build_gemini_client",

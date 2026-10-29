@@ -19,6 +19,7 @@ from trendradar.ai_frontier.sources.youtube_podcast import YouTubePodcastSource
 from trendradar.intelligence.pipeline import persist_adapter_results_best_effort
 from trendradar.intelligence.runner import AdapterRunner
 from trendradar.intelligence.storage import IntelligenceStorage
+from trendradar.intelligence.translation import CanonicalTitleTranslator
 from trendradar.sources.ai_frontier import build_ai_adapters
 from trendradar.utils.logging import log
 
@@ -110,6 +111,7 @@ async def fetch_and_process(
     intelligence_storage: IntelligenceStorage | None = None,
     story_wording_client: object | None = None,
     digest_analyzer: object | None = None,
+    title_translator: CanonicalTitleTranslator | None = None,
     now: datetime | None = None,
 ) -> list[AIItem]:
     """一站式：构造 sources → 并发 fetch → 去重 → 新鲜度过滤"""
@@ -140,6 +142,7 @@ async def fetch_and_process(
             story_content_ids=fresh_content_ids,
             wording_client=story_wording_client,
             digest_analyzer=digest_analyzer,
+            title_translator=title_translator,
         )
     else:
         sources = build_sources(config)

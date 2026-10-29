@@ -12,10 +12,9 @@ from trendradar.core.models import ContentItem
 from trendradar.intelligence.deduplicate import DeduplicationResult, Deduplicator
 from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.intelligence.stories import StoryBatchResult, StoryService
+from trendradar.intelligence.translation import CANONICAL_ID_ATTRIBUTE, CanonicalTitleTranslator
 from trendradar.sources.base import AdapterResult
 from trendradar.utils.logging import log
-
-CANONICAL_ID_ATTRIBUTE = "_canonical_content_id"
 
 
 def _positive_int(value: Any, default: int) -> int:
@@ -216,31 +215,57 @@ def persist_adapter_results_best_effort(
     save_story_report: bool = True,
     process_stories: bool = True,
     story_domain: str | None = None,
+    title_translator: CanonicalTitleTranslator | None = None,
 ) -> DeduplicationResult:
     """Write normalized adapter output; failures never affect legacy projections."""
     items = [item for result in adapter_results for item in result.items]
     if not items:
         return DeduplicationResult(persistence_succeeded=storage is not None)
-    if storage is None:
-        result = Deduplicator().process(items)
-        result.persistence_succeeded = False
-        attach_canonical_ids(adapter_results, result)
-        return result
+    if title_translator is not None:
+        for item in items:
+            item.metadata["title_translation"] = {
+                "status": "pending", "original_title": item.title,
+            }
     persisted = False
     try:
         result = process_content_items(items, storage=storage)
-        persisted = True
+        persisted = storage is not None
+        result.persistence_succeeded = persisted
     except Exception as exc:
         log.error("统一情报库写入失败，旧链路继续", error=str(exc))
         result = Deduplicator().process(items)
         result.persistence_succeeded = False
-    if persisted and process_stories:
+    # Freshness filters arrive as input IDs; deduplication can map them to older canonical IDs.
+    selected_ids = set(story_content_ids) if story_content_ids is not None else None
+    eligible_ids = {
+        canonical_id for item, canonical_id in zip(items, result.canonical_ids, strict=False)
+        if selected_ids is None or item.id in selected_ids
+    }
+    translation_ready = True
+    if title_translator is not None:
+        try:
+            canonical = {item.id: item for item in result.canonical_items}
+            if persisted:
+                canonical.update({
+                    item_id: item for item_id in sorted(eligible_ids)
+                    if (item := storage.get_item(item_id)) is not None
+                })
+            outcomes = title_translator.resolve([
+                item for item_id, item in canonical.items() if item_id in eligible_ids
+            ])
+            if persisted:
+                storage.update_title_translations(outcomes)
+        except Exception as exc:
+            translation_ready = False
+            log.error("Title metadata persistence failed; Story publication deferred",
+                      error_type=type(exc).__name__)
+    if persisted and process_stories and translation_ready:
         try:
             process_stories_after_persist_best_effort(
                 result,
                 storage,
                 save_report=save_story_report,
-                story_content_ids=story_content_ids,
+                story_content_ids=eligible_ids,
                 story_domain=story_domain,
                 wording_client=wording_client,
                 digest_analyzer=digest_analyzer,
@@ -248,6 +273,13 @@ def persist_adapter_results_best_effort(
         except Exception as exc:
             log.error("Story intelligence failed unexpectedly; legacy path continues", error=str(exc))
     attach_canonical_ids(adapter_results, result)
+    if title_translator is not None:
+        for adapter_result in adapter_results:
+            for raw in adapter_result.normalized_raw_items:
+                try:
+                    title_translator.project(raw, getattr(raw, CANONICAL_ID_ATTRIBUTE, ""))
+                except (AttributeError, TypeError):
+                    continue
     return result
 
 

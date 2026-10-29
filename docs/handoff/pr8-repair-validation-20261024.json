@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-24",
+  "timezone": "Asia/Shanghai",
+  "scope": "uncommitted local PR 8 handoff repairs",
+  "head": "b700fc64991f8ab4438e45212bba80d086d076db",
+  "merged_pr8": "a0dd38ecbea50737781241c1244cc3752feeb1cf",
+  "base_content_tree": "07164edf43ab050af34b2369680ac6047959d499",
+  "branch": "fix/pr8-handoff-repairs-20261024",
+  "python": "Python 3.12.3",
+  "source": "/var/lib/trendradar-pr8-repair-20261024.pf5vvepr/source",
+  "production_release": "p7-20261023-28e7283",
+  "production_deployment": false,
+  "git_dirty": true,
+  "full": {
+    "passed": 1464,
+    "skipped": 6,
+    "failed": 0,
+    "errors": 0,
+    "seconds": 543.12,
+    "warnings": 2,
+    "exit_code": 0,
+    "junit_sha256": "8aa25a613f99ca0bfbe2def1e2c1a866bf92267513c60060fb767d1675f22e63",
+    "junit": "../../output/pr8-repair-20261024/full-final.xml",
+    "skips": [
+      {
+        "name": "test_popen_failure_closes_windows_job",
+        "class": "tests.deployment.test_offsite_processes",
+        "reason": "Windows Job Object lifecycle"
+      },
+      {
+        "name": "test_job_attachment_failure_reaps_the_actual_suspended_process[False]",
+        "class": "tests.deployment.test_offsite_processes",
+        "reason": "Windows Job Object attachment"
+      },
+      {
+        "name": "test_job_attachment_failure_reaps_the_actual_suspended_process[True]",
+        "class": "tests.deployment.test_offsite_processes",
+        "reason": "Windows Job Object attachment"
+      },
+      {
+        "name": "test_pre_fix_entry_drops_trusted_configuration_and_health_reads_wrong_database",
+        "class": "tests.deployment.test_pre_fix_linux",
+        "reason": "requires isolated Linux root and explicit retained-audit reproduction"
+      },
+      {
+        "name": "test_pre_fix_root_restore_removes_service_ownership_and_readability",
+        "class": "tests.deployment.test_pre_fix_linux",
+        "reason": "requires isolated Linux root and explicit retained-audit reproduction"
+      },
+      {
+        "name": "test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout",
+        "class": "tests.deployment.test_release_install_linux",
+        "reason": "requires opt-in isolated Linux dependency installation"
+      }
+    ]
+  },
+  "focused": {
+    "passed": 538,
+    "failed": 0,
+    "seconds": 19.9,
+    "junit_sha256": "c6eb4d260343f05fd326f7ac09e6e622ebcf0e9e33b99dab30214daee0f9fa90",
+    "junit": "../../output/pr8-repair-20261024/focused-final.xml"
+  },
+  "changed_python_ruff": "passed",
+  "diff_check": "passed",
+  "source_binding": {
+    "verified_paths": 299,
+    "test_source_unchanged": true,
+    "windows_raw_matches": 15,
+    "windows_crlf_normalized_matches": 284,
+    "mismatches": [],
+    "full_record": "../../output/pr8-repair-20261024/full-final-result.json",
+    "full_record_sha256": "c1f704baedd5ac9919d366c72ff59ab22bef55cbe1732e0c79512862532e4707"
+  },
+  "changed_python_sha256_lf": {
+    "trendradar/ai/assistant.py": "d814e3d5100d07e613d3b74bd5ea8b4dc75097438f243973242554baf840d7e5",
+    "trendradar/ai/models.py": "69a0bcaaa2fc8b5fd5e1cc1cab177454cb0272f6d333d08bf5dde6989db1c986",
+    "trendradar/ai/tools.py": "d9fa1b984e63e293e25885ede5bb92370d8638465ecf4162673455f8717058e5",
+    "trendradar/integrations/feishu/client.py": "100db594118ff7c77ae884940f2cb5e1b4c83e23d93ee04d5ab5ccd1fcf1d1dc",
+    "trendradar/integrations/feishu/handler.py": "e9bbabd7aa630e459de828f94706996572c6e16ed120c6d30cd1d2883c308079",
+    "trendradar/integrations/feishu/models.py": "96fb1ba805a248ad88d4c1a9976c8e1fec2b48de009ef286c80e7ce57d16768f",
+    "trendradar/integrations/feishu/reply_context.py": "a595fdc02a3e9d5026ff08d20d79ee04a04105243d4e01c8abe1bbddd6fdba4c",
+    "tests/integrations/feishu/test_reply_context.py": "d694dea551826968f1a97f11a6a8bd77409845eafe7a1e044dd829cc376cbfb1",
+    "tests/ai/test_assistant_integration.py": "5da95fb7af1cb22f9ec17d85eb281e080b5b51ec406f14b7d2cc19ad648d3c6e",
+    "tests/integrations/feishu/test_client.py": "12bc56f7f740ed37fe2a978e9b2e15c7968f8b115922221708e147173ebb9732",
+    "tests/ai/test_quoted_context.py": "46784529d957beda29c06a6bb4de20ca320e174e642577c827e0c466296f995b",
+    "tests/ai/test_tool_recovery.py": "c659af4eac3e4438f6f2862a55932ef8d9af5f195d46d13ca1fbd96fe233f11b",
+    "tests/integrations/feishu/test_quoted_replies.py": "1225da71a761ecdc78f44142532f81f8a88889106b5445929c16e605082a7f5e"
+  },
+  "title_diagnosis": "../../output/pr8-repair-20261024/title-diagnosis.json",
+  "remaining": [
+    "commit/push instruction and fresh stack check",
+    "exact-build release/install validation and authorized deployment",
+    "fixed root-owned installer bootstrap",
+    "live Lark quote/tool permissions and acceptance",
+    "translation/source/resource stability and 48-hour observation",
+    "offsite backup and independent restore"
+  ],
+  "linux_diff_check": {
+    "status": "passed",
+    "command": "git -c core.autocrlf=input diff --check",
+    "tested_source_bytes_preserved": true
+  }
+}

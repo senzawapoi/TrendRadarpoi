@@ -18,9 +18,10 @@ restore, Lark delivery, or 48-hour operation.
 | P7-R09 | Runbook and evidence records updated | this document and phase7-acceptance.md |
 | P7-R10 | Target environment acceptance | pending host, GitHub Environment and backup credentials |
 
-The table records delivered code, not completed acceptance of the current
-worktree. The [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md) is the
-resume authority: trusted environment loading, role/source readiness, UID/mode
+The table preserves the earlier offline checkpoint, not current release status.
+Resume from the [2026-10-23 handoff](phase7-release-20261023/HANDOFF.md).
+The historical [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md) covers
+trusted environment loading, role/source readiness, UID/mode
 preservation and transaction guards have new implementation and scoped tests.
 Earlier cleanup checks passed 101 Windows tests with 25 platform skips,
 120 Linux tests with one Windows-only skip, and a separate 24-test Linux

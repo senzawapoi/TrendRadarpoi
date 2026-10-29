@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 
 import aiohttp
 
-from trendradar.ai_frontier._http import make_session, request_with_retry, run_with_concurrency
-from trendradar.ai_frontier.sources.base import AIItem, AISource
+from trendradar.ai_frontier._http import make_session, request_with_retry
+from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
 HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
@@ -45,17 +45,20 @@ class HackerNewsSource(AISource):
             label=f"HN '{keyword}'", max_attempts=2, timeout=self.timeout,
         )
         if resp is None:
-            return []
+            raise SourceFetchError("request_failed")
         if resp.status != 200:
             log.warning(f"HN 搜索 '{keyword}' 状态异常", status=resp.status)
-            await resp.release()
-            return []
+            resp.release()
+            raise SourceFetchError(f"http_{resp.status}")
         try:
             data = await resp.json()
         except Exception as e:
             log.warning(f"HN '{keyword}' JSON 解析失败", error=str(e))
-            return []
-
+            raise SourceFetchError("invalid_json") from e
+        finally:
+            resp.release()
+        if not isinstance(data, dict) or not isinstance(data.get("hits"), list):
+            raise SourceFetchError("invalid_listing")
         return self._parse_hits(keyword, data)
 
     def _parse_hits(self, keyword: str, data: dict) -> list[AIItem]:
@@ -102,6 +105,7 @@ class HackerNewsSource(AISource):
         return items
 
     async def fetch(self) -> list[AIItem]:
+        self._fetch_errors.clear()
         if not self.enabled or not self.keywords:
             return []
 
@@ -110,7 +114,7 @@ class HackerNewsSource(AISource):
             total_timeout=self.timeout, max_per_host=4,
         ) as session:
             coros = [self._fetch_keyword(session, kw) for kw in self.keywords]
-            results = await run_with_concurrency(coros, limit=5)
+            results = await self._gather(coros, self.keywords, limit=5)
 
         seen: set[str] = set()
         merged: list[AIItem] = []

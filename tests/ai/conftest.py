@@ -20,6 +20,12 @@ from trendradar.intelligence.storage import IntelligenceStorage
 NOW = datetime(2026, 9, 4, 12, tzinfo=timezone.utc)
 
 
+@pytest.fixture(autouse=True)
+def isolated_model_cooldowns(monkeypatch):
+    """Each test owns its process-local circuit state, including injected clocks."""
+    monkeypatch.setattr("trendradar.ai.client._MODEL_COOLDOWNS", {})
+
+
 @dataclass
 class SeededIntelligence:
     storage: IntelligenceStorage

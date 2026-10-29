@@ -11,6 +11,7 @@ NOW = datetime(2026, 9, 12, 0, 30, tzinfo=timezone.utc)
 CONFIG = FeishuConfig(
     enabled=True,
     delivery_enabled=True,
+    delivery_mode="daily",
     delivery_target="chat",
     delivery_time="08:00",
     delivery_end="09:00",
@@ -37,6 +38,9 @@ def test_duplicate_ticks_restart_and_new_day(tmp_path):
     first = DeliveryScheduler(CONFIG, path, delivery, client, clock=lambda: NOW)
     assert first.tick() == "sent"
     assert first.tick() == "already_claimed"
+    assert first.storage.connection.execute(
+        "SELECT COUNT(*) FROM lark_instant_batches"
+    ).fetchone()[0] == 0
     first.close()
     second = DeliveryScheduler(CONFIG, path, delivery, client, clock=lambda: NOW)
     assert second.tick() == "already_claimed"

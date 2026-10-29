@@ -47,7 +47,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
         with:
-          python-version: '3.10'
+          python-version: '3.12'
       - name: Validate release identifier before packaging
         env:
           RELEASE_ID: ${{ inputs.release_id }}
@@ -72,6 +72,12 @@ jobs:
             --release-id "$RELEASE_ID"
           manifest_sha="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["git_commit"])' dist/RELEASE-MANIFEST.json)"
           test "$manifest_sha" = "$(git rev-parse HEAD)"
+      - name: Install the exact deployment archive in an empty Python 3.12 environment
+        env:
+          TRENDRADAR_P7_ARTIFACT_INSTALL: 'true'
+          TRENDRADAR_P7_ARTIFACT_PATH: dist/trendradar-${{ inputs.release_id }}.tar.gz
+          TRENDRADAR_P7_ARTIFACT_MANIFEST: dist/RELEASE-MANIFEST.json
+        run: python -B -m pytest tests/deployment/test_release_install_linux.py -q -s -p no:cacheprovider --tb=short
       - name: Upload the validated deployment bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

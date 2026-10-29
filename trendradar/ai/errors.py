@@ -71,6 +71,37 @@ class GeminiResponseError(GeminiError):
 
     code = "GEMINI_RESPONSE_ERROR"
     default_message = "Gemini response was invalid."
+    default_retryable = True
+
+
+class GeminiAuthenticationError(GeminiRequestError):
+    """The shared credential is invalid or lacks permission."""
+
+    code = "GEMINI_AUTHENTICATION_ERROR"
+    default_message = "Gemini authentication or permission failed."
+    default_retryable = False
+
+
+class GeminiModelUnavailableError(GeminiRequestError):
+    """The requested model is not available at the provider."""
+
+    code = "GEMINI_MODEL_UNAVAILABLE"
+    default_message = "The requested Gemini model is unavailable."
+
+
+class GeminiServerError(GeminiRequestError):
+    """The provider returned a server failure."""
+
+    code = "GEMINI_SERVER_ERROR"
+    default_message = "Gemini provider service failed."
+
+
+class GeminiCooldownError(GeminiError):
+    """All configured candidates are cooling down; no request was sent."""
+
+    code = "GEMINI_COOLDOWN"
+    default_message = "All Gemini models are temporarily cooling down."
+    default_retryable = True
 
 
 # Compatibility-friendly explicit name for callers that prefer the failure condition.
@@ -78,12 +109,16 @@ GeminiInvalidResponseError = GeminiResponseError
 
 
 __all__ = [
+    "GeminiAuthenticationError",
     "GeminiConfigurationError",
+    "GeminiCooldownError",
     "GeminiError",
     "GeminiInvalidResponseError",
+    "GeminiModelUnavailableError",
     "GeminiRateLimitError",
     "GeminiRequestError",
     "GeminiResponseError",
+    "GeminiServerError",
     "GeminiTimeoutError",
     "GeminiUnavailableError",
 ]

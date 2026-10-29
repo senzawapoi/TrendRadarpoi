@@ -1,5 +1,6 @@
 """RG-04: opt-in real Linux artifact installation outside the source checkout."""
 
+import hashlib
 import json
 import os
 import subprocess
@@ -29,8 +30,19 @@ def _run(command, *, cwd, environment, timeout=300):
 
 
 def test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout(tmp_path):
-    archive = build_release(tmp_path / "artifacts", "isolated-install")
-    manifest = create_manifest(archive, "isolated-install")
+    supplied_archive = os.environ.get("TRENDRADAR_P7_ARTIFACT_PATH")
+    if supplied_archive:
+        archive = Path(supplied_archive).resolve()
+        manifest = json.loads(Path(os.environ["TRENDRADAR_P7_ARTIFACT_MANIFEST"]).read_text())
+        actual = create_manifest(archive, manifest["release_id"])
+        assert not manifest["git_dirty"] and not actual["git_dirty"]
+        assert manifest["git_commit"] == actual["git_commit"]
+        assert manifest["artifact"] == actual["artifact"]
+        assert manifest["dependency_files"] == actual["dependency_files"]
+    else:
+        archive = build_release(tmp_path / "artifacts", "isolated-install")
+        manifest = create_manifest(archive, "isolated-install")
+    release_id = manifest["release_id"]
     assert isinstance(manifest["git_dirty"], bool)
     assert manifest["git_commit"] != "unknown"
     # A dirty checkout can prove packaging mechanics, never a clean candidate.
@@ -41,12 +53,12 @@ def test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout(tmp_
         for member in stream.getmembers():
             parts = Path(member.name).parts
             assert member.isfile()
-            assert parts[0] == "trendradar-isolated-install"
+            assert parts[0] == f"trendradar-{release_id}"
             assert not any(part in {"output", "runtime", "__pycache__", ".pytest_cache", ".ruff_cache"} for part in parts)
             assert not member.name.endswith((".db", ".db-wal", ".db-shm", ".pyc"))
             assert Path(member.name).name != ".env"
         stream.extractall(extracted)
-    release = extracted / "trendradar-isolated-install"
+    release = extracted / f"trendradar-{release_id}"
     isolated = tmp_path / "outside-checkout"
     isolated.mkdir()
     virtualenv = tmp_path / "empty-venv"
@@ -64,6 +76,7 @@ def test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout(tmp_
         "LARK_ENABLED": "false",
         "INTELLIGENCE_RESEARCH_ENABLED": "false",
         "INTELLIGENCE_DB_PATH": str(tmp_path / "missing/intelligence.db"),
+        "FREQUENCY_WORDS_PATH": str(release / "config/frequency_words.txt"),
         "TRENDRADAR_CONTROL_DIR": str(tmp_path / "control"),
         "TRENDRADAR_HEALTH_DIR": str(tmp_path / "health"),
         "TRENDRADAR_LOCK_DIR": str(tmp_path / "locks"),
@@ -86,11 +99,14 @@ def test_locked_artifact_installs_into_empty_venv_and_runs_without_checkout(tmp_
         "assert Path(trendradar.__file__).is_relative_to(Path(sys.prefix)); "
         "assert Path(mcp_server.__file__).is_relative_to(Path(sys.prefix)); "
         "import trendradar.__main__,trendradar.ai_frontier.__main__,mcp_server.server; "
+        "from trendradar.core.frequency import load_frequency_words; "
+        "assert len(load_frequency_words()) == 3; "
         "print(json.dumps({'python':sys.version.split()[0],'sqlite':sqlite3.sqlite_version}))",
     ], cwd=isolated, environment=environment)
     _run(["/bin/bash", str(release / "scripts/deploy/release_smoke.sh"), python, str(release)],
          cwd=isolated, environment=environment, timeout=60)
     assert not Path(environment["INTELLIGENCE_DB_PATH"]).exists()
+    assert hashlib.sha256(archive.read_bytes()).hexdigest() == manifest["artifact"]["sha256"]
     evidence = {
         "release_id": manifest["release_id"], "artifact": manifest["artifact"],
         "git_commit": manifest["git_commit"], "git_dirty": manifest["git_dirty"],

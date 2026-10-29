@@ -1,0 +1,694 @@
+{
+  "schema": 1,
+  "project": "TrendRadarpoi",
+  "phase": "07",
+  "mode": "advisory-real-workspace",
+  "plan": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+  "sources": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".planning/PROJECT.md",
+    ".planning/REQUIREMENTS.md",
+    ".planning/ROADMAP.md",
+    ".planning/phases/07-deployment/07-CONTEXT.md",
+    ".planning/phases/07-deployment/07-01-PLAN.md",
+    ".planning/phases/07-deployment/07-02-PLAN.md",
+    ".planning/phases/07-deployment/07-03-PLAN.md",
+    ".planning/phases/07-deployment/07-04-PLAN.md",
+    ".planning/phases/07-deployment/07-05-PLAN.md",
+    "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+    "TrendRadarpoi-Phase7-Codex交接操作指南-2026-10-15.md",
+    "docs/phase7-actual-gap-evidence/HANDOFF.md"
+  ],
+  "input_roots": [
+    "trendradar",
+    "mcp_server",
+    "scripts",
+    "tests",
+    "deploy",
+    ".github",
+    "config",
+    "pyproject.toml",
+    "requirements.txt",
+    "requirements.lock",
+    "build-requirements.lock"
+  ],
+  "suites": {
+    "health": {
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py",
+        "tests/deployment/test_health.py",
+        "tests/deployment/test_combined_readiness.py"
+      ],
+      "timeout_seconds": 120
+    },
+    "environment-parser": {
+      "selectors": [
+        "tests/deployment/test_environment_loading.py"
+      ],
+      "timeout_seconds": 120
+    },
+    "environment-linux": {
+      "requires": [
+        "linux",
+        "root"
+      ],
+      "selectors": [
+        "tests/deployment/test_environment_entry_linux.py",
+        "tests/deployment/test_environment_loading.py",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_uses_all_configured_paths_for_actual_operations",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_rejects_actually_unreadable_config_before_migration"
+      ],
+      "timeout_seconds": 300
+    },
+    "guard-portable": {
+      "selectors": [
+        "tests/deployment/test_runtime_guards.py::test_uncontrolled_deployment_blocks_work",
+        "tests/deployment/test_runtime_guards.py::test_public_clear_refuses_incomplete_restore",
+        "tests/deployment/test_runtime_guards.py::test_invalid_deployment_blocks_all_cli_roles_before_io",
+        "tests/deployment/test_remaining_gap_assertions.py::test_uncontrolled_valid_deployment_stages_block_every_business_entry",
+        "tests/deployment/test_remaining_gap_assertions.py::test_pending_restore_clear_keeps_every_business_entry_protected"
+      ],
+      "timeout_seconds": 300
+    },
+    "guard-linux": {
+      "requires": [
+        "linux",
+        "root"
+      ],
+      "selectors": [
+        "tests/deployment/test_runtime_guards.py",
+        "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels"
+      ],
+      "timeout_seconds": 300
+    },
+    "restore": {
+      "requires": [
+        "linux"
+      ],
+      "selectors": [
+        "tests/deployment/test_backup.py",
+        "tests/deployment/test_restore_recovery.py",
+        "tests/deployment/test_restore_crash_recovery.py",
+        "tests/deployment/test_restore_durability.py",
+        "tests/deployment/test_deployment_rollback.py"
+      ],
+      "timeout_seconds": 300
+    },
+    "permissions": {
+      "requires": [
+        "linux",
+        "root"
+      ],
+      "selectors": [
+        "tests/deployment/test_restore_permissions_linux.py",
+        "tests/deployment/test_remaining_gap_assertions.py::test_first_install_service_uid_writes_both_databases_in_wal"
+      ],
+      "timeout_seconds": 300
+    },
+    "installer": {
+      "requires": [
+        "linux",
+        "root"
+      ],
+      "selectors": [
+        "tests/deployment/test_installer_behavior.py"
+      ],
+      "timeout_seconds": 1800
+    },
+    "release-inputs": {
+      "requires": [
+        "linux",
+        "root"
+      ],
+      "selectors": [
+        "tests/deployment/test_release_inputs.py",
+        "tests/deployment/test_ci_acceptance_scope.py"
+      ],
+      "timeout_seconds": 600
+    },
+    "systemd": {
+      "requires": [
+        "linux",
+        "root",
+        "systemd"
+      ],
+      "selectors": [
+        "tests/deployment/test_systemd_contract_linux.py",
+        "tests/deployment/test_systemd_quiesce_linux.py"
+      ],
+      "timeout_seconds": 1800
+    },
+    "offsite": {
+      "selectors": [
+        "tests/deployment/test_offsite_backup.py",
+        "tests/deployment/test_offsite_processes.py"
+      ],
+      "timeout_seconds": 180
+    },
+    "compatibility": {
+      "selectors": [
+        "tests/baseline",
+        "tests/integrations/feishu",
+        "tests/intelligence",
+        "tests/research"
+      ],
+      "timeout_seconds": 600
+    },
+    "full-windows": {
+      "requires": [
+        "windows"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "timeout_seconds": 1800
+    },
+    "full-linux": {
+      "requires": [
+        "linux",
+        "root",
+        "systemd"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "timeout_seconds": 2400
+    }
+  },
+  "cases": [
+    {
+      "id": "ENV-01",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_installer_behavior.py::test_fixed_entry_loads_common_and_clears_caller_environment",
+        "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths"
+      ],
+      "coverage": "partial",
+      "note": "真实固定入口与 installer 已映射；逐条路径证据与完整 finalize 断言仍需独立复核。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| ENV-01 | L | 用最小 sudo 环境启动固定入口；按参考配置把角色心跳放在独立 run/health，准备同 release 的健康角色。安装器调用真实 health。 | 安装器与角色读取同一有效配置；心跳被找到；预期成功部署可达到 finalize，不依赖调用者手工 export。当前 F-01 应先被此用例暴露。 |"
+    },
+    {
+      "id": "ENV-02",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_environment_loading.py",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_uses_all_configured_paths_for_actual_operations"
+      ],
+      "coverage": "partial",
+      "note": "Windows 解析与 Linux 六路径实际操作分开记录；不使用静态文字检查替代行为。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| ENV-02 | W+L | 将 database、AI database、control、health、lock、backup 路径全部改到非默认临时位置；执行部署检查、锁操作和恢复预检。 | 所有操作命中配置路径；默认位置没有新增数据库、锁或心跳；不会检查 A 库却迁移 B 库。 |",
+      "layer_selectors": {
+        "W": [
+          "tests/deployment/test_environment_loading.py::test_invalid_configuration_is_rejected"
+        ],
+        "L": [
+          "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_uses_all_configured_paths_for_actual_operations"
+        ]
+      }
+    },
+    {
+      "id": "ENV-03",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_environment_entry_linux.py::test_invalid_common_fails_before_maintenance",
+        "tests/deployment/test_environment_loading.py::test_shell_substitution_is_never_executed",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_quoted_values_and_missing_required_keys",
+        "tests/deployment/test_remaining_gap_assertions.py::test_fixed_entry_rejects_actually_unreadable_config_before_migration"
+      ],
+      "coverage": "reviewed",
+      "note": "已核对真实入口缺键/非法格式/带引号值/不可读 YAML 断言；按当前源码重新执行，不继承旧失败结论。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| ENV-03 | L | 缺少必需配置、格式错误、路径不可读，以及合法带引号的配置值分别输入入口。 | 非法生产配置在停写、迁移或切换前明确失败；合法格式按声明解析。不能静默退回开发默认值，也不能把任意 EnvironmentFile 当可执行 shell。日志无凭证值。 |"
+    },
+    {
+      "id": "ENV-04",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_environment_entry_linux.py::test_entry_maintenance_contends_for_real_role_lock"
+      ],
+      "coverage": "partial",
+      "note": "真实四角色 flock 与 migrate/activate 已映射；等待逐项证据复核。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| ENV-04 | L | 测试角色用真实文件锁持有 bot/worker/collector/scheduler 锁；维护进程从安装入口解析配置后尝试迁移或激活恢复。 | 双方争用同一锁路径；冲突时有界失败且数据库不被改写；释放锁后同一路径操作成功。不能通过选用另一目录“解决”冲突。 |"
+    },
+    {
+      "id": "HEALTH-01",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py::test_bot_readiness_requires_connected",
+        "tests/deployment/test_actual_gap_health.py::test_worker_uses_its_own_state_rules",
+        "tests/deployment/test_actual_gap_health.py::test_real_transport_state_written_to_heartbeat_then_health"
+      ],
+      "coverage": "reviewed",
+      "note": "真实 transport 状态经 RoleHeartbeat 交给 health CLI；参数覆盖 Bot 与 Worker 各自规则。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| HEALTH-01 | W+L | 对 Bot 的 connected、connecting、retrying、cooldown、stopped、disabled、unknown、maintenance 以及 disconnected 参数化；保持 release、时间和其他指标健康。另测 Worker running 与非运行状态。 | Bot 仅真实可接受业务的连接状态通过；连接中、重试、冷却及未知状态均拒绝 ready。Worker 使用自己的角色规则。至少一项由实际 transport 状态写入 RoleHeartbeat，再通过真实 health CLI 读取，不能只手写 disconnected。 |"
+    },
+    {
+      "id": "HEALTH-02",
+      "layers": [
+        "W"
+      ],
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py::test_heartbeat_identity_and_exact_age_boundary",
+        "tests/deployment/test_combined_readiness.py"
+      ],
+      "coverage": "reviewed",
+      "note": "release/缺失/未来/阈值边界及健康→故障→修复组合行为；无外部服务。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| HEALTH-02 | W | 分别提供匹配、新旧不一致、缺失、unknown 的 release；缺失角色心跳和超龄心跳；随后恢复全部健康值。 | 匹配且新鲜时通过；错误 release、必需角色缺失或过期时拒绝。配置阈值等于和略超过边界分别验证，避免时间测量抖动。 |"
+    },
+    {
+      "id": "HEALTH-03",
+      "layers": [
+        "W"
+      ],
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py::test_required_sources_cannot_be_empty",
+        "tests/deployment/test_actual_gap_health.py::test_explicit_source_without_run_is_rejected",
+        "tests/deployment/test_actual_gap_health.py::test_source_runs_required_and_fresh",
+        "tests/deployment/test_combined_readiness.py"
+      ],
+      "coverage": "reviewed",
+      "note": "真实 SQLite source_runs，空/缺/错/过期/正向与关闭开关的兼容行为。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| HEALTH-03 | W | require_source_runs=true 下测试：两个来源集合均空；明确来源但无记录；记录过期；真实失败状态；全部来源有新鲜成功记录。再测试 require_source_runs=false 的兼容行为。 | 要求来源时，空集合不能被当作已经证明健康；缺失、过期或失败均拒绝。全部有效时通过。关闭来源要求时不因单纯无来源记录误拒绝。当前 F-03 必须被单独暴露。 |"
+    },
+    {
+      "id": "HEALTH-04",
+      "layers": [
+        "W"
+      ],
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py::test_queue_age_survives_recent_retry",
+        "tests/deployment/test_combined_readiness.py"
+      ],
+      "coverage": "reviewed",
+      "note": "按原始接收时间测试 below/equal/over，终态和耗尽重试不算待处理。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| HEALTH-04 | W | 构造真实可重试待处理事件，等待时间为阈值以下、等于、略高于；再构造已完成或已耗尽重试事件。 | 超过 queue_wait_seconds 的可处理积压拒绝 ready；健康队列通过；终态不会被误计为待处理积压。明确等待时间使用的业务语义，并让断言独立于待测函数内部计算方式。 |"
+    },
+    {
+      "id": "HEALTH-05",
+      "layers": [
+        "W"
+      ],
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py::test_backup_gate_binds_receipt_and_data_age",
+        "tests/deployment/test_health.py::test_health_ignores_malformed_offsite_array_without_crashing",
+        "tests/deployment/test_combined_readiness.py"
+      ],
+      "coverage": "reviewed",
+      "note": "本地快照年龄与合成 offsite receipt 绑定；不证明真实远端上传或恢复。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| HEALTH-05 | W | 构造新鲜/过期本地快照、新上传但数据已过期的 offsite 收据、错误 digest/backup_id、数组 JSON 收据，以及完整有效收据。 | require_backup=true 时按数据年龄拒绝过期备份；新上传不能刷新旧数据的 RPO。坏收据不崩溃、不算成功；完整有效正向夹具可通过。关闭备份要求保留兼容行为。 |"
+    },
+    {
+      "id": "HEALTH-06",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_actual_gap_health.py::test_health_and_readiness_preserve_readonly_exit_contract"
+      ],
+      "coverage": "reviewed",
+      "note": "真实普通 health/readiness 退出码、缺库不创建、不迁移及字节只读断言。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| HEALTH-06 | W+L | 数据库缺失、schema 不符、intelligence disabled、maintenance，以及完整健康库分别走普通 health 和 --readiness。 | 缺库不创建文件、不自动迁移；生产 readiness 拒绝 disabled 和 maintenance。普通 health 的既有 disabled/maintenance 退出语义保持兼容；完整正向夹具退出 0。 |"
+    },
+    {
+      "id": "PERM-01",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_restore_permissions_linux.py::test_restore_keeps_service_metadata_and_real_uid_can_write"
+      ],
+      "coverage": "partial",
+      "note": "真实 UID/GID、0600/0660、WAL 和拒绝其他 UID 已映射；完整场景审查仍单列。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| PERM-01 | L | 服务账号拥有既有 intelligence、ai_frontier 和 legacy 库；root 调用真实 backup restore/activate。覆盖服务账号独占 0600 和服务组可读写 0660 两种受控策略。 | 发布后的每个数据库具有正确 owner/group/mode；服务 UID 实际 SELECT、写入并提交成功，WAL 模式工作正常；其他无权限账号无法读取。不能留下 root 独占的 0600 数据库。 |"
+    },
+    {
+      "id": "PERM-02",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_remaining_gap_assertions.py::test_first_install_service_uid_writes_both_databases_in_wal"
+      ],
+      "coverage": "partial",
+      "note": "真实 installer、双 schema 与 UID 写入；pip/venv/systemctl 为受控替代。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| PERM-02 | L | 临时 runtime/output 中不存在数据库，通过首次安装路径创建和迁移两类库，然后使用服务 UID 打开。 | 父目录、数据库和锁路径均符合服务账号运行需要；readiness 不依赖 root 的访问能力。root 侧 schema check 成功而服务启动 PermissionError 属于失败。 |"
+    },
+    {
+      "id": "PERM-03",
+      "layers": [
+        "L",
+        "S"
+      ],
+      "selectors": [
+        "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid",
+        "tests/deployment/test_systemd_contract_linux.py"
+      ],
+      "coverage": "partial",
+      "note": "快照读权限与真实备份 unit 分层；restic 是本地 fake。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| PERM-03 | L | 分别由安装器创建发布前快照、由备份服务身份创建日常快照；fake restic 在规定账号下读取本次完整快照。 | 每种快照能被其实际使用者完整读取；服务账号能继续创建下一次日常快照；无全局可读的数据库或凭证目录；不以 root 的 fake restic 成功替代服务身份。 |",
+      "layer_selectors": {
+        "L": [
+          "tests/deployment/test_restore_permissions_linux.py::test_first_install_and_upgrade_snapshots_use_actual_service_uid"
+        ],
+        "S": [
+          "tests/deployment/test_systemd_contract_linux.py"
+        ]
+      }
+    },
+    {
+      "id": "PERM-04",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_restore_permissions_linux.py::test_failed_restore_keeps_service_access_and_unrelated_metadata",
+        "tests/deployment/test_restore_durability.py::test_target_metadata_failure_preserves_originals_and_protection"
+      ],
+      "coverage": "partial",
+      "note": "真实访问、无关路径不变与 chown/chmod/copy/switch 故障节点已映射；不等于完整审查关闭。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| PERM-04 | L | 在应用目标元数据、复制文件、切换前分别注入权限错误或 I/O 错误，覆盖新库和已有库。 | 失败退出；旧数据保留或可按 journal 明确恢复；guard 保持；不会发布“complete”但服务无法访问的库；不得递归修改无关目录权限。 |"
+    },
+    {
+      "id": "GUARD-01",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_runtime_guards.py",
+        "tests/deployment/test_remaining_gap_assertions.py::test_uncontrolled_valid_deployment_stages_block_every_business_entry",
+        "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels"
+      ],
+      "coverage": "partial",
+      "note": "负向入口和受控正向入口均存在；是否覆盖全部独立角色恢复语义仍需复核。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-01 | W+L | 写入发布各阶段的真实格式事务；在没有 restore-guard 的情况下分别启动 Bot、Worker、Scheduler、collector 的入口或真实 guard 调用链；补充无效 JSON/未知状态。 | 未受控的未完成事务仍阻止业务；无效记录按保护处理；外部调用为零。正常已完成状态及有效受控 resume 的正向路径可执行，不产生永久阻塞。 |",
+      "layer_selectors": {
+        "W": [
+          "tests/deployment/test_runtime_guards.py::test_invalid_deployment_blocks_all_cli_roles_before_io",
+          "tests/deployment/test_remaining_gap_assertions.py::test_uncontrolled_valid_deployment_stages_block_every_business_entry"
+        ],
+        "L": [
+          "tests/deployment/test_runtime_guards.py",
+          "tests/deployment/test_remaining_gap_assertions.py::test_controlled_or_completed_deployment_reaches_real_entrypoint_sentinels"
+        ]
+      }
+    },
+    {
+      "id": "GUARD-02",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_remaining_gap_assertions.py::test_pending_restore_clear_keeps_every_business_entry_protected",
+        "tests/deployment/test_restore_recovery.py"
+      ],
+      "coverage": "partial",
+      "note": "pending journal 的 clear 拒绝与入口保护；恢复完成到解锁的全链路审查未宣称完成。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-02 | W+L | 构造未完成的真实恢复事务，再调用公开 maintenance clear；覆盖 prepared/installing、损坏或非对象 journal。 | clear 非零失败并说明需恢复；guard 与事务证据保留；角色仍不能处理业务。完成或经验证已回滚后才能解除；不能仅检查 activate_restore 拒绝重试。 |"
+    },
+    {
+      "id": "GUARD-03",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection"
+      ],
+      "coverage": "partial",
+      "note": "真实 Bash 进程中断/信号/异常参数化；systemctl 为 fake，不证明断电耐久性。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-03 | L | 真实执行 installer，在清除 guard 前、清除后但启动前、首个角色启动后、readiness 验证期间分别强杀；重建进程，模拟自动服务重启。 | 持久化的业务边界不落后于实际放行；中断被识别；角色重启继续受保护，不能因 guard 文件已删而直接工作。保留旧/新 release、快照和阶段证据。普通异常与 SIGTERM 另做对应参数。 |"
+    },
+    {
+      "id": "GUARD-04",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_installer_behavior.py::test_installer_post_boundary_failure_stops_roles_and_retains_guard"
+      ],
+      "coverage": "partial",
+      "note": "真实 health/SQLite 与可控服务故障；待逐条审查重启后的业务入口保护。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-04 | L | 一个角色启动成功后，另一个启动失败；另测 readiness 一直失败、超时和健康命令异常退出。 | 安装器非零退出；已启动的受管业务停止或按保护协议停止接收/处理；保护保留。越过业务边界后不自动覆盖数据库；边界前需要回退时恢复一致的代码、数据和 release 身份。 |"
+    },
+    {
+      "id": "GUARD-05",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_restore_crash_recovery.py::test_abrupt_restore_death_and_idempotent_complete_rollback",
+        "tests/deployment/test_restore_durability.py"
+      ],
+      "coverage": "partial",
+      "note": "真实子进程强杀；多库 schema/FK 与确认前后一致性仍需逐项审查。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-05 | L | 多库真实 activate 子进程在“操作计划已持久化、旧库已移走、新库已放置、第一库完成而第二库未完成”等位置强杀；WAL/SHM 使用真实 SQLite 夹具。 | 不依赖 except/finally；journal 足以定位原文件、保留文件、目标与已安装集合；pending 可见且角色被保护；不存在误报 complete 的混合数据状态。对声明支持的恢复路径执行完整重放或回退。 |"
+    },
+    {
+      "id": "GUARD-06",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_restore_crash_recovery.py::test_interrupted_recovery_can_be_repeated_from_consistent_snapshot",
+        "tests/deployment/test_restore_crash_recovery.py::test_recovery_refuses_corrupt_mapping_before_replacing_files",
+        "tests/deployment/test_deployment_rollback.py::test_restore_keeps_complete_snapshot_mapping"
+      ],
+      "coverage": "partial",
+      "note": "重复恢复/坏映射/完整快照；保留恢复命令文档和全部数据不变式的审查缺口。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-06 | W+L | 对实际中断产生的 journal，按实现提供的恢复程序或精确运行手册执行；再对相同中断状态重复操作。使用 pre-restore 快照，并覆盖恢复前某个目标库不存在的情形。 | 数据恢复为明确的一致集合；不存在的目标不能悄悄残留为新版本；所有映射、schema 和内容匹配；重复操作不再次破坏数据。解除保护前复核齐全。当前只有 recovery-status 不能自动视为已完成恢复。 |"
+    },
+    {
+      "id": "GUARD-07",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_installer_behavior.py::test_installer_success_with_real_health_and_configured_paths",
+        "tests/deployment/test_installer_behavior.py::test_installer_interruption_preserves_protection",
+        "tests/deployment/test_installer_behavior.py::test_finalize_reconfirmation_rejects_mismatch_and_retains_marker"
+      ],
+      "coverage": "partial",
+      "note": "正常 finalize、中断及确认错误已映射；不会直接删除标记制造成功。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| GUARD-07 | L | 正常部署完全通过；另在 finalize 持久化后、删除活动标记前终止，再按明确完成确认流程恢复。 | 成功路径确实可 finalize，身份与数据不漂移；残留标记可以被安全核对和处理；不会把真正未完成事务误判成成功。禁止测试直接 rm 标记来制造通过。 |"
+    },
+    {
+      "id": "RG-01",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_release_inputs.py"
+      ],
+      "coverage": "partial",
+      "note": "真实 workflow 校验和固定入口；stub SSH 不代表真实 GitHub/SSH 执行。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-01 | L | 用受控输入执行 workflow 中实际校验片段及固定入口：合法部署路径/release_id；相对路径、目录穿越、空白、引号、分号、反斜杠、换行、非法 release 字符；host key 不匹配。 | 非法输入在远端变更前拒绝；合法输入能到达预期步骤；校验不执行输入里的文本；固定入口保持 root 控制，部署包不能替换实际执行的 installer。真实 SSH host key 链路另由 V-02 验证。 |"
+    },
+    {
+      "id": "RG-02",
+      "layers": [
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_release_inputs.py::test_real_installer_rejects_bad_manifests_before_migration_or_switch",
+        "tests/deployment/test_release_inputs.py::test_real_installer_rejects_unsafe_tar_members_without_escape",
+        "tests/deployment/test_release_inputs.py::test_legal_synthetic_archive_continues_through_real_migration_and_finalize"
+      ],
+      "coverage": "partial",
+      "note": "真实归档负向与合法路径；测试替代依赖安装，不能证明生产产物可安装。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-02 | L | 用小型真实 archive/manifest 测试 SHA 不符、release 不符、dirty 候选、越界成员、符号链接和合法包。 | 无效包在迁移与切换前拒绝；不能写出暂存边界；合法包可继续。生产默认拒绝 dirty；测试如需使用离线 dirty 包，必须独立标记，不能计入生产候选证据。 |"
+    },
+    {
+      "id": "RG-03",
+      "layers": [
+        "L",
+        "S"
+      ],
+      "selectors": [
+        "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration",
+        "tests/deployment/test_systemd_quiesce_linux.py"
+      ],
+      "coverage": "partial",
+      "note": "模拟停写顺序和真实 systemd 生命周期必须分别具备；不累加历史通过数量。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-03 | L+S | 同时模拟或实际运行 Bot/Worker，以及 scheduler、main/AI collector、health、backup 的 oneshot 与 timer；在停写过程中触发一个 timer 到期。 | 快照/迁移前所有受管写入者停止；timer 不重新拉起写入者；只恢复事先 active 或明确配置的初始单位；原本 inactive 的单位不被意外启用。stub 顺序测试与真实 systemd 结果分别记录。 |",
+      "layer_selectors": {
+        "L": [
+          "tests/deployment/test_installer_behavior.py::test_all_timers_stop_before_writers_and_snapshot_migration",
+          "tests/deployment/test_installer_behavior.py::test_only_previously_active_or_first_install_initial_units_resume"
+        ],
+        "S": [
+          "tests/deployment/test_systemd_quiesce_linux.py"
+        ]
+      }
+    },
+    {
+      "id": "RG-04",
+      "layers": [
+        "L"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "干净生产候选与真实空 venv 产物安装须另行执行；本程序不复制 .git 或自动联网安装依赖，不冒充该证据。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-04 | L | 用干净候选打包；新建空 venv，按 requirements.lock 和项目安装步骤安装；离开 checkout，unset PYTHONPATH，用安装产物导入 trendradar/mcp_server、执行离线 CLI 和 release smoke。 | 目标 Python 版本下真实依赖安装与 pip check 成功；包无运行数据库、真实 .env 或缓存；从独立工作目录可运行；负向 readiness 不创建数据库。Windows 安装或 --no-deps 的 dry-run 不能替代本项。 |"
+    },
+    {
+      "id": "RG-05",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests/deployment/test_offsite_backup.py",
+        "tests/deployment/test_offsite_processes.py"
+      ],
+      "coverage": "partial",
+      "note": "fake restic 的进程/超时/收据；Windows Job Object 与 POSIX 子进程必须分平台查看。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-05 | W+L | fake restic 正常成功、非零退出、超时、派生子进程不退出；输出内放入合成 secret sentinel。 | 失败和超时有界结束且无测试子进程残留；不生成成功收据；成功收据绑定 backup_id、manifest digest、远端 snapshot 标识与数据时间；日志中没有 sentinel。 |",
+      "layer_selectors": {
+        "W": [
+          "tests/deployment/test_offsite_backup.py",
+          "tests/deployment/test_offsite_processes.py"
+        ],
+        "L": [
+          "tests/deployment/test_offsite_backup.py",
+          "tests/deployment/test_offsite_processes.py::test_backup_completion_reaps_child_even_after_leader_exit",
+          "tests/deployment/test_offsite_processes.py::test_direct_cli_outside_checkout_redacts_provider_failures"
+        ]
+      }
+    },
+    {
+      "id": "RG-06",
+      "layers": [
+        "W",
+        "L"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "coverage": "partial",
+      "note": "完整 pytest、受影响路径 lint/compile/diff 和 warning 审查必须齐全；本版不将模块计数或跳过当作完整回归验收。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-06 | W+L | 修复完成后运行部署/角色重点测试，再运行完整 tests；按变更路径运行 Ruff、编译检查及 diff 检查。 | 无新增失败或未解释 warning；保留 Intelligence-off、Lark-off、角色隔离、完成事件去重、保存回复后重试、重连界限等既有行为。全部业务 provider 均为 mock/fake。 |"
+    },
+    {
+      "id": "RG-07",
+      "layers": [
+        "S"
+      ],
+      "selectors": [
+        "tests/deployment/test_systemd_contract_linux.py"
+      ],
+      "coverage": "partial",
+      "note": "真实 systemd/UID/PrivateTmp 的默认参数及覆盖值；不是所有角色的运维验收。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| RG-07 | S | 在真实 systemd 的隔离环境校验 units；用受控 helper 接收备份 unit 参数，分别测试默认值与环境覆盖；验证 release.env 与实际服务身份读取。 | 默认 timeout=900、kill-grace=10 正确传参，覆盖值生效；服务组读取 release 身份成功；unit 启停行为与退出结果正确。只做 YAML 解析或搜索字符串不算通过。 |"
+    },
+    {
+      "id": "V-01",
+      "layers": [
+        "V"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "目标现场证据尚未由本工具采集；保留原计划范围与既有明确例外，不预填 PASS。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| V-01 | VPS preflight | OS/架构、Python/SQLite、systemd/cgroup、内存/swap/磁盘/inode、服务账号和目录权限、现有调度器、DNS/TLS/WSS 可用性。实际值与部署要求相容；旧 cron/Docker/Actions 的重复运行范围已处理。 |"
+    },
+    {
+      "id": "V-02",
+      "layers": [
+        "V"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "目标现场证据尚未由本工具采集；保留原计划范围与既有明确例外，不预填 PASS。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| V-02 | GitHub → SSH → 固定 installer | 在已配置的目标/Environment 上跑完整工作流；记录唯一 revision、artifact SHA、manifest、固定入口的 owner/mode、受控 sudo 范围和 host key。错误 key 必须失败；成功部署的 revision 与测试/构建对象一致。 |"
+    },
+    {
+      "id": "V-03",
+      "layers": [
+        "V"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "目标现场证据尚未由本工具采集；保留原计划范围与既有明确例外，不预填 PASS。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| V-03 | 真正的安装、升级与失败处理 | 目标服务身份下完成首次安装及升级；记录 current、release.env、角色心跳、队列和 readiness。先在可恢复的验收范围演练启动失败/超时；验证 guard、停写和回退边界，不在唯一生产数据上做故障试验。 |"
+    },
+    {
+      "id": "V-04",
+      "layers": [
+        "V"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "目标现场证据尚未由本工具采集；保留原计划范围与既有明确例外，不预填 PASS。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| V-04 | 远端备份与隔离恢复 | 完成真实 restic 上传，从远端取回指定 snapshot，在隔离目标恢复全部库；校验 schema、业务标识、权限、cutover 与 journal。仅有上传成功收据不能算恢复验收。 |"
+    },
+    {
+      "id": "V-05",
+      "layers": [
+        "V"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "目标现场证据尚未由本工具采集；保留原计划范围与既有明确例外，不预填 PASS。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| V-05 | Lark 现场遗留项与角色协作 | 经授权的测试范围验证 Bot→持久化→Worker→实际收件；完成 C3 真实网络中断/恢复及 C4 收件确认。保留已接受的 B6 跳过状态；若有同 event_id 重传证据，再验证已完成事件抑制，不声称平台级 exactly-once。 |"
+    },
+    {
+      "id": "V-06",
+      "layers": [
+        "V"
+      ],
+      "selectors": [],
+      "coverage": "external",
+      "note": "目标现场证据尚未由本工具采集；保留原计划范围与既有明确例外，不预填 PASS。",
+      "source": "TrendRadarpoi-Phase7-实际缺口测试计划.md",
+      "anchor": "| V-06 | 持续运行与资源 | 至少 48 小时，并覆盖两个实际日推送窗口及一次受控故障恢复。记录 cgroup 峰值、OOM/重启、队列等待、来源新鲜度、备份年龄、实际收件和重复情况。满足所配置阈值，无未解释中断或未恢复积压。 |"
+    }
+  ]
+}

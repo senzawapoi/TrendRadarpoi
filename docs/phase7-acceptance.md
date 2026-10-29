@@ -1,14 +1,18 @@
 # Phase 7 Acceptance Record
 
+Historical checkpoint through 2026-10-22. Later deployment and title-translation
+repair status are in the [current handoff](phase7-release-20261023/HANDOFF.md).
+The unfilled gates below preserve this earlier evidence boundary.
+
 This is an evidence form, not a claim that deployment has happened. Updated
 2026-10-22: H1-A..D, timezone and controller-lease repairs have focused passing
 evidence. Frozen v6 Windows and Linux full regression and dirty installation pass.
 Matrix: 27 PASS/1 BLOCKED (RG-04 clean candidate). G1 PASS; G2 blocked; G3 open.
 Confidence is high for executed scope and unknown for VPS operation.
 
-## Current actual-gap checkpoint
+## 2026-10-22 Actual-Gap Checkpoint
 
-Use the [current report](phase7-actual-gap-evidence/verification-20261022.md),
+Use the [dated report](phase7-actual-gap-evidence/verification-20261022.md),
 [run record](phase7-actual-gap-evidence/final-run-v6-20261022.json) and
 [handoff](phase7-actual-gap-evidence/HANDOFF.md). The candidate is dirty, frozen
 by 301 source/resource hashes. H1 passed 22 Linux tests; lease/rollback/complete

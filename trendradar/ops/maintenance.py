@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sqlite3
 import tempfile
@@ -12,6 +13,35 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+
+class FinalizeHealthError(RuntimeError):
+    """Expose bounded reason codes without leaking configuration or provider values."""
+
+    def __init__(self, report: dict[str, Any]) -> None:
+        super().__init__("finalized deployment must pass health confirmation")
+        self.diagnostics = {
+            "status": report.get("status"),
+            "errors": [str(item).split(":", 1)[0][:80]
+                       for item in report.get("errors", [])[:20]],
+            "warnings": [str(item).split(":", 1)[0][:80]
+                         for item in report.get("warnings", [])[:20]],
+        }
+        clocks = {}
+        for role in ("bot", "worker", "scheduler", "collector"):
+            heartbeat = (report.get("heartbeats") or {}).get(role, {})
+            age = heartbeat.get("age_seconds")
+            if isinstance(age, int | float) and not isinstance(age, bool) and math.isfinite(age):
+                clocks[role] = {"age_seconds": age}
+                for field in ("updated_at", "sampled_at"):
+                    try:
+                        stamp = datetime.fromisoformat(heartbeat.get(field, ""))
+                    except (TypeError, ValueError):
+                        continue
+                    if stamp.tzinfo and stamp.utcoffset() is not None:
+                        clocks[role][field] = stamp.astimezone(timezone.utc).isoformat()
+        if clocks:
+            self.diagnostics["heartbeat_clocks"] = clocks
 
 
 def _sync_directory(path: Path) -> None:
@@ -253,7 +283,7 @@ def finalize_deployment(database_path: str | Path) -> dict[str, Any]:
 
     report = collect_health(readiness=True, allow_maintenance=True)
     if report["status"] not in {"healthy", "maintenance"} or report.get("errors"):
-        raise RuntimeError("finalized deployment must pass health confirmation")
+        raise FinalizeHealthError(report)
     path = control_directory(database_path) / "deploy-in-progress.json"
     _unlink_control_marker(path)
     return {"finalized": True, "release_id": release_id}
@@ -366,7 +396,12 @@ def main(argv=None) -> int:
         try:
             result = finalize_deployment(args.database)
         except (RuntimeError, ValueError, OSError, sqlite3.Error) as exc:
-            print(json.dumps({"error": str(exc)}))
+            print(json.dumps({
+                "error": "finalize_confirmation_failed",
+                "error_type": type(exc).__name__,
+                "errno": getattr(exc, "errno", None),
+                "health": getattr(exc, "diagnostics", None),
+            }))
             return 2
     elif args.command == "confirm-deployment-rollback":
         try:

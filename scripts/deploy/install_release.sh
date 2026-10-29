@@ -237,6 +237,25 @@ PY
 actual_sha="$(sha256sum "$archive" | awk '{print $1}')"
 [[ "$expected_sha" == "$actual_sha" ]] || { echo "release checksum mismatch" >&2; exit 2; }
 
+# Reject malformed archives before probing or changing service state. Role
+# capture still happens before the maintenance marker and potentially long setup.
+python3 - "$archive" "$release_id" <<'PY'
+import sys
+import tarfile
+from pathlib import Path
+
+archive, release_id = sys.argv[1:]
+prefix = f"trendradar-{release_id}/"
+with tarfile.open(archive, "r:gz") as stream:
+    members = stream.getmembers()
+    for member in members:
+        name = member.name
+        if not name.startswith(prefix) or name.startswith("/") or ".." in Path(name).parts:
+            raise SystemExit(f"invalid archive member: {name}")
+        if member.issym() or member.islnk() or not (member.isfile() or member.isdir()):
+            raise SystemExit(f"unsupported archive member: {name}")
+PY
+
 write_state prepare
 if [[ -e "$current_link" || -L "$current_link" ]]; then
   old_target="$(readlink -f "$current_link")"
@@ -248,6 +267,14 @@ fi
 if [[ -f "$in_progress_file" ]]; then
   fail "another deployment transaction is incomplete"
 fi
+# The active marker itself tells running roles to stop accepting work. Capture
+# their restart intent while holding the deployment lock, before publishing it;
+# a Worker can exit during acquire, long before the explicit quiesce step.
+for unit in $managed_units; do
+  if systemctl is-active --quiet "$unit"; then
+    pre_active_units="$pre_active_units $unit"
+  fi
+done
 active_transaction=true
 write_state prepare
 
@@ -315,11 +342,6 @@ if [[ -f "$database" ]]; then
 fi
 
 write_state quiesce
-for unit in $managed_units; do
-  if systemctl is-active --quiet "$unit"; then
-    pre_active_units="$pre_active_units $unit"
-  fi
-done
 quiesce_started=true
 for unit in $(ordered_managed_units); do
   systemctl stop "$unit" || fail "could not stop $unit"
@@ -409,8 +431,14 @@ while (( $(date +%s) < deadline )); do
   if [[ -z "${TRENDRADAR_SKIP_READINESS:-}" ]] && TRENDRADAR_RELEASE_ID="$release_id" as_service "$release_dir/venv/bin/python" -m trendradar.ops health \
       --config "${CONFIG_PATH:-/etc/trendradar/config.yaml}" --readiness --json >/dev/null 2>&1; then
     write_state finalize
-    as_service "$release_dir/venv/bin/python" -m trendradar.ops maintenance finalize-deployment \
-      --database "$database" >/dev/null || fail "finalize confirmation"
+    if finalize_output=$(as_service "$release_dir/venv/bin/python" -m trendradar.ops maintenance finalize-deployment \
+        --database "$database"); then
+      :
+    else
+      finalize_status=$?
+      printf 'finalize exit=%s diagnostic=%s\n' "$finalize_status" "$finalize_output" >&2
+      fail "finalize confirmation"
+    fi
     rm -f "$in_progress_file"
     echo "release activated and readiness verified: $release_id"
     exit 0

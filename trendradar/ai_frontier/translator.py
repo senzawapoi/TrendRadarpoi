@@ -64,6 +64,8 @@ def translate_items(
     en_indices: list[int] = []
     en_titles: list[str] = []
     for i, item in enumerate(representatives):
+        if getattr(item, "_canonical_translation_resolved", False):
+            continue
         if not is_english_title(item.title):
             continue
         if item.title_translated:
