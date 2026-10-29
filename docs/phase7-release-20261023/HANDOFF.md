@@ -1,5 +1,7 @@
 # Phase 7 Current Handoff
 
+Owner scope amendment (2026-10-29): temporarily suspend Reddit and X/Nitter; retain their definitions and history. Remove only their required-source entries in the external production configuration, keep all other readiness requirements, and reintroduce both sources only after access is verified. See [source suspension plan](../plans/2026-10-29-temporary-source-suspension.md). This decision permits controlled recovery; it does not establish recovery success.
+
 Updated 2026-10-28 (Asia/Shanghai). **Production is in protected maintenance.**
 Application repair `a20f2d8` is committed, pushed and merged via PR 9; the installed
 `p7-20261027-a20f2d8` candidate failed readiness. It is not a successful deployment.
@@ -10,7 +12,7 @@ transaction identity, evidence, preserved records and recovery progress.
 ## Workspace And Release
 
 - Recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`,
-  branch `fix/deploy-recovery-20261028`, based on `241cefb`.
+  branch `fix/phase7-source-scope-20261029`, based on PR 10 merge `31ce870`.
 - The original repair, handoff and dirty workspaces remain retained.
 - PR 9 merged as `241cefb`; its tree equals `a20f2d8`. PR 7 remains OPEN on the
   Phase 7 branch, with base master. Do not merge it automatically.

@@ -4,8 +4,8 @@ milestone: v5.0
 milestone_name: milestone
 status: in_progress
 stopped_at: recovery controller validated; deployment prerequisites recorded in local output
-last_updated: "2026-10-28"
-last_activity: 2026-10-28 -- permission fix validated; source precheck and delivery drain published in PR 10
+last_updated: "2026-10-29"
+last_activity: 2026-10-29 -- owner authorized temporary Reddit/X suspension; controlled recovery remains pending
 progress:
   total_phases: 9
   completed_phases: 7
@@ -18,6 +18,8 @@ progress:
 
 ## Current Position
 
+Owner scope amendment (2026-10-29): temporarily suspend Reddit and X/Nitter; retain their definitions and history. Remove only their required-source entries in the external production configuration, keep all other readiness requirements, and reintroduce both sources only after access is verified. See [source suspension plan](../docs/plans/2026-10-29-temporary-source-suspension.md). This decision permits controlled recovery; it does not establish recovery success.
+
 Phase 7 / [07-06](phases/07-deployment/07-06-PLAN.md) remains in progress.
 The [current handoff](../docs/phase7-release-20261023/HANDOFF.md) owns release
 identity and deployment evidence; the [repository handoff](../docs/repository-handoff-20261023.md)
@@ -25,7 +27,7 @@ owns worktree reconciliation, pending changes and the maintainer PR sequence.
 Roadmap completion counts are unchanged; one successful release and receipt do
 not close source stability, 48-hour operation or offsite recovery.
 
-- Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`, branch `fix/deploy-recovery-20261028`, based on `241cefb`.
+- Active recovery worktree: `C:/Users/DELL/Desktop/TrendRadarpoi-deploy-checkpoint-20261027`, branch `fix/phase7-source-scope-20261029`, based on PR 10 merge `31ce870`.
 - Application repair `a20f2d8` is committed and merged by PR 9 into the Phase 7 branch as `241cefb`; PR 7 remains open.
 - Current VPS target: `p7-20261027-a20f2d8`, installed but **not activated successfully**. The last successful release was `p7-20261023-28e7283`.
 - Deployment run `40493521142`: exact artifact validation passed, deployment readiness failed. The failed transaction and restore guard remain intact; all managed roles/timers are stopped.
