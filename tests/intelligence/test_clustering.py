@@ -1,7 +1,15 @@
 from datetime import datetime, timedelta, timezone
+from difflib import SequenceMatcher
+from itertools import combinations
 
 from trendradar.core.models import ContentItem
-from trendradar.intelligence.clustering import ClusteringConfig, cluster_items
+from trendradar.intelligence import clustering
+from trendradar.intelligence.clustering import (
+    ClusteringConfig,
+    are_related,
+    cluster_items,
+    item_signals,
+)
 
 NOW = datetime(2026, 9, 4, 6, tzinfo=timezone.utc)
 CONFIG = ClusteringConfig.from_mapping(
@@ -142,6 +150,54 @@ def test_transitive_match_cannot_extend_component_past_time_window():
         first.id in cluster.member_ids and last.id in cluster.member_ids
         for cluster in clusters
     )
+
+
+def test_title_similarity_is_computed_only_when_shared_tokens_allow_a_match(monkeypatch):
+    built = []
+
+    class RecordingMatcher(SequenceMatcher):
+        def __init__(self, *args, **kwargs):
+            built.append(args)
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(clustering, "SequenceMatcher", RecordingMatcher)
+    unrelated = [_item("Database maintenance window", "rss:one"),
+                 _item("Quarterly earnings beat forecasts", "rss:two", hours=1)]
+    related = [_item("Open source agents improve coding workflows", "rss:three"),
+               _item("Open source agents improve coding tools", "rss:four", hours=2)]
+
+    assert len(cluster_items(unrelated, CONFIG)) == 2
+    assert built == []
+    assert len(cluster_items(related, CONFIG)) == 1
+    assert len(built) == 1
+
+
+def test_lazy_title_similarity_matches_eager_decision():
+    titles = ["OpenAI launches the new GPT-5 model", "OpenAI launches GPT 5 model worldwide",
+              "Open source agents improve coding workflows", "Open source agents improve tools",
+              "Database maintenance window", "Database maintenance window tonight",
+              "Company launches a flagship reasoning model", "数据库维护窗口今晚开始",
+              "数据库维护窗口明晚开始", "Quarterly earnings beat forecasts"]
+    items = [_item(title, f"rss:{index}", hours=index % 3, tags=["agents"] if index % 2 else [])
+             for index, title in enumerate(titles)]
+    signals = [item_signals(item, CONFIG) for item in items]
+
+    def eager(first, second):
+        if (first.cve_ids or second.cve_ids
+                or (first.entities and second.entities and not first.entities & second.entities)
+                or first.title == second.title):
+            return are_related(first, second, CONFIG)
+        shared = first.tokens & second.tokens
+        if (first.entities & second.entities or first.tags & second.tags) and (
+                clustering.token_jaccard(first.tokens, second.tokens)
+                >= CONFIG.token_jaccard_threshold):
+            return True
+        ratio = SequenceMatcher(None, first.title, second.title).ratio()
+        return len(shared) >= CONFIG.min_shared_tokens and ratio >= CONFIG.title_similarity_threshold
+
+    for first, second in combinations(signals, 2):
+        assert are_related(first, second, CONFIG) == eager(first, second), (
+            first.title, second.title)
 
 
 def test_malformed_clustering_config_uses_defaults():

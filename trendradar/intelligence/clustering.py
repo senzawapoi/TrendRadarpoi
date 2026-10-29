@@ -236,17 +236,23 @@ def are_related(
     if first.title == second.title:
         return True
 
-    shared_tags = first.tags & second.tags
-    shared_tokens = first.tokens & second.tokens
-    jaccard = token_jaccard(first.tokens, second.tokens)
-    title_ratio = SequenceMatcher(None, first.title, second.title).ratio()
-    has_context_signal = bool(shared_entities or shared_tags)
-
-    if has_context_signal and jaccard >= config.token_jaccard_threshold:
+    # Similarity scores are computed only where they can decide the result.
+    has_context_signal = bool(shared_entities or first.tags & second.tags)
+    if (
+        has_context_signal
+        and token_jaccard(first.tokens, second.tokens) >= config.token_jaccard_threshold
+    ):
         return True
+    if len(first.tokens & second.tokens) < config.min_shared_tokens:
+        return False
+    # Same decision as ratio() >= threshold; the documented upper bounds skip
+    # the quadratic matcher for pairs that cannot reach it.
+    threshold = config.title_similarity_threshold
+    matcher = SequenceMatcher(None, first.title, second.title)
     return (
-        len(shared_tokens) >= config.min_shared_tokens
-        and title_ratio >= config.title_similarity_threshold
+        matcher.real_quick_ratio() >= threshold
+        and matcher.quick_ratio() >= threshold
+        and matcher.ratio() >= threshold
     )
 
 
