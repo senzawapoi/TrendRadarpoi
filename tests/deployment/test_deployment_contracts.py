@@ -100,6 +100,23 @@ def test_systemd_roles_share_resource_slice_and_production_defaults_are_strict()
     assert "INTELLIGENCE_SQLITE_SYNCHRONOUS=FULL" in common
 
 
+def test_interactive_roles_are_protected_without_starving_collectors():
+    def setting(path, key):
+        return next((line.split("=", 1)[1] for line in path.read_text(encoding="utf-8").splitlines()
+                     if line.startswith(key + "=")), None)
+
+    def mib(value):
+        return int(value[:-1]) * {"M": 1, "G": 1024}[value[-1]]
+
+    systemd = ROOT / "deploy/systemd"
+    high = mib(setting(systemd / "trendradar.slice", "MemoryHigh"))
+    protected = {path.name: mib(value) for path in systemd.glob("trendradar-*.service")
+                 if (value := setting(path, "MemoryLow"))}
+    assert set(protected) == {"trendradar-bot.service", "trendradar-worker.service"}
+    # Collectors and page cache keep at least 100 MiB below the shared slice soft limit.
+    assert high - sum(protected.values()) >= 100
+
+
 def test_health_unit_treats_degraded_snapshot_as_success_but_not_unhealthy():
     from trendradar.ops.health import _exit_code
 

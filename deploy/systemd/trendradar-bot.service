@@ -6,6 +6,7 @@ After=network-online.target
 [Service]
 Type=simple
 Slice=trendradar.slice
+MemoryLow=200M
 User=trendradar
 Group=trendradar
 WorkingDirectory=/var/lib/trendradar
