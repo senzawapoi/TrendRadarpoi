@@ -18,6 +18,11 @@ expected triggers with a finite `NextElapseUSecMonotonic`. An empty
 without `OnActiveSec=` the timer stays `active (elapsed)` with no next trigger
 after a boot or fresh unit load. Review any other local drop-in for that pattern.
 
+The health unit opens databases with `mode=ro`, but it may write the database
+directory: SQLite removes `-wal`/`-shm` when the last writer closes, and a reader
+must then create `-shm`. Without that path, `ai_frontier.db` fails with
+`database_read_failed:OperationalError`. Keep the control directory read-only.
+
 The Bot and Worker share the same explicit `INTELLIGENCE_DB_PATH`. All service
 units join `trendradar.slice`; review its initial resource limits against the
 target VPS before enabling them. Bot owns the

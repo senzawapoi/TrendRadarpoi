@@ -14,5 +14,5 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/run/trendradar
+ReadWritePaths=/run/trendradar /var/lib/trendradar/output
 UMask=0077
