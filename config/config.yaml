@@ -307,6 +307,10 @@ intelligence:
     max_citations: 12
     max_tool_calls: 3
     max_tool_result_chars: 4000
+    # 读者画像：Assistant 据此筛选与排序（≤2000 字，可用 INTELLIGENCE_ASSISTANT_READER_PROFILE 覆盖）
+    reader_profile: >-
+      主要关注 AI 相关的软件与硬件，涵盖技术、经济和政治三个层面：模型与开源发布、AI 开发工具与应用、
+      芯片与算力基础设施、AI 公司融资与商业动态、AI 政策监管与出口管制。非 AI 内容仅在影响重大时提及。
     tools:
       search_stories: true
       search_content_items: true
