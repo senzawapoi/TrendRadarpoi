@@ -186,6 +186,38 @@ def test_invalid_policy_fails_before_any_snapshot_is_written(tmp_path, monkeypat
     assert not destination.exists() or not any(destination.iterdir())
 
 
+def test_real_snapshots_are_retention_candidates(tmp_path):
+    from trendradar.intelligence.storage import IntelligenceStorage
+    from trendradar.ops.backup import create_snapshot
+
+    root, runtime = tmp_path / "backups", tmp_path / "output"
+    runtime.mkdir()
+    with IntelligenceStorage(runtime / "intelligence.db"):
+        pass
+    ids = [create_snapshot([runtime / "intelligence.db"], root, root=runtime,
+                           retention_managed=True)["backup_id"] for _ in range(3)]
+    result = prune_snapshots(root, runtime)
+    # All three fall in one hour, so the hourly window keeps only the newest.
+    assert sorted(result["removed"]) == sorted(ids[:2])
+    assert (root / ids[2] / "database-0.db").is_file()
+
+
+def test_legacy_validation_sidecars_do_not_block_pruning(tmp_path):
+    root, runtime = tmp_path / "backups", tmp_path / "output"
+    now = datetime(2026, 10, 23, 3, tzinfo=timezone.utc)
+    paths = [snapshot(root, runtime, now - timedelta(hours=i)) for i in range(30)]
+    for path in paths:
+        (path / ".database-0.db.4242.tmp-wal").write_bytes(b"")
+        (path / ".database-0.db.4242.tmp-shm").write_bytes(b"\0" * 32768)
+    unsafe = [paths[26], paths[27]]
+    (unsafe[0] / ".database-0.db.4242.tmp-wal").write_bytes(b"uncheckpointed frames")
+    (unsafe[1] / ".database-3.db.4242.tmp-shm").write_bytes(b"")
+    result = prune_snapshots(root, runtime, RetentionPolicy(hours=24, days=0, weeks=0))
+    assert sorted(result["removed"]) == sorted(path.name for path in (*paths[24:26], *paths[28:]))
+    assert all(path.exists() for path in (*paths[:24], *unsafe))
+    assert not any(path.exists() for path in (*paths[24:26], *paths[28:]))
+
+
 def test_directory_swap_cannot_redirect_deletion(tmp_path, monkeypatch):
     from trendradar.ops import backup_retention
 
