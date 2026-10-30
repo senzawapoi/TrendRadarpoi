@@ -1,14 +1,17 @@
 import json
 import os
+from collections import namedtuple
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
-from trendradar.ops.backup_retention import prune_snapshots
+from trendradar.ops import backup_retention
+from trendradar.ops.backup_retention import RetentionPolicy, prune_snapshots
 from trendradar.ops.maintenance import set_guard
 
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="directory-fenced Linux retention")
+shutil_usage = namedtuple("usage", "total used free")
 
 
 def snapshot(destination, runtime, created, **overrides):
@@ -97,6 +100,90 @@ def test_retention_preserves_malformed_time_and_prunes_valid_snapshots(tmp_path,
     result = prune_snapshots(root, runtime)
     assert result["status"] == "complete" and result["removed"]
     assert (malformed / "database-0.db").is_file()
+
+
+def _sizes(path):
+    return sum(child.stat().st_size for child in path.iterdir())
+
+
+def test_shorter_windows_rotate_snapshots_faster(tmp_path):
+    root, runtime = tmp_path / "backups", tmp_path / "output"
+    now = datetime(2026, 10, 23, 3, tzinfo=timezone.utc)
+    paths = [snapshot(root, runtime, now - timedelta(hours=i)) for i in range(24 * 10)]
+    result = prune_snapshots(root, runtime, RetentionPolicy(hours=6, days=2, weeks=0))
+    assert result["status"] == "complete"
+    assert all(path.exists() for path in paths[:6])
+    remaining = [path for path in root.iterdir() if path.is_dir()]
+    assert 6 <= len(remaining) <= 8
+
+
+def test_byte_budget_removes_oldest_retained_but_keeps_newest(tmp_path):
+    root, runtime = tmp_path / "backups", tmp_path / "output"
+    now = datetime(2026, 10, 23, 3, tzinfo=timezone.utc)
+    paths = [snapshot(root, runtime, now - timedelta(hours=i)) for i in range(10)]
+    budget = _sizes(paths[0]) * 3
+    result = prune_snapshots(root, runtime, RetentionPolicy(max_bytes=budget))
+    assert result["capacity_exceeded"] is False
+    assert result["capacity_removed"] == [path.name for path in reversed(paths[3:])]
+    assert all(path.exists() for path in paths[:3])
+    assert not any(path.exists() for path in paths[3:])
+    tiny = prune_snapshots(root, runtime, RetentionPolicy(max_bytes=1))
+    assert tiny["capacity_exceeded"] is True
+    assert [path.exists() for path in paths[:3]] == [True, True, False]
+
+
+def test_free_space_floor_prunes_until_satisfied_and_spares_unmanaged(tmp_path, monkeypatch):
+    root, runtime = tmp_path / "backups", tmp_path / "output"
+    now = datetime(2026, 10, 23, 3, tzinfo=timezone.utc)
+    paths = [snapshot(root, runtime, now - timedelta(hours=i)) for i in range(8)]
+    evidence = snapshot(root, runtime, now - timedelta(days=30), retention_managed=False)
+
+    def usage(_path):
+        managed = sum(1 for path in paths if path.exists())
+        return shutil_usage(total=100, used=50 + 5 * managed, free=50 - 5 * managed)
+
+    monkeypatch.setattr(backup_retention.shutil, "disk_usage", usage)
+    result = prune_snapshots(root, runtime, RetentionPolicy(min_free_ratio=0.3))
+    assert result["capacity_exceeded"] is False
+    assert sum(path.exists() for path in paths) == 4  # free 30/100 with four left
+    assert evidence.exists()
+    strict = prune_snapshots(root, runtime, RetentionPolicy(min_free_ratio=0.6))
+    assert strict["capacity_exceeded"] is True
+    assert [path.exists() for path in paths[:3]] == [True, True, False]
+    assert evidence.exists()
+
+
+def test_policy_from_environment_defaults_overrides_and_rejects_invalid_values():
+    default = RetentionPolicy.from_environment({})
+    assert (default.hours, default.days, default.weeks) == (24, 7, 4)
+    assert default.max_bytes is None and default.min_free_ratio == 0.1
+    custom = RetentionPolicy.from_environment({
+        "TRENDRADAR_BACKUP_KEEP_HOURS": "12", "TRENDRADAR_BACKUP_KEEP_DAYS": "3",
+        "TRENDRADAR_BACKUP_KEEP_WEEKS": "0", "TRENDRADAR_BACKUP_MAX_MIB": "2048",
+        "TRENDRADAR_BACKUP_MIN_FREE_PERCENT": "20",
+    })
+    assert (custom.hours, custom.days, custom.weeks) == (12, 3, 0)
+    assert custom.max_bytes == 2048 * 1024 * 1024 and custom.min_free_ratio == 0.2
+    disabled = RetentionPolicy.from_environment({"TRENDRADAR_BACKUP_MIN_FREE_PERCENT": "0"})
+    assert disabled.min_free_ratio is None
+    for name, value in (("TRENDRADAR_BACKUP_KEEP_HOURS", "0"), ("TRENDRADAR_BACKUP_KEEP_DAYS", "x"),
+                        ("TRENDRADAR_BACKUP_MAX_MIB", "-1"),
+                        ("TRENDRADAR_BACKUP_MIN_FREE_PERCENT", "95")):
+        with pytest.raises(ValueError, match=name):
+            RetentionPolicy.from_environment({name: value})
+
+
+def test_invalid_policy_fails_before_any_snapshot_is_written(tmp_path, monkeypatch):
+    from trendradar.ops.backup import main
+
+    runtime, destination = tmp_path / "output", tmp_path / "backups"
+    runtime.mkdir()
+    monkeypatch.setenv("TRENDRADAR_BACKUP_KEEP_HOURS", "0")
+    with pytest.raises(SystemExit) as exited:
+        main(["create", "--root", str(runtime), "--destination", str(destination),
+              "--apply-retention"])
+    assert exited.value.code == 2
+    assert not destination.exists() or not any(destination.iterdir())
 
 
 def test_directory_swap_cannot_redirect_deletion(tmp_path, monkeypatch):
