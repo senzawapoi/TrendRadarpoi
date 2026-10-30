@@ -27,7 +27,9 @@ out of `systemctl --failed`; unhealthy (exit 2) still marks the unit failed.
 
 The Bot and Worker share the same explicit `INTELLIGENCE_DB_PATH`. All service
 units join `trendradar.slice`; review its initial resource limits against the
-target VPS before enabling them. Bot owns the
+target VPS before enabling them. Bot and Worker set `MemoryLow=200M` so reclaim
+under the slice's `MemoryHigh` takes collector page cache before swapping out the
+interactive roles; the contract test keeps at least 100 MiB unprotected. Bot owns the
 WebSocket; Worker polls the durable EventLedger; Scheduler is a one-shot timer.
 `TRENDRADAR_LOCK_DIR` points at `/run/trendradar`, and
 `TRENDRADAR_CONTROL_DIR` points at `/var/lib/trendradar/control`; both must be

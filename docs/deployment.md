@@ -158,9 +158,14 @@ configure `RESTIC_REPOSITORY` and `RESTIC_PASSWORD_FILE` in `backup.env`.
 For this deployment set `TRENDRADAR_OFFSITE_ENABLED=false` in `common.env` and
 `backup.env`. Readiness still requires a fresh local snapshot, but does not
 require an offsite receipt. The hourly backup unit applies managed retention:
-24 hourly, 7 daily and 4 weekly snapshots in Asia/Shanghai. Only snapshots
-explicitly marked retention-managed are pruned; manual snapshots and historical
-recovery evidence are preserved. Local backups do not protect against host loss.
+by default 24 hourly, 7 daily and 4 weekly snapshots in Asia/Shanghai
+(`TRENDRADAR_BACKUP_KEEP_HOURS/DAYS/WEEKS`). A capacity guard then removes the
+oldest managed snapshots while they exceed `TRENDRADAR_BACKUP_MAX_MIB` (0 = no
+budget) or free disk is below `TRENDRADAR_BACKUP_MIN_FREE_PERCENT` (default 10),
+always keeping the newest two. Invalid values fail the backup before a snapshot
+is written. Only snapshots explicitly marked retention-managed are pruned; manual
+snapshots and historical recovery evidence are preserved but still occupy disk.
+Local backups do not protect against host loss.
 
 The backup tool uses SQLite Online Backup API, validates each snapshot, and
 writes a manifest only after every requested database succeeds. It does not

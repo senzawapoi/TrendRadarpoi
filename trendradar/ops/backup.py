@@ -748,7 +748,9 @@ def main(argv=None) -> int:
     create.add_argument("--destination", required=True)
     create.add_argument("--release-id", default="unknown")
     create.add_argument("--apply-retention", action="store_true",
-                        help="manage scheduled snapshots: 24 hourly, 7 daily, 4 weekly")
+                        help="manage scheduled snapshots: TRENDRADAR_BACKUP_KEEP_HOURS/DAYS/WEEKS "
+                             "(24/7/4) plus TRENDRADAR_BACKUP_MAX_MIB and "
+                             "TRENDRADAR_BACKUP_MIN_FREE_PERCENT (10) capacity limits")
     restore = subparsers.add_parser("restore")
     restore.add_argument("--snapshot", required=True)
     restore.add_argument("--destination", required=True)
@@ -770,6 +772,15 @@ def main(argv=None) -> int:
     if args.command == "create":
         if args.apply_retention and args.database:
             parser.error("--apply-retention requires automatic --root discovery")
+        policy = None
+        if args.apply_retention:
+            from trendradar.ops.backup_retention import RetentionPolicy
+
+            # Reject a bad policy before writing a snapshot that could never be pruned.
+            try:
+                policy = RetentionPolicy.from_environment()
+            except ValueError as exc:
+                parser.error(str(exc))
         databases = args.database or discover_databases(args.root)
         result = create_snapshot(databases, args.destination, release_id=args.release_id,
                                  root=args.root if not args.database else None,
@@ -777,7 +788,7 @@ def main(argv=None) -> int:
         if args.apply_retention:
             from trendradar.ops.backup_retention import prune_snapshots
 
-            result["retention"] = prune_snapshots(args.destination, args.root)
+            result["retention"] = prune_snapshots(args.destination, args.root, policy)
     elif args.command == "restore":
         guard_database = args.guard_database or os.environ.get("INTELLIGENCE_DB_PATH") or str(
             Path(args.destination).expanduser().resolve().parent / ".restore-target.db"
