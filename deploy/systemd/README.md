@@ -22,6 +22,8 @@ The health unit opens databases with `mode=ro`, but it may write the database
 directory: SQLite removes `-wal`/`-shm` when the last writer closes, and a reader
 must then create `-shm`. Without that path, `ai_frontier.db` fails with
 `database_read_failed:OperationalError`. Keep the control directory read-only.
+Exit code 1 is a degraded snapshot, not a crash, so `SuccessExitStatus=1` keeps it
+out of `systemctl --failed`; unhealthy (exit 2) still marks the unit failed.
 
 The Bot and Worker share the same explicit `INTELLIGENCE_DB_PATH`. All service
 units join `trendradar.slice`; review its initial resource limits against the

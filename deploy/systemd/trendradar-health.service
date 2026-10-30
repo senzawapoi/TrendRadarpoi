@@ -10,6 +10,7 @@ WorkingDirectory=/var/lib/trendradar
 EnvironmentFile=-/etc/trendradar/common.env
 EnvironmentFile=-/etc/trendradar/release.env
 ExecStart=/opt/trendradar/current/venv/bin/python -m trendradar.ops health --config /etc/trendradar/config.yaml --json
+SuccessExitStatus=1
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict

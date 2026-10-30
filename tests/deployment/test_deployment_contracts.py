@@ -100,6 +100,16 @@ def test_systemd_roles_share_resource_slice_and_production_defaults_are_strict()
     assert "INTELLIGENCE_SQLITE_SYNCHRONOUS=FULL" in common
 
 
+def test_health_unit_treats_degraded_snapshot_as_success_but_not_unhealthy():
+    from trendradar.ops.health import _exit_code
+
+    unit = (ROOT / "deploy/systemd/trendradar-health.service").read_text(encoding="utf-8")
+    accepted = {int(code) for line in unit.splitlines() if line.startswith("SuccessExitStatus=")
+                for code in line.split("=", 1)[1].split()}
+    assert _exit_code("degraded") in accepted
+    assert _exit_code("unhealthy") not in accepted
+
+
 def test_release_and_offsite_workflows_have_explicit_control_boundaries():
     deploy = (ROOT / ".github/workflows/phase7-deploy.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/phase7-release.yml").read_text(encoding="utf-8")
