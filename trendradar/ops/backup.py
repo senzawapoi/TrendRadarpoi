@@ -107,6 +107,9 @@ def snapshot_database(source: str | Path, target: str | Path, *, timeout_seconds
     try:
         source_connection.backup(target_connection, pages=128, progress=progress, sleep=0.1)
         target_connection.commit()
+        # The copy inherits WAL mode from a live source. Store it as a self-contained rollback
+        # file so read-only validation cannot leave -wal/-shm sidecars inside the snapshot.
+        target_connection.execute("PRAGMA journal_mode=DELETE").fetchone()
         target_connection.close()
         target_connection = None
         result = _validate(temporary)

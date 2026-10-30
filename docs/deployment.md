@@ -169,7 +169,10 @@ Local backups do not protect against host loss.
 
 The backup tool uses SQLite Online Backup API, validates each snapshot, and
 writes a manifest only after every requested database succeeds. It does not
-copy an active `.db`/WAL pair directly. Restore into a new directory first:
+copy an active `.db`/WAL pair directly. Snapshot files are stored as
+self-contained rollback-journal databases (the services switch a restored file
+back to WAL when they open it), so read-only validation leaves no `-wal`/`-shm`
+sidecars that would make retention skip the snapshot. Restore into a new directory first:
 
 ```bash
 python -m trendradar.ops backup restore \
