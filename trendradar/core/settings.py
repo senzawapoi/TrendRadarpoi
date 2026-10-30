@@ -691,6 +691,10 @@ class RuntimeSettings:
                 name in {"search_stories", "search_content_items", "get_story_evidence"},
             )
         config["tools"] = tools
+        profile = self.get_str(
+            "INTELLIGENCE_ASSISTANT_READER_PROFILE", "intelligence.assistant.reader_profile", "",
+        )
+        config["reader_profile"] = " ".join(str(profile or "").split())[:2_000]
         return config
 
     @property
