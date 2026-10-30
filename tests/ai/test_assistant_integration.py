@@ -218,6 +218,74 @@ intelligence:
     assert seeded_intelligence.storage.count("assistant_sessions") == 0
 
 
+def test_editor_brief_profile_and_local_time_precede_unchanged_grounding_rules(
+    seeded_intelligence,
+    tmp_path: Path,
+) -> None:
+    from trendradar.ai.assistant import _GROUNDING_RULES
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "app:\n  timezone: Asia/Shanghai\nintelligence:\n  enabled: true\n  assistant:\n"
+        "    reader_profile: >-\n      关注 AI 软件与硬件，\n      含技术、经济与政治\n",
+        encoding="utf-8",
+    )
+    gemini = SequenceGemini(GeminiResult(text='{"answer":"无相关证据","citations":[]}', model="m"))
+    service = build_assistant_service(
+        load_settings(config_path, environ={}),
+        storage=seeded_intelligence.storage,
+        gemini_client=gemini,
+    )
+    assert service is not None
+    service.handle(AssistantRequest("brief-1", "owner", "今天有什么值得看?", requested_at=NOW))
+    instruction = gemini.calls[0][1]["system_instruction"]
+    assert instruction.startswith("Act as the reader's personal news-intelligence editor")
+    assert "Reader profile: 关注 AI 软件与硬件， 含技术、经济与政治" in instruction
+    assert "Reader local time: 2026-09-04 20:00 Friday (Asia/Shanghai, UTC+0800)." in instruction
+    assert instruction.endswith("Grounding rules, which override everything above: "
+                                + _GROUNDING_RULES)
+    assert _GROUNDING_RULES.startswith("You are a local intelligence assistant. Answer only")
+
+    bare = SequenceGemini(GeminiResult(text='{"answer":"无","citations":[]}', model="m"))
+    AssistantService(seeded_intelligence.storage, gemini_client=bare, reader_timezone="Bad/Zone"
+                     ).handle(AssistantRequest("brief-2", "owner", "hi", requested_at=NOW))
+    assert "Reader profile" not in bare.calls[0][1]["system_instruction"]
+    assert "(UTC, UTC+0000)" in bare.calls[0][1]["system_instruction"]
+
+
+def test_unmatched_question_falls_back_to_most_important_entries(seeded_intelligence) -> None:
+    story_ref = f"story:{seeded_intelligence.story.id}"
+    gemini = SequenceGemini(GeminiResult(
+        text=f'{{"answer":"Alpha [{story_ref}]","citations":["{story_ref}"]}}', model="m",
+    ))
+    service = AssistantService(seeded_intelligence.storage, gemini_client=gemini)
+    reply = service.handle(
+        AssistantRequest("broad-1", "owner", "今天最值得看的是哪些", requested_at=NOW)
+    )
+    prompt = gemini.calls[0][0][-1].content
+    evidence = json.loads(
+        prompt.split("Local evidence JSON:\n", 1)[1].split("\n\nCurrent input JSON:", 1)[0]
+    )
+    assert evidence["query"] == ""
+    assert seeded_intelligence.story.id in prompt
+    assert [citation.ref for citation in reply.citations] == [story_ref]
+
+
+def test_reader_profile_setting_is_whitespace_normalized_and_bounded(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("intelligence:\n  assistant:\n    reader_profile: ' AI\n  芯片 '\n",
+                           encoding="utf-8")
+    assert load_settings(config_path, environ={}).intelligence_assistant_config[
+        "reader_profile"] == "AI 芯片"
+    overridden = load_settings(config_path, environ={
+        "INTELLIGENCE_ASSISTANT_READER_PROFILE": "x" * 3_000,
+    }).intelligence_assistant_config["reader_profile"]
+    assert overridden == "x" * 2_000
+    empty = tmp_path / "empty.yaml"
+    empty.write_text("intelligence: {}\n", encoding="utf-8")
+    assert load_settings(empty, environ={}).intelligence_assistant_config["reader_profile"] == ""
+
+
 def test_factory_fails_closed_without_enabled_local_storage(tmp_path: Path) -> None:
     disabled_path = tmp_path / "disabled.yaml"
     disabled_path.write_text("intelligence:\n  enabled: false\n", encoding="utf-8")
@@ -285,6 +353,10 @@ def test_quote_prompt_preserves_complete_json_or_fails_closed(seeded_intelligenc
         assert reply.degraded and "input limit" in reply.degraded_reason
         return
     assert len(sdk.models.calls) == 1
+    # The editorial brief does not fit 1024 chars; the mandatory grounding rules still apply.
+    from trendradar.ai.assistant import _GROUNDING_RULES
+
+    assert sdk.models.calls[0]["config"]["system_instruction"] == _GROUNDING_RULES
     prompt = sdk.models.calls[0]["contents"][-1]["parts"][0]["text"]
     assert len(prompt) <= provider_limit
     payload = json.loads(prompt.split("Current input JSON:\n", 1)[1])

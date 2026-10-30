@@ -13,6 +13,7 @@ from mcp_server.tools.translation import TranslationTools
 from trendradar.ai.errors import GeminiTimeoutError
 from trendradar.ai.translator import (
     TRANSLATION_MODEL,
+    TRANSLATION_MODELS,
     TranslationEngine,
     build_translation_client,
 )
@@ -215,28 +216,34 @@ def test_real_inference_client_uses_flash_lite_without_modifying_inference(facad
     assert inference.chat("inference").model == "inference-one"
 
 
-def test_translation_failure_is_independent_of_inference_cooldowns():
+def test_translation_falls_back_once_independently_of_inference_routing():
     from trendradar.ai import GeminiClient
 
-    sdk = FakeSdkClient(TimeoutError(), _response("still works"))
-    inference = GeminiClient(_config(max_attempts=3), client=sdk)
+    sdk = FakeSdkClient(
+        TimeoutError(), _response("你好"), _response("still works"), _response("再见"),
+    )
+    inference = GeminiClient(_config(models=("inference-one",)), client=sdk)
     translation = TranslationEngine(gemini_client=inference)
-    assert translation.batch_translate_titles(["one", "two"]) == ["", ""]
-    assert [call["model"] for call in sdk.models.calls] == [TRANSLATION_MODEL]
+    assert translation.translate_text("hello", "en", "zh")["translated_text"] == "你好"
+    assert [call["model"] for call in sdk.models.calls] == list(TRANSLATION_MODELS)
     assert inference.chat("question").text == "still works"
-    assert translation.batch_translate_titles(["three"]) == [""]
-    assert len(sdk.models.calls) == 2
+    assert sdk.models.calls[-1]["model"] == "inference-one"
+    # The cooled-down primary is skipped; the fixed fallback answers directly.
+    assert translation.translate_text("goodbye", "en", "zh")["translated_text"] == "再见"
+    assert sdk.models.calls[-1]["model"] == TRANSLATION_MODELS[1]
 
 
 def test_translation_failure_never_switches_to_gemma_or_inference_models():
     from trendradar.ai import GeminiClient
 
-    sdk = FakeSdkClient(TimeoutError(), _response("must not be requested"))
+    sdk = FakeSdkClient(TimeoutError(), TimeoutError(), _response("must not be requested"))
     engine = TranslationEngine(gemini_client=GeminiClient(_config(max_attempts=3), client=sdk))
     outcome = engine.translate_text("original title", "en", "zh")
     assert not outcome["success"]
     assert outcome["translated_text"] == "original title"
-    assert [call["model"] for call in sdk.models.calls] == ["gemini-3.1-flash-lite"]
+    assert [call["model"] for call in sdk.models.calls] == [
+        "gemini-3.1-flash-lite", "gemini-3.5-flash-lite",
+    ]
 
 
 def test_settings_translation_ignores_inference_models_and_reuses_key(tmp_path):
@@ -247,8 +254,8 @@ def test_settings_translation_ignores_inference_models_and_reuses_key(tmp_path):
         "GEMINI_MODELS": "inference-one,inference-two",
     })
     client = build_translation_client(settings)
-    assert client.config.models == (TRANSLATION_MODEL,)
-    assert client.config.max_attempts == 1
+    assert client.config.models == TRANSLATION_MODELS == (TRANSLATION_MODEL, "gemini-3.5-flash-lite")
+    assert client.config.max_attempts == 2
     assert client.config.api_key == settings.gemini_api_key
     assert not client.initialized
     assert build_translation_client(load_settings(path, environ={})) is None

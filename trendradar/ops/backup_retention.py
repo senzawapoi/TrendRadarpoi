@@ -71,6 +71,14 @@ def _over_capacity(root: Path, kept: list, policy: RetentionPolicy) -> bool:
     return False
 
 
+def _legacy_sidecar(child: Path, count: int) -> bool:
+    """Read-only validation in older releases left these behind; an empty WAL holds no data."""
+    match = re.fullmatch(r"\.database-(\d+)\.db\.\d+\.tmp-(wal|shm)", child.name)
+    if match is None or int(match.group(1)) >= count:
+        return False
+    return match.group(2) == "shm" or child.stat().st_size == 0
+
+
 def _candidate(path: Path, runtime: Path):
     if path.is_symlink() or not path.is_dir() or not re.fullmatch(r"\d{8}T\d{12}Z", path.name):
         return None
@@ -102,7 +110,8 @@ def _candidate(path: Path, runtime: Path):
         children = list(path.iterdir())
         allowed = names | {"manifest.json", "offsite-manifest.json"}
         if (
-            any(child.is_symlink() or not child.is_file() or child.name not in allowed
+            any(child.is_symlink() or not child.is_file()
+                or (child.name not in allowed and not _legacy_sidecar(child, len(entries)))
                 for child in children)
             or not names <= {child.name for child in children}
         ):

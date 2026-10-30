@@ -86,8 +86,9 @@ checks every 60 seconds without changing collector frequency. At most 20 new
 Stories are registered per batch; overflow remains eligible for subsequent ticks.
 Delivery uses persisted payloads and chunk checkpoints. Do not run daily delivery
 as a second sender. Configure the ordered `GEMINI_MODELS` list from `.env.example`;
-translation uses a separate `gemini-3.1-flash-lite` profile and the same key. Failed
-translations retain the original without switching to Gemma or inference models.
+translation uses a separate fixed route, `gemini-3.1-flash-lite` then one attempt on
+`gemini-3.5-flash-lite`, with the same key. It never inherits `GEMINI_MODELS`; when both
+fail the original is retained without switching to Gemma.
 
 New instant batches use Lark `post` rich text: batch count, source groups and numbered
 linked headlines. Each Story has one source link; detailed evidence remains in reports.
@@ -169,7 +170,10 @@ Local backups do not protect against host loss.
 
 The backup tool uses SQLite Online Backup API, validates each snapshot, and
 writes a manifest only after every requested database succeeds. It does not
-copy an active `.db`/WAL pair directly. Restore into a new directory first:
+copy an active `.db`/WAL pair directly. Snapshot files are stored as
+self-contained rollback-journal databases (the services switch a restored file
+back to WAL when they open it), so read-only validation leaves no `-wal`/`-shm`
+sidecars that would make retention skip the snapshot. Restore into a new directory first:
 
 ```bash
 python -m trendradar.ops backup restore \

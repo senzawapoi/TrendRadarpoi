@@ -642,7 +642,15 @@ def _research_tool(context: ToolContext, arguments: Mapping[str, Any]) -> ToolRe
 
 def _default_specs() -> tuple[ToolSpec, ...]:
     search_properties = {
-        "query": {"type": "string", "maxLength": 500},
+        "query": {
+            "type": "string",
+            "maxLength": 500,
+            "description": (
+                "Space-separated keywords; every keyword must appear in the title or summary. "
+                "Use one or two short keywords per call (for example 芯片 or Nvidia), never a "
+                "sentence. An empty query returns the most important entries in the range."
+            ),
+        },
         "time_range": {
             "type": "object",
             "description": (
@@ -662,7 +670,11 @@ def _default_specs() -> tuple[ToolSpec, ...]:
     specs = [
         ToolSpec(
             name="search_stories",
-            description="Search local Stories in the supplied UTC time range.",
+            description=(
+                "Search local Stories in the supplied UTC time range, most important first. "
+                "Omit domain for news: domain ai holds only AI Frontier sources such as papers "
+                "and repositories, while AI news is mostly general."
+            ),
             parameters={
                 "type": "object",
                 "properties": search_properties,

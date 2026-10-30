@@ -24,7 +24,7 @@ The unified store is `output/intelligence.db`. Existing news/RSS date databases 
 
 All Google calls share environment-only `GEMINI_API_KEY`. Inference tries `gemini-3.8-flash`, `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`. `GEMINI_MODELS` accepts an ordered comma-separated list, ahead of legacy `GEMINI_MODEL` and YAML settings. Each request attempts a candidate once, with at most three attempts. Model failures trigger immediate failover and a default 60-second cooldown; shared authentication errors stop immediately. Exhaustion returns the existing deterministic local-evidence response.
 
-Translation uses a separate `gemini-3.1-flash-lite` profile with the same API key. It never inherits inference models or uses anonymous providers. Failed translations retain original text without falling back to Gemma.
+Translation uses a separate fixed route with the same API key: `gemini-3.1-flash-lite`, then one attempt on `gemini-3.5-flash-lite`. It never inherits `GEMINI_MODELS` or uses anonymous providers. When both fail, the original text is retained without falling back to Gemma.
 
 Main and AI Frontier collection resolve and persist canonical title translations before publishing Stories; reports reuse the same results. Raw evidence and saved delivery payloads remain unchanged. See the [translation contract](docs/intelligence.md#title-translation-before-publication).
 
