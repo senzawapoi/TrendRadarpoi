@@ -53,7 +53,9 @@ share the result while raw titles, URLs and observation times/counts remain unch
 Story titles do not change clustering/identity or the original title used for interest scoring.
 Optional wording cannot overwrite the resolved display title. Existing schemas remain at v7.
 
-Translation uses only `gemini-3.1-flash-lite`, with original-text fallback. The statistical
+Translation uses the fixed route `gemini-3.1-flash-lite` → `gemini-3.5-flash-lite` (one
+attempt each, independent of `GEMINI_MODELS`), with original-text fallback. The persisted
+`model` field names the route's primary model. The statistical
 `median`/`average` regression guard rejects the known mistranslation; this is not a general
 semantic-quality guarantee. AI Frontier now translates all fresh Story candidates, not only
 the legacy report's first 30 items; the initial translation workload can therefore increase.

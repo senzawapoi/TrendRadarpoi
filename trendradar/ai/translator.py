@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 _CJK_PATTERN = re.compile(r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]")
 _NUMBERED_LINE = re.compile(r"^(\d+)\s*[.\)\uff0e\u3001:\-\uff09]\s*(.+)")
 TRANSLATION_MODEL = "gemini-3.1-flash-lite"
+# Fixed and independent of GEMINI_MODELS: the primary once, then one fallback attempt.
+TRANSLATION_MODELS = (TRANSLATION_MODEL, "gemini-3.5-flash-lite")
 MAX_PARTIAL_RECOVERY_CALLS = 3
 _TITLE_FIDELITY_INSTRUCTION = (
     "Preserve quantities, units, ranges, approximation signs and named entities. "
@@ -63,19 +65,19 @@ def optional_gemini_client(
     gemini_client: GeminiClient | None = None,
     gemini_api_key: str | None = None,
 ) -> GeminiClient | None:
-    """Keep legacy injection shapes while fixing real clients to the translation model."""
+    """Keep legacy injection shapes while fixing real clients to the translation route."""
     if gemini_client is not None:
         if isinstance(gemini_client, GeminiClient):
-            return gemini_client.for_model(TRANSLATION_MODEL)
+            return gemini_client.for_models(TRANSLATION_MODELS)
         return gemini_client
     if gemini_api_key is None:
         from trendradar.core.settings import load_settings
 
         return build_translation_client(load_settings(fallback_to_empty=True))
     key = str(gemini_api_key or "").strip()
-    return GeminiClient(
-        GeminiConfig(api_key=key, model=TRANSLATION_MODEL, max_attempts=1)
-    ) if key else None
+    return GeminiClient(GeminiConfig(
+        api_key=key, models=TRANSLATION_MODELS, max_attempts=len(TRANSLATION_MODELS),
+    )) if key else None
 
 
 def build_translation_client(settings: RuntimeSettings) -> GeminiClient | None:
@@ -85,8 +87,8 @@ def build_translation_client(settings: RuntimeSettings) -> GeminiClient | None:
     values = settings.gemini_config
     return GeminiClient(GeminiConfig(
         api_key=settings.gemini_api_key,
-        model=TRANSLATION_MODEL,
-        max_attempts=1,
+        models=TRANSLATION_MODELS,
+        max_attempts=len(TRANSLATION_MODELS),
         **{name: values[name] for name in (
             "timeout_seconds", "min_request_interval_seconds", "max_input_chars",
             "max_output_chars", "model_cooldown_seconds",
@@ -95,7 +97,7 @@ def build_translation_client(settings: RuntimeSettings) -> GeminiClient | None:
 
 
 class TranslationEngine:
-    """Use the independent translation model, keeping failed batch slots empty."""
+    """Use the independent translation route, keeping failed batch slots empty."""
 
     TRANSLATION_APIS = ANONYMOUS_TRANSLATION_APIS
 
@@ -111,7 +113,7 @@ class TranslationEngine:
         self.default_source = str(default_source or "en")
         self.default_target = str(default_target or "zh")
         self.gemini_client = (
-            gemini_client.for_model(TRANSLATION_MODEL)
+            gemini_client.for_models(TRANSLATION_MODELS)
             if isinstance(gemini_client, GeminiClient) else gemini_client
         )
         self.session = session  # Compatibility attribute only; no anonymous requests.
@@ -355,8 +357,9 @@ class TranslationEngine:
 __all__ = [
     "ANONYMOUS_TRANSLATION_APIS",
     "LANGUAGE_NAMES",
-    "TranslationEngine",
     "TRANSLATION_MODEL",
+    "TRANSLATION_MODELS",
+    "TranslationEngine",
     "build_translation_client",
     "is_english_title",
     "optional_gemini_client",

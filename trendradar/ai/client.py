@@ -479,10 +479,15 @@ class GeminiClient:
 
     def for_model(self, model: str) -> GeminiClient:
         """Reuse the lazy SDK transport with an independent single-model route."""
-        if self.config.models == (model,) and self.config.max_attempts == 1:
+        return self.for_models((model,))
+
+    def for_models(self, models: Sequence[str]) -> GeminiClient:
+        """Reuse the lazy SDK transport with a fixed route, one attempt per listed model."""
+        route = tuple(models)
+        if self.config.models == route and self.config.max_attempts == len(route):
             return self
         return GeminiClient(
-            replace(self.config, model=model, models=(model,), max_attempts=1),
+            replace(self.config, model=route[0], models=route, max_attempts=len(route)),
             client_factory=lambda **_kwargs: self._get_client(),
             clock=self._clock,
             sleeper=self._sleeper,
