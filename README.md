@@ -32,7 +32,7 @@ python -m trendradar.integrations.lark --check
 
 `GEMINI_MODELS` 接受逗号分隔列表，优先于旧 `GEMINI_MODEL` 和 YAML 配置。每个候选每次请求最多尝试一次，总计最多三次；模型错误触发即时切换与默认 60 秒冷却。全部不可用时返回确定性本地证据。共享鉴权错误不会轮换模型。
 
-翻译使用独立的 `gemini-3.1-flash-lite` 客户端，共用 API key；不继承推理模型列表，也不调用匿名翻译服务。失败直接保留原文，不回退 Gemma。
+翻译使用独立的固定路由：先 `gemini-3.1-flash-lite`，失败或冷却时再试一次 `gemini-3.5-flash-lite`，共用 API key；不继承 `GEMINI_MODELS` 推理列表，也不调用匿名翻译服务。两者都失败时保留原文，不回退 Gemma。记录中的 `model` 字段标识翻译路由（主模型名），不区分实际应答模型。
 
 主采集和 AI Frontier 在发布 Story 前完成规范标题翻译并保存结果，报告复用同一译文；原始来源证据与已保存的投递内容保持不变。详见[翻译与发布契约](docs/intelligence.md#title-translation-before-publication)。
 
