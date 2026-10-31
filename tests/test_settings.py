@@ -577,3 +577,35 @@ def test_env_example_contains_only_empty_secret_placeholders() -> None:
     ):
         assert setting_name in values
         assert values[setting_name] == ""
+
+
+def test_lark_delivery_filter_and_batch_budget_come_from_yaml_with_env_switch(
+    tmp_path: Path,
+) -> None:
+    config_path = _write_config(
+        tmp_path / "config.yaml",
+        "lark:\n"
+        "  delivery_max_batches_per_tick: 3\n"
+        "  delivery:\n"
+        "    filter:\n"
+        "      enabled: true\n"
+        "      exclude_sources: [newsnow:jin10]\n"
+        "      keywords: [AI, 芯片]\n",
+    )
+    yaml_only = load_settings(config_path, environ={}).lark_config
+    assert yaml_only["delivery_max_batches_per_tick"] == 3
+    assert yaml_only["delivery_filter"] == {
+        "enabled": True, "exclude_sources": ["newsnow:jin10"], "keywords": ["AI", "芯片"],
+    }
+    overridden = load_settings(
+        config_path,
+        environ={
+            "LARK_DELIVERY_FILTER_ENABLED": "false",
+            "LARK_DELIVERY_MAX_BATCHES_PER_TICK": "99",
+        },
+    ).lark_config
+    assert overridden["delivery_filter"]["enabled"] is False
+    assert overridden["delivery_max_batches_per_tick"] == 10
+    default = load_settings(_write_config(tmp_path / "empty.yaml", "{}\n"), environ={}).lark_config
+    assert default["delivery_filter"] == {"enabled": False}
+    assert default["delivery_max_batches_per_tick"] == 1

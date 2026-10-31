@@ -19,10 +19,20 @@ lark:
   request_timeout_seconds: 30
   max_message_chars: 8000
   delivery_max_stories: 20
+  delivery_max_batches_per_tick: 3 # bounded catch-up per scheduler run (1 = one batch)
   delivery:
     enabled: false
     target: "" # chat_id; may be supplied by LARK_DELIVERY_TARGET
     mode: instant
+    # Reader-interest filter for instant pushes. Held-back Stories stay in the database,
+    # reports and Assistant search. Omitted lists use the broad built-in defaults in
+    # trendradar/integrations/feishu/story_filter.py; a configured list replaces them.
+    filter:
+      enabled: true # LARK_DELIVERY_FILTER_ENABLED may override
+      # domains: [ai, security]
+      # sources: ["rss:TechCrunch AI", "rss:Hugging Face Blog"]
+      # exclude_sources: ["newsnow:jin10"]
+      # keywords: [AI, 人工智能, 芯片]
 
 app:
   # 时区配置（影响所有时间显示、推送窗口判断、数据存储）
@@ -343,10 +353,22 @@ intelligence:
         enabled: true
         timeout: 30
         lookback_hours: 48
-        results_per_page: 100
+        date_field: published # published = new CVEs only; modified also re-reports old CVEs
+        results_per_page: 2000
         max_pages: 2
-        max_items: 200
+        max_items: 200 # cap after the significance filter
         request_interval_seconds: 6
+        # Keep only significant CVEs at collection time. Omitted rules use the built-in
+        # ai_stack (CVSS >= 8.0) and major_platform (CVSS >= 9.0) keyword rules in
+        # trendradar/sources/security.py; CISA KEV is collected separately.
+        significance:
+          enabled: true
+          keep_known_exploited: true
+          max_per_keyword: 3 # vendors batch-publish many CVEs per product; keep top scores
+          # rules:
+          #   - name: ai_stack
+          #     min_cvss: 8.0
+          #     keywords: [LangChain, Ollama, vLLM, PyTorch]
       rss:
         enabled: true
         timeout: 20

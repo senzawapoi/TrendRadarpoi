@@ -120,6 +120,63 @@ explicitly regroups hot-list results by platform and includes only new RSS entri
 new-Story delivery by the Scheduler. Collectors collect data and generate reports; selecting
 `daily` reports does not enable Lark daily delivery. See the [Lark guide](intelligence.md#lark-assistant).
 
+### Instant push filter / 即时推送过滤
+
+`lark.delivery.filter.enabled: true`（或 `LARK_DELIVERY_FILTER_ENABLED=true`）启用。规则如下：
+
+- Story 满足以下任一条件就推送：
+  - `domain` 在 `domains` 中（默认 `ai`、`security`）；
+  - 任一成员来源在 `sources` 中；
+  - 标题、摘要或成员原始标题命中 `keywords`。英文关键词按字母和数字边界匹配，所以 `AI芯片` 能命中 `AI`，`SAID` 不会。
+- 成员来源全部列在 `exclude_sources` 中的 Story 不推送。
+- 不推送的 Story 仍按目标登记，但不分配批次（`delivery_key` 为 NULL）：
+  - 不会重发，不计入积压或等待告警；
+  - 仍留在数据库、报告和 Assistant 检索里；
+  - 健康检查用 `instant_delivery.held_back_stories_24h` 报告最近 24 小时的数量。
+- 不需要迁移数据库表结构，回滚到旧版本也能读这些登记记录。
+- 列表不配置时使用 `trendradar/integrations/feishu/story_filter.py` 里的宽松默认值；配置了就整体替换默认值。
+
+`lark.delivery_max_batches_per_tick`（默认 1，最大 10）设置每次 Scheduler 运行最多连续发送几批。只有上一批发送完成才会继续，遇到失败、维护或租约丢失立即停止。
+
+Enable with `lark.delivery.filter.enabled: true` (or `LARK_DELIVERY_FILTER_ENABLED=true`):
+
+- A Story is pushed when any of these holds:
+  - its domain is in `domains`;
+  - a member source is in `sources`;
+  - its title, summary or a member's original title matches `keywords`.
+- A Story whose member sources are all in `exclude_sources` is not pushed.
+- Held-back Stories are registered for the target with no batch:
+  - they are never resent and are not counted as backlog;
+  - they remain in the database, reports and Assistant search;
+  - health reports `held_back_stories_24h`.
+- No schema migration is involved, and older releases can still read these records.
+
+`lark.delivery_max_batches_per_tick` sets how many batches one scheduler run may send. A run continues only after a completed send.
+
+### NVD significance filter / NVD 重要性过滤
+
+在 `intelligence.security.sources.nvd` 下配置：
+
+- `date_field: published` 只查询 lookback 窗口内新发布的 CVE。默认值 `modified` 会把最近改过的旧 CVE 也查出来。
+- `significance.enabled: true` 在采集时只保留以下 CVE，`max_items` 在过滤之后计数：
+  - `known_exploited` 为真（可用 `keep_known_exploited` 关闭）；
+  - 命中某条 `rules`：CVSS 不低于该规则的 `min_cvss`，且描述命中该规则的 `keywords`。
+- 默认规则：
+  - `ai_stack`：CVSS ≥ 8.0；
+  - `major_platform`：CVSS ≥ 9.0；
+  - 没有评分的记录跳过，除非规则设置了 `include_unscored`。
+- 关键词是产品名，比如 `Microsoft Windows`、`GitHub Copilot`，不用描述里顺带出现的 `Windows`、`Copilot` 这类单词。
+- `max_per_keyword`（默认 0，表示不限）控制每轮采集里同一个命中关键词最多保留几个 CVE，按 CVSS 从高到低取。厂商一次批量发布很多 CVE 时，这个上限能把数量压下来。
+- CISA KEV 由独立的采集器采集，不受这个过滤影响。
+- 某一轮没有保留任何 CVE 时，该来源记为 `degraded`、错误数 0，健康检查和部署就绪检查都接受这种状态。
+
+Under `intelligence.security.sources.nvd`:
+
+- `date_field: published` queries only CVEs first published in the lookback window.
+- `significance.enabled: true` keeps only known-exploited records or records matching a rule (CVSS ≥ `min_cvss` and a keyword). `max_items` counts after filtering.
+- Defaults are `ai_stack` (CVSS ≥ 8.0) and `major_platform` (CVSS ≥ 9.0).
+- An empty filtered run is reported as `degraded` with no errors, which readiness accepts.
+
 ## Source Reference / 实现依据
 
 [Keyword parser and matcher / 关键词解析与匹配](../trendradar/core/frequency.py),

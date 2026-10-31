@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+import re
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -20,6 +22,154 @@ from trendradar.domains.security.collector import (
 )
 from trendradar.sources.base import SourceAdapter
 from trendradar.storage.base import RSSItem
+from trendradar.utils.logging import log
+
+# Default significance rules for NVD (used only when ``significance.enabled`` is true
+# and no explicit ``rules`` are configured). NVD publishes several hundred CVEs a day;
+# these keep AI-stack issues of high severity and critical issues in widely deployed
+# platforms. CISA KEV entries are collected separately and are never filtered here.
+DEFAULT_NVD_RULES: tuple[dict[str, Any], ...] = (
+    {
+        "name": "ai_stack",
+        "min_cvss": 8.0,
+        "keywords": (
+            "LLM", "large language model", "AI agent", "model context protocol", "MCP server",
+            "retrieval-augmented", "LangChain", "LangGraph", "Langflow", "LlamaIndex",
+            "llama.cpp", "Ollama", "vLLM", "SGLang", "LMDeploy", "Xinference", "LocalAI",
+            "GPT4All", "PrivateGPT", "PyTorch", "TensorFlow", "Keras", "Hugging Face",
+            "huggingface", "safetensors", "ONNX Runtime", "OpenVINO", "DeepSpeed", "Megatron",
+            "NVIDIA", "CUDA Toolkit", "TensorRT", "Triton Inference Server", "ComfyUI",
+            "Stable Diffusion", "Open WebUI", "open-webui", "AnythingLLM", "LobeChat",
+            "LibreChat", "Dify", "Flowise", "n8n", "MLflow", "Kubeflow", "BentoML", "KServe",
+            "Gradio", "Streamlit", "Chainlit", "JupyterLab", "Jupyter Notebook", "Jupyter Server",
+            "Milvus", "Qdrant", "Weaviate", "ChromaDB", "LiteLLM", "AutoGen", "CrewAI", "Agno",
+            "Semantic Kernel", "OpenAI", "Anthropic", "Claude Code", "Google Gemini",
+            "Gemini CLI", "GitHub Copilot", "Microsoft Copilot", "Copilot Studio",
+            "PaddlePaddle", "MindSpore", "Label Studio",
+        ),
+    },
+    {
+        "name": "major_platform",
+        "min_cvss": 9.0,
+        # Product names, not words that CVE descriptions mention in passing ("on Windows").
+        "keywords": (
+            "Microsoft Windows", "Windows Server", "Microsoft Exchange", "Exchange Server",
+            "SharePoint", "Microsoft Office", "Microsoft Outlook", "Azure", "Hyper-V",
+            "Active Directory", "Apple iOS", "iPadOS", "macOS", "Safari", "WebKit",
+            "Google Chrome", "Chromium", "Mozilla Firefox", "Linux kernel", "OpenSSL", "OpenSSH",
+            "glibc", "sudo", "systemd", "Cisco", "Fortinet", "FortiOS", "FortiGate", "FortiWeb",
+            "FortiManager", "Palo Alto Networks", "PAN-OS", "Ivanti", "VMware", "ESXi", "vCenter",
+            "Citrix", "NetScaler", "Juniper", "Junos", "BIG-IP", "SonicWall", "Kubernetes",
+            "Docker Engine", "Docker Desktop", "containerd", "runc", "Apache HTTP Server",
+            "Apache Tomcat", "Apache Struts", "Log4j", "nginx", "Jenkins", "GitLab",
+            "GitHub Enterprise Server", "Atlassian", "Confluence", "Jira", "Oracle WebLogic",
+            "Oracle Database", "SAP NetWeaver", "Redis", "PostgreSQL", "MySQL", "Elasticsearch",
+            "Grafana", "Zimbra", "Veeam", "MOVEit", "Cloudflare", "AWS", "Google Cloud",
+        ),
+    },
+)
+
+
+def _keyword_regex(keywords: Iterable[str]) -> re.Pattern[str] | None:
+    parts = []
+    for keyword in sorted({normalize_text(item) for item in keywords if normalize_text(item)},
+                          key=len, reverse=True):
+        # Letter/digit boundaries avoid matching "Ray" in "X-ray" style substrings while
+        # still allowing punctuation such as "llama.cpp" and "PAN-OS".
+        parts.append(rf"(?<![A-Za-z0-9]){re.escape(keyword)}(?![A-Za-z0-9])")
+    return re.compile("|".join(parts), re.IGNORECASE) if parts else None
+
+
+@dataclass(frozen=True)
+class NvdSignificanceRule:
+    name: str
+    min_cvss: float
+    pattern: re.Pattern[str] | None
+    include_unscored: bool = False
+
+
+class NvdSignificanceFilter:
+    """Keep only NVD records that match a configured interest rule."""
+
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
+        values = config if isinstance(config, Mapping) else {}
+        self.enabled = _as_bool(values.get("enabled"), False)
+        self.keep_known_exploited = _as_bool(values.get("keep_known_exploited"), True)
+        raw_rules = values.get("rules")
+        if not isinstance(raw_rules, list | tuple) or not raw_rules:
+            raw_rules = DEFAULT_NVD_RULES
+        rules = []
+        for index, raw in enumerate(raw_rules[:20]):
+            if not isinstance(raw, Mapping):
+                continue
+            keywords = raw.get("keywords")
+            if isinstance(keywords, str):
+                keywords = keywords.split(",")
+            pattern = _keyword_regex(keywords) if isinstance(keywords, Iterable) else None
+            rules.append(NvdSignificanceRule(
+                name=normalize_text(raw.get("name")) or f"rule_{index + 1}",
+                min_cvss=_bounded_float(raw.get("min_cvss"), 9.0, maximum=10.0),
+                # A rule without keywords applies to every product.
+                pattern=pattern,
+                include_unscored=_as_bool(raw.get("include_unscored"), False),
+            ))
+        self.rules = tuple(rules)
+        # Vendors often publish many CVEs for one product at once; keep the highest-scored
+        # few per matched keyword in each run (0 = unlimited).
+        try:
+            cap = int(values.get("max_per_keyword", 0))
+        except (TypeError, ValueError):
+            cap = 0
+        self.max_per_keyword = max(0, min(1000, cap))
+
+    def match(self, record: SecurityRecord) -> tuple[str, str] | None:
+        """Return ``(rule name, matched keyword)`` or ``None`` when not kept."""
+        if not self.enabled:
+            return "filter_disabled", ""
+        if self.keep_known_exploited and record.known_exploited:
+            return "known_exploited", ""
+        text = " ".join(
+            normalize_text(value)
+            for value in (record.title, record.summary, record.vendor, record.product)
+            if value
+        )
+        for rule in self.rules:
+            score = record.cvss_score
+            if score is None and not rule.include_unscored:
+                continue
+            if score is not None and score < rule.min_cvss:
+                continue
+            if rule.pattern is None:
+                return rule.name, ""
+            found = rule.pattern.search(text)
+            if found:
+                return rule.name, found.group(0)
+        return None
+
+    def reason(self, record: SecurityRecord) -> str | None:
+        """Return the matching rule name, or ``None`` when the record is not kept."""
+        matched = self.match(record)
+        return matched[0] if matched else None
+
+    def cap(
+        self, matches: list[tuple[SecurityRecord, str, str]],
+    ) -> list[tuple[SecurityRecord, str, str]]:
+        """Apply ``max_per_keyword`` by CVSS score while preserving source order."""
+        if self.max_per_keyword <= 0:
+            return matches
+        ranked = sorted(
+            range(len(matches)), key=lambda index: -(matches[index][0].cvss_score or 0.0)
+        )
+        counts: dict[str, int] = {}
+        keep = set()
+        for index in ranked:
+            keyword = matches[index][2].casefold()
+            if not keyword:
+                keep.add(index)
+            elif counts.get(keyword, 0) < self.max_per_keyword:
+                counts[keyword] = counts.get(keyword, 0) + 1
+                keep.add(index)
+        return [match for index, match in enumerate(matches) if index in keep]
 
 
 def _positive_int(value: Any, default: int, *, maximum: int | None = None) -> int:
@@ -139,6 +289,17 @@ class NvdCveAdapter(SourceAdapter[SecurityRecord]):
             maximum=60.0,
         )
         self.proxy_url = normalize_text(values.get("proxy_url"))
+        # "modified" (default) follows NVD lastMod dates and also re-reports old CVEs;
+        # "published" only covers CVEs first published inside the lookback window.
+        date_field = normalize_text(values.get("date_field")).casefold() or "modified"
+        if date_field not in {"modified", "published"}:
+            log.warning("Invalid NVD date_field; using modified", date_field=date_field[:40])
+            date_field = "modified"
+        self.date_field = date_field
+        self.significance = NvdSignificanceFilter(
+            values.get("significance") if isinstance(values.get("significance"), Mapping)
+            else None
+        )
         timestamp = now or datetime.now(tz=timezone.utc)
         if timestamp.tzinfo is None or timestamp.utcoffset() is None:
             raise ValueError("NVD reference time must be timezone-aware")
@@ -148,9 +309,10 @@ class NvdCveAdapter(SourceAdapter[SecurityRecord]):
 
     def _params(self, start_index: int) -> dict[str, Any]:
         start = self.now - timedelta(hours=self.lookback_hours)
+        prefix = "pub" if self.date_field == "published" else "lastMod"
         return {
-            "lastModStartDate": start.isoformat(timespec="milliseconds"),
-            "lastModEndDate": self.now.isoformat(timespec="milliseconds"),
+            f"{prefix}StartDate": start.isoformat(timespec="milliseconds"),
+            f"{prefix}EndDate": self.now.isoformat(timespec="milliseconds"),
             "resultsPerPage": self.results_per_page,
             "startIndex": start_index,
         }
@@ -159,7 +321,8 @@ class NvdCveAdapter(SourceAdapter[SecurityRecord]):
         if not self.enabled:
             return []
         headers = {"apiKey": self.api_key} if self.api_key else None
-        records: list[SecurityRecord] = []
+        matches: list[tuple[SecurityRecord, str, str]] = []
+        scanned = 0
         start_index = 0
         async with make_session(total_timeout=self.timeout, max_per_host=1) as session:
             for page in range(self.max_pages):
@@ -185,8 +348,14 @@ class NvdCveAdapter(SourceAdapter[SecurityRecord]):
                 finally:
                     response.release()
                 page_records, total, returned_start, returned_count = parse_nvd_page(payload)
-                records.extend(page_records)
-                if len(records) >= self.max_items:
+                scanned += len(page_records)
+                for record in page_records:
+                    matched = self.significance.match(record)
+                    if matched is not None:
+                        matches.append((record, *matched))
+                # With the filter on, read every page so the per-keyword cap ranks the
+                # whole window; max_pages still bounds the requests.
+                if not self.significance.enabled and len(matches) >= self.max_items:
                     break
                 step = returned_count or len(page_records)
                 next_index = returned_start + step
@@ -195,7 +364,19 @@ class NvdCveAdapter(SourceAdapter[SecurityRecord]):
                 start_index = next_index
                 if page + 1 < self.max_pages and self.request_interval:
                     await asyncio.sleep(self.request_interval)
-        return records[: self.max_items]
+        kept = self.significance.cap(matches)[: self.max_items]
+        if self.significance.enabled:
+            reasons: dict[str, int] = {}
+            for _record, rule, _keyword in kept:
+                reasons[rule] = reasons.get(rule, 0) + 1
+            log.info(
+                "NVD significance filter",
+                scanned=scanned,
+                matched=len(matches),
+                kept=len(kept),
+                reasons=",".join(f"{name}={count}" for name, count in sorted(reasons.items())),
+            )
+        return [record for record, _rule, _keyword in kept]
 
     def normalize(self, raw: SecurityRecord, *, collected_at: datetime) -> ContentItem:
         return raw.to_content_item(collected_at=collected_at)

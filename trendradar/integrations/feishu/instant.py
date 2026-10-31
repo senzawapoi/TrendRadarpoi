@@ -13,11 +13,16 @@ from uuid import uuid4
 
 from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.ops.maintenance import read_guard, read_recovery_cutover
+from trendradar.utils.logging import log
 
 from .config import FeishuConfig
 from .ledger import lease_heartbeat, stamp
 from .models import stable_digest
 from .post import message_content
+
+# Bounded per-tick scan when the reader-interest filter holds most Stories back.
+_FILTER_PAGE_SIZE = 200
+_FILTER_SCAN_LIMIT = 2000
 
 
 def _validate_chunks(chunks: Any) -> None:
@@ -68,6 +73,100 @@ class InstantDeliveryScheduler:
         ).rowcount
         return changed
 
+    def _select(
+        self, connection: sqlite3.Connection, now: datetime, limit: int,
+    ) -> list[sqlite3.Row]:
+        """Return the oldest unregistered Stories that pass the reader-interest filter.
+
+        Held-back Stories are registered for this target without a batch, inside the
+        caller's transaction, so they are never resent and do not count as backlog.
+        """
+        query = """SELECT s.* FROM stories AS s WHERE NOT EXISTS (
+                       SELECT 1 FROM lark_story_deliveries AS d
+                       WHERE d.target_key=? AND d.story_id=s.id
+                   ) AND (? IS NULL OR s.created_at>? OR (s.created_at=? AND s.id>?))
+                   ORDER BY s.created_at, s.id LIMIT ?"""
+        story_filter = self.config.delivery_filter
+        if not story_filter.enabled:
+            return connection.execute(
+                query, (self.target_key, None, None, None, None, limit)
+            ).fetchall()
+        selected: list[sqlite3.Row] = []
+        held: list[sqlite3.Row] = []
+        reasons: dict[str, int] = {}
+        cursor: tuple[str, str] | None = None
+        scanned = 0
+        while len(selected) < limit and scanned < _FILTER_SCAN_LIMIT:
+            created, story_id = cursor or (None, None)
+            page = connection.execute(
+                query,
+                (self.target_key, created, created, created, story_id, _FILTER_PAGE_SIZE),
+            ).fetchall()
+            if not page:
+                break
+            members = self._member_evidence(connection, page)
+            for row in page:
+                scanned += 1
+                cursor = (row["created_at"], row["id"])
+                sources, titles = members.get(row["id"], ((), ()))
+                reason = story_filter.decide(
+                    domain=row["domain"], sources=sources,
+                    texts=(row["title"], row["summary"], *titles),
+                )
+                if reason is None:
+                    held.append(row)
+                    continue
+                key = reason.split(":", 1)[0]
+                reasons[key] = reasons.get(key, 0) + 1
+                selected.append(row)
+                if len(selected) >= limit:
+                    break
+        if held:
+            connection.executemany(
+                """INSERT INTO lark_story_deliveries
+                       (target_key, story_id, first_persisted_at, registered_at,
+                        delivery_key, status)
+                   VALUES (?, ?, ?, ?, NULL, 'registered')""",
+                [(self.target_key, row["id"], row["created_at"], stamp(now)) for row in held],
+            )
+        if held or selected:
+            log.info(
+                "Instant delivery interest filter",
+                scanned=scanned, pushed=len(selected), held_back=len(held),
+                reasons=",".join(f"{name}={count}" for name, count in sorted(reasons.items())),
+            )
+        return selected
+
+    @staticmethod
+    def _member_evidence(
+        connection: sqlite3.Connection, rows: list[sqlite3.Row],
+    ) -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
+        """Map Story id to its member source ids and original member titles."""
+        wanted: dict[str, list[str]] = {}
+        for row in rows:
+            try:
+                members = json.loads(row["member_ids_json"] or "[]")
+            except (TypeError, ValueError):
+                members = []
+            wanted[row["id"]] = [str(item) for item in members if isinstance(item, str)][:50]
+        ids = sorted({item for members in wanted.values() for item in members})
+        found: dict[str, tuple[str, str]] = {}
+        for start in range(0, len(ids), 500):
+            chunk = ids[start:start + 500]
+            for item in connection.execute(
+                f"SELECT id, source, title FROM content_items WHERE id IN "
+                f"({','.join('?' * len(chunk))})",
+                chunk,
+            ):
+                found[item["id"]] = (str(item["source"]), str(item["title"]))
+        return {
+            story_id: (
+                tuple(found[item][0] for item in members if item in found),
+                tuple(found[item][1] for item in members if item in found),
+            )
+            for story_id, members in wanted.items()
+        }
+
     def _claim(self, now: datetime) -> tuple[str, sqlite3.Row | None]:
         owner = uuid4().hex
         with self.lock, self.storage.transaction() as connection:
@@ -94,13 +193,7 @@ class InstantDeliveryScheduler:
                     (owner, lease, stamp(now), key),
                 )
             else:
-                rows = connection.execute(
-                    """SELECT s.* FROM stories AS s WHERE NOT EXISTS (
-                           SELECT 1 FROM lark_story_deliveries AS d
-                           WHERE d.target_key=? AND d.story_id=s.id
-                       ) ORDER BY s.created_at, s.id LIMIT ?""",
-                    (self.target_key, min(20, self.config.delivery_max_stories)),
-                ).fetchall()
+                rows = self._select(connection, now, min(20, self.config.delivery_max_stories))
                 if not rows:
                     return "quarantined" if changed else "empty", None
                 stories = [self.storage.get_story(row["id"]) for row in rows]

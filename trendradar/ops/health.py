@@ -14,7 +14,7 @@ import os
 import shutil
 import sqlite3
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -108,8 +108,18 @@ def _instant_health(
            )""",
         (cutoff_stamp, target_key, target_key, cutoff_stamp, target_key, target_key),
     ).fetchone()[0]
+    # Stories the reader-interest filter registered without a batch (never sent).
+    held_back = connection.execute(
+        "SELECT COUNT(*) FROM lark_story_deliveries WHERE status='registered' "
+        "AND delivery_key IS NULL AND registered_at>? AND (? IS NULL OR target_key=?)",
+        (
+            (_utc_now() - timedelta(days=1)).isoformat(),
+            target_key, target_key,
+        ),
+    ).fetchone()[0]
     oldest = [row["oldest"] for row in (pending, unregistered) if row["oldest"]]
     return {
+        "held_back_stories_24h": int(held_back),
         "batches": states,
         "backlog": int(pending["count"]) + int(unregistered["count"]),
         "unregistered_stories": int(unregistered["count"]),

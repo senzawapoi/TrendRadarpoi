@@ -47,6 +47,21 @@ def _actual_synchronous(storage, settings) -> str:
     return value if value in {"OFF", "NORMAL", "FULL", "EXTRA"} else _synchronous(settings)
 
 
+def drain_ticks(scheduler, config) -> str:
+    """Send at most ``delivery_max_batches_per_tick`` batches in one bounded run.
+
+    Each tick still claims, freezes and sends one batch; the loop only continues after a
+    completed send, so failures, maintenance and lease loss stop it immediately.
+    """
+    limit = getattr(config, "delivery_max_batches_per_tick", 1)
+    limit = limit if isinstance(limit, int) and not isinstance(limit, bool) else 1
+    results = [scheduler.tick()]
+    while results[-1] == "sent" and len(results) < max(1, min(10, limit)):
+        results.append(scheduler.tick())
+    # A drained queue after successful sends is reported as the send it was.
+    return "sent" if results[-1] == "empty" and len(results) > 1 else results[-1]
+
+
 # Lazy wrappers preserve the old module-level seams used by tests and keep the
 # Bot process from importing Assistant, Gemini, or research integrations.
 def build_gemini_client(settings):
@@ -134,7 +149,7 @@ def run_worker(settings, config, client, inbox, stop, failure=None):
             next_recovery_poll = 0.0
             while not stop.is_set():
                 if time.monotonic() >= next_tick:
-                    scheduler.tick()
+                    drain_ticks(scheduler, config)
                     next_tick = time.monotonic() + 60
                 try:
                     event, binding = inbox.get(timeout=0.5)
@@ -320,7 +335,7 @@ def run_scheduler_once(settings, config, client) -> str:
                 storage=storage,
             )
             stack.callback(scheduler.close)
-            result = scheduler.tick()
+            result = drain_ticks(scheduler, config)
             heartbeat.write(
                 state="completed",
                 last_result=result,

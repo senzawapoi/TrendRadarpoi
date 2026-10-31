@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from trendradar.core.settings import RuntimeSettings
 
 from .models import sanitize_id
+from .story_filter import StoryInterestFilter
 
 IDENTITY_FIELDS = ("open_id", "user_id", "union_id")
 LARK_API_DOMAIN = "https://open.larksuite.com"
@@ -70,6 +71,8 @@ class FeishuConfig:
     timezone: str = "Asia/Shanghai"
     delivery_target: str = field(default="", repr=False)
     delivery_max_stories: int = 20
+    delivery_max_batches_per_tick: int = 1
+    delivery_filter: StoryInterestFilter = field(default_factory=StoryInterestFilter)
     api_domain: str = field(default=LARK_API_DOMAIN, init=False)
 
     def __post_init__(self) -> None:
@@ -82,8 +85,12 @@ class FeishuConfig:
             ("max_message_chars", 8000, 256, 50000),
             ("request_timeout_seconds", 30, 1, 120),
             ("delivery_max_stories", 20, 1, 100),
+            ("delivery_max_batches_per_tick", 1, 1, 10),
         ):
             object.__setattr__(self, name, _bounded(getattr(self, name), default, minimum, maximum))
+        object.__setattr__(
+            self, "delivery_filter", StoryInterestFilter.from_mapping(self.delivery_filter)
+        )
         object.__setattr__(
             self,
             "delivery_retry_max_seconds",
@@ -147,6 +154,8 @@ class FeishuConfig:
                 "delivery_end",
                 "delivery_target",
                 "delivery_max_stories",
+                "delivery_max_batches_per_tick",
+                "delivery_filter",
             )
             if name in raw
         }
