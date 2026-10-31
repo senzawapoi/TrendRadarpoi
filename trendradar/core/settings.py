@@ -440,6 +440,7 @@ class RuntimeSettings:
             ("max_message_chars", 8000, 256, 50000),
             ("request_timeout_seconds", 30, 1, 120),
             ("delivery_max_stories", 20, 1, 100),
+            ("delivery_max_batches_per_tick", 1, 1, 10),
         ):
             config[name] = _bounded_int(
                 self.get_int(
@@ -451,6 +452,16 @@ class RuntimeSettings:
                 minimum=minimum,
                 maximum=maximum,
             )
+        # Reader-interest filter for instant delivery; YAML holds the rules, and the
+        # environment may only switch it on or off.
+        delivery_filter = self.yaml_value(self._lark_yaml_path("delivery.filter"))
+        delivery_filter = _thaw(delivery_filter) if isinstance(delivery_filter, Mapping) else {}
+        delivery_filter["enabled"] = self.get_bool(
+            self._lark_environment_key("DELIVERY_FILTER_ENABLED"),
+            self._lark_yaml_path("delivery.filter.enabled"),
+            False,
+        )
+        config["delivery_filter"] = delivery_filter
         return config
 
     @property
