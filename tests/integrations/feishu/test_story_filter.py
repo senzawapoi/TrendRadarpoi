@@ -12,6 +12,7 @@ from trendradar.integrations.feishu.delivery import StoryDelivery
 from trendradar.integrations.feishu.scheduler import DeliveryScheduler
 from trendradar.integrations.feishu.story_filter import StoryInterestFilter
 from trendradar.intelligence.storage import IntelligenceStorage
+from trendradar.ops import health as health_module
 from trendradar.ops.health import _instant_health
 
 NOW = datetime(2026, 10, 31, 4, tzinfo=timezone.utc)
@@ -92,7 +93,8 @@ def test_from_mapping_accepts_yaml_lists_csv_and_string_switches():
     assert config.delivery_max_batches_per_tick == 10
 
 
-def test_only_matching_stories_are_sent_and_held_back_ones_are_never_backlog(tmp_path):
+def test_only_matching_stories_are_sent_and_held_back_ones_are_never_backlog(tmp_path, monkeypatch):
+    monkeypatch.setattr(health_module, "_utc_now", lambda: NOW)
     client = Mock(send=Mock(return_value=True))
     with IntelligenceStorage(tmp_path / "intelligence.db") as storage:
         seed(storage, "黄金价格上涨", index=0)
