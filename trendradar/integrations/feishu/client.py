@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
+from importlib.util import find_spec
 from typing import Any, Protocol
 
 from .config import LARK_API_DOMAIN
@@ -124,6 +127,18 @@ class FeishuClient:
             return ReplyContext("invalid_response")
 
     @classmethod
+    def deferred_for_scheduler(
+        cls, app_id: str, app_secret: str, *, timeout_seconds: int = 30,
+        api_domain: str = LARK_API_DOMAIN,
+    ) -> FeishuClient:
+        """Check SDK presence without importing it until a scheduler sends."""
+        if not app_id or not app_secret or find_spec("lark_oapi") is None:
+            return cls()
+        return _DeferredSchedulerClient(lambda: cls.from_credentials(
+            app_id, app_secret, timeout_seconds=timeout_seconds, api_domain=api_domain,
+        ))
+
+    @classmethod
     def from_credentials(
         cls,
         app_id: str,
@@ -148,6 +163,29 @@ class FeishuClient:
                 api_domain=api_domain,
             )
         )
+
+
+class _DeferredSchedulerClient(FeishuClient):
+    """Send-only client; initialization failures use the normal saved-batch retry."""
+
+    def __init__(self, factory: Callable[[], FeishuClient]) -> None:
+        super().__init__()
+        self._factory = factory
+        self._delegate: FeishuClient | None = None
+        self._initialization_lock = threading.Lock()
+
+    @property
+    def available(self) -> bool:
+        return self._delegate is None or self._delegate.available
+
+    def send(self, target: str, text: str, *, message_uuid: str | None = None) -> bool:
+        try:
+            with self._initialization_lock:
+                if self._delegate is None:
+                    self._delegate = self._factory()
+            return self._delegate.send(target, text, message_uuid=message_uuid)
+        except Exception:
+            return False
 
 
 class _SdkOperations:

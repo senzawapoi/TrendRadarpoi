@@ -396,7 +396,11 @@ def main(argv=None) -> int:
         print("Lark runtime is in maintenance mode.")
         return 1
     try:
-        client = FeishuClient.from_credentials(
+        client_factory = (
+            FeishuClient.deferred_for_scheduler
+            if args.role == "scheduler-once" else FeishuClient.from_credentials
+        )
+        client = client_factory(
             config.app_id,
             config.app_secret,
             timeout_seconds=config.request_timeout_seconds,

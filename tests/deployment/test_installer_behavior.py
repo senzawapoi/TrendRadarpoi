@@ -127,6 +127,7 @@ def unexpected(*args, **kwargs):
     calls.append(True)
     raise AssertionError("protected restart attempted business I/O")
 runner.FeishuClient.from_credentials=unexpected
+runner.FeishuClient.deferred_for_scheduler=unexpected
 runner.run_bot=unexpected
 runner.run_bot_role=unexpected
 runner.run_worker_role=unexpected
@@ -184,13 +185,18 @@ class Client:
     available=True
 client_calls=[]
 def client(*args, **kwargs):
-    client_calls.append(True)
+    client_calls.append("eager")
+    return Client()
+
+def deferred_client(*args, **kwargs):
+    client_calls.append("deferred")
     return Client()
 database,config=sys.argv[1:]
 assert read_guard(database) is None
 collector._run_main=collect
 frontier._run=frontier_run
 runner.FeishuClient.from_credentials=client
+runner.FeishuClient.deferred_for_scheduler=deferred_client
 runner.run_bot=combined
 runner.run_bot_role=bot
 runner.run_worker_role=worker
@@ -201,7 +207,7 @@ assert frontier.main() == 0
 for role in ("combined", "bot", "worker", "scheduler-once"):
     assert runner.main(["--config", config, "--role", role]) == 0
 assert calls == ["collector", "frontier", "combined", "bot", "worker", "scheduler-once"]
-assert len(client_calls) == 4
+assert client_calls == ["eager", "eager", "eager", "deferred"]
 print("RESTART-ACCEPTING")
 '''
     result = subprocess.run(

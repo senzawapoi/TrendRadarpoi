@@ -67,6 +67,7 @@ def test_invalid_deployment_blocks_all_cli_roles_before_io(tmp_path, monkeypatch
         raise AssertionError("protected role attempted provider or acquisition")
 
     monkeypatch.setattr(runner.FeishuClient, "from_credentials", unexpected)
+    monkeypatch.setattr(runner.FeishuClient, "deferred_for_scheduler", unexpected)
     monkeypatch.setattr(collector, "_run_main", unexpected)
     monkeypatch.setattr(frontier, "_run", unexpected)
     for role in ("combined", "bot", "worker", "scheduler-once"):

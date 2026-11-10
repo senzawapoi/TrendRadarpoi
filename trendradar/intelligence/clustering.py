@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+import time
+from collections import defaultdict, deque
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
 from difflib import SequenceMatcher
@@ -12,6 +14,7 @@ from typing import Any
 from trendradar.core.models import ContentItem, normalize_identity_title, normalize_tags
 from trendradar.core.models.story import Cluster, deterministic_cluster_id
 from trendradar.intelligence.deduplicate import event_time
+from trendradar.utils.logging import log
 
 _TOKEN_RE = re.compile(r"[^\W_]+", re.UNICODE)
 _CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
@@ -276,6 +279,57 @@ def _union(parents: list[int], first: int, second: int) -> int:
         return second_root
 
 
+def _candidate_indices(
+    signals: list[ItemSignals], config: ClusteringConfig,
+) -> Iterator[tuple[int, list[int]]]:
+    """Yield a conservative candidate superset in the original comparison order.
+
+    Ordinary postings expire with the time window. Only CVE postings retain
+    older evidence. Keep one candidate list at a time, never an N-by-N graph.
+    """
+    postings: dict[tuple[str, str, str], set[int]] = defaultdict(set)
+    cves: dict[tuple[str, str], list[int]] = defaultdict(list)
+    active: deque[tuple[int, list[tuple[str, str, str]]]] = deque()
+    domains: dict[str, set[int]] = defaultdict(set)
+    window = timedelta(hours=config.time_window_hours)
+
+    def keys(signal: ItemSignals) -> list[tuple[str, str, str]]:
+        domain = signal.item.domain
+        result = [(domain, "title", signal.title)]
+        result.extend((domain, "token", token) for token in signal.tokens)
+        if config.token_jaccard_threshold <= 0:
+            result.extend((domain, "tag", tag) for tag in signal.tags)
+            result.extend((domain, "entity", entity) for entity in signal.entities)
+        return result
+
+    for right, signal in enumerate(signals):
+        timestamp = event_time(signal.item)
+        while active and timestamp - event_time(signals[active[0][0]].item) > window:
+            expired, expired_keys = active.popleft()
+            domains[signals[expired].item.domain].discard(expired)
+            for key in expired_keys:
+                posting = postings[key]
+                posting.remove(expired)
+                if not posting:
+                    del postings[key]
+        signal_keys = keys(signal)
+        candidates: set[int] = set()
+        if config.min_shared_tokens <= 0:
+            candidates.update(domains[signal.item.domain])
+        else:
+            for key in signal_keys:
+                candidates.update(postings.get(key, ()))
+        for cve in signal.cve_ids:
+            candidates.update(cves.get((signal.item.domain, cve), ()))
+        yield right, sorted(candidates, reverse=True)
+        for key in signal_keys:
+            postings[key].add(right)
+        domains[signal.item.domain].add(right)
+        active.append((right, signal_keys))
+        for cve in signal.cve_ids:
+            cves[(signal.item.domain, cve)].append(right)
+
+
 def cluster_items(
     items: list[ContentItem],
     config: ClusteringConfig | Mapping[str, Any] | None = None,
@@ -291,15 +345,21 @@ def cluster_items(
     component_start = [event_time(signal.item) for signal in signals]
     component_end = list(component_start)
     window = timedelta(hours=resolved.time_window_hours)
+    started = time.process_time()
+    comparisons = 0
+    max_candidates = 0
 
-    for right, candidate in enumerate(signals):
-        for left in range(right - 1, -1, -1):
+    for right, candidates in _candidate_indices(signals, resolved):
+        candidate = signals[right]
+        max_candidates = max(max_candidates, len(candidates))
+        for left in candidates:
             prior = signals[left]
             outside_window = event_time(candidate.item) - event_time(prior.item) > window
             if outside_window and not candidate.cve_ids:
                 break
             if outside_window and not (candidate.cve_ids & prior.cve_ids):
                 continue
+            comparisons += 1
             if are_related(prior, candidate, resolved):
                 left_root = _find(parents, left)
                 right_root = _find(parents, right)
@@ -326,6 +386,13 @@ def cluster_items(
                 component_entity_sets[other] = []
                 component_start[root] = combined_start
                 component_end[root] = combined_end
+
+    if len(signals) >= 1000:
+        log.info(
+            "Story clustering candidates",
+            items=len(signals), comparisons=comparisons, max_candidates=max_candidates,
+            comparison_cpu_seconds=round(time.process_time() - started, 3),
+        )
 
     components: dict[int, list[ItemSignals]] = {}
     for index, signal in enumerate(signals):
@@ -378,8 +445,8 @@ def cluster_items(
 
 
 __all__ = [
-    "ClusteringConfig",
     "DEFAULT_ENTITY_KEYWORDS",
+    "ClusteringConfig",
     "ItemSignals",
     "are_related",
     "cluster_items",
