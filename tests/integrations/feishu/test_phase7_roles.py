@@ -43,6 +43,11 @@ def test_role_checks_are_offline_and_do_not_create_database(tmp_path, monkeypatc
         "from_credentials",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("network")),
     )
+    monkeypatch.setattr(
+        runner.FeishuClient,
+        "deferred_for_scheduler",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("client initialization")),
+    )
 
     for role in ("bot", "worker", "scheduler-once"):
         assert runner.main(["--config", str(config_path), "--role", role, "--check"]) == 0
