@@ -1,6 +1,7 @@
 """Bounded poll recovery, temporary SQLite only; no provider calls."""
 
 import sqlite3
+import sys
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -29,13 +30,17 @@ def test_gate_nonempty_wal_poll_proves_busy_and_fixed_stage(tmp_path, monkeypatc
             runner._worker_operation(ledger.storage, "worker.pending_events"),
         ):
             ledger.pending_events(recover=True, limit=1)
-        assert caught.value.sqlite_errorcode & 255 == 5
-        assert error_fields(caught.value) == {"sqlite_code": 5, "sqlite_primary": "SQLITE_BUSY"}
         assert ledger.storage.connection.in_transaction is False
         fields = logger.error.call_args.kwargs
         assert fields["stage"] == "worker.pending_events"
         assert fields["transaction_open"] is False
-        assert fields["sqlite_code"] == 5 and fields["sqlite_primary"] == "SQLITE_BUSY"
+        if hasattr(caught.value, "sqlite_errorcode"):
+            assert caught.value.sqlite_errorcode & 255 == 5
+            assert error_fields(caught.value) == {"sqlite_code": 5, "sqlite_primary": "SQLITE_BUSY"}
+            assert fields["sqlite_code"] == 5 and fields["sqlite_primary"] == "SQLITE_BUSY"
+        else:
+            assert error_fields(caught.value) == {"sqlite_code": None, "sqlite_primary": "UNKNOWN"}
+            assert fields["sqlite_code"] is None and fields["sqlite_primary"] == "UNKNOWN"
         writer.rollback()
         assert ledger.pending_events(recover=True, limit=1) == [(event, binding)]
     finally:
@@ -191,9 +196,15 @@ def test_actual_sqlite_busy_recovers_after_writer_released(tmp_path):
         ledger.storage.connection.execute("PRAGMA busy_timeout=0")
         writer.execute("BEGIN IMMEDIATE")
         control = Control(on_wait=writer.rollback)
-        result = poll(ledger, control)
-        assert result.state == "ok" and result.events == ((event, binding),)
-        assert control.waits == [1] and ledger.storage.connection.in_transaction is False
+        if sys.version_info >= (3, 11):
+            result = poll(ledger, control)
+            assert result.state == "ok" and result.events == ((event, binding),)
+            assert control.waits == [1] and ledger.storage.connection.in_transaction is False
+        else:
+            # Python 3.10 lacks native sqlite_errorcode and fails closed without text matching.
+            with pytest.raises(sqlite3.OperationalError):
+                poll(ledger, control)
+            assert control.waits == [] and ledger.storage.connection.in_transaction is False
     finally:
         writer.rollback()
         writer.close()
@@ -301,7 +312,8 @@ def test_native_busy_commit_with_active_transaction_is_never_retried(tmp_path):
         with pytest.raises(sqlite3.OperationalError) as caught:
             poll(ledger, control)
         assert caught.value is errors[0]
-        assert caught.value.sqlite_errorcode & 255 == 5
+        if hasattr(caught.value, "sqlite_errorcode"):
+            assert caught.value.sqlite_errorcode & 255 == 5
         assert writer.in_transaction is True and not control.waits
         assert ledger.pending_events.call_count == 1
     finally:
