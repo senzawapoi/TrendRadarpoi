@@ -46,3 +46,9 @@ For Phase 7, resume from the [current handoff](docs/phase7-release-20261023/HAND
 Resolve canonical titles before publishing Stories; pending translation must not enter clustering context. Preserve raw evidence and ranking inputs. Never rewrite saved delivery payloads or requeue delivered Stories to fix their language. Follow the [translation contract](docs/intelligence.md#title-translation-before-publication).
 
 During Windows UAT, follow [test/README.md](test/README.md). Preserve `test/runtime/`, including SQLite WAL/SHM, fixtures and logs. Verify `lark-live.json` against the live process; never start a second bot or reset the sandbox while testing. Local acceptance is not Linux VPS deployment. This release uses Python 3.12, instant Lark delivery and local backups only; offsite recovery and 48-hour observation remain separate gates.
+
+## 资源修复候选约束
+
+- SQLite 诊断只允许原生错误码、固定阶段、耗时及事务状态；不得记录 SQL、路径、异常正文或消息内容。仅独立 Worker 的已知 BUSY 且事务明确为 false 的轮询可有界重试；handler/model/send 与 UNKNOWN 不重试。
+- 采集等待 `TRENDRADAR_COLLECTOR_WAIT_SECONDS` 默认 0，有限范围 0..1800；正值超时非零。默认 AI 忙时退出 0 是跳过，不能视为完成；D5 未关闭，不得激活生产等待或声称持久待办已实现。
+- 本地候选证据见 [资源修复验证](docs/evidence/resource-remediation-20261111/verification.md)。保留角色、授权、租约、冻结消息、UUID、FULL、schema、PrivateTmp 与依赖；内存试调门槛仍未满足，不得借本地验证推定生产已部署。

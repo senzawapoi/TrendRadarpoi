@@ -84,3 +84,9 @@ python -m trendradar.intelligence.backfill --from 2026-08-01 --to 2026-08-31 --d
 - [仓库交接](docs/repository-handoff-20261023.md)：记录双工作区核对、保留/迁移/排除清单、待提交改动和 PR 前门槛。
 - [待移植 Lark 补丁](docs/handoff/deferred-lark-repair.md)：保留旧树的工具错误修复与引用上下文源码；未移植、未部署，不能按已交付能力使用。
 - [.planning/STATE.md](.planning/STATE.md)：当前进度与待办；原始需求和 `conductor/` 历史快照不代表已交付状态。
+
+## 资源修复候选约束
+
+- SQLite 诊断只允许原生错误码、固定阶段、耗时及事务状态；不得记录 SQL、路径、异常正文或消息内容。仅独立 Worker 的已知 BUSY 且事务明确为 false 的轮询可有界重试；handler/model/send 与 UNKNOWN 不重试。
+- 采集等待 `TRENDRADAR_COLLECTOR_WAIT_SECONDS` 默认 0，有限范围 0..1800；正值超时非零。默认 AI 忙时退出 0 是跳过，不能视为完成；D5 未关闭，不得激活生产等待或声称持久待办已实现。
+- 本地候选证据见 [资源修复验证](docs/evidence/resource-remediation-20261111/verification.md)。保留角色、授权、租约、冻结消息、UUID、FULL、schema、PrivateTmp 与依赖；内存试调门槛仍未满足，不得借本地验证推定生产已部署。

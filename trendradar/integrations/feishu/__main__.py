@@ -7,12 +7,13 @@ import asyncio
 import queue
 import threading
 import time
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from typing import Any
 
 from trendradar.core.heartbeat import RoleHeartbeat
 from trendradar.core.locking import LockUnavailable, runtime_locks
 from trendradar.core.settings import load_settings
+from trendradar.core.sqlite_errors import error_fields
 from trendradar.intelligence.storage import IntelligenceStorage
 from trendradar.ops.maintenance import read_guard
 from trendradar.utils.logging import log
@@ -23,11 +24,50 @@ from .delivery import StoryDelivery
 from .handler import FeishuHandler
 from .ledger import EventLedger
 from .models import stable_digest
+from .polling import poll_pending
 from .scheduler import DeliveryScheduler
 from .transport import FeishuTransport, SdkConnection
 
 EVENT_QUEUE_CAPACITY = 32
 WORKER_POLL_SECONDS = 0.75
+# Match the existing 5000 ms SQLite busy timeout; successful fast polls stay silent.
+WORKER_SLOW_OPERATION_SECONDS = 5.0
+
+
+def _transaction_open(storage) -> bool | None:
+    """Diagnostic inspection must not replace an operation's original exception."""
+    try:
+        value = storage.connection.in_transaction
+        return value if type(value) is bool else None
+    except Exception:
+        return None
+
+
+@contextmanager
+def _worker_operation(storage, stage: str):
+    """Time worker phases using fixed stage literals at the two call sites."""
+    started = time.monotonic()
+    try:
+        yield
+    except Exception as exc:
+        log.error(
+            "Lark worker operation failed",
+            stage=stage,
+            elapsed_ms=round((time.monotonic() - started) * 1000, 1),
+            transaction_open=_transaction_open(storage),
+            error_type=type(exc).__name__,
+            **error_fields(exc),
+        )
+        raise
+    else:
+        elapsed = time.monotonic() - started
+        if elapsed >= WORKER_SLOW_OPERATION_SECONDS:
+            log.warning(
+                "Lark worker operation slow",
+                stage=stage,
+                elapsed_ms=round(elapsed * 1000, 1),
+                transaction_open=_transaction_open(storage),
+            )
 
 
 def _require_existing(settings) -> bool:
@@ -288,9 +328,47 @@ def run_worker_role(settings, config, client, stop=None, *, poll_seconds=WORKER_
                     state="running",
                     sqlite_synchronous=_actual_synchronous(storage, settings),
                 )
-                pending = ledger.pending_events(recover=True, limit=1)
+                with _worker_operation(storage, "worker.pending_events"):
+                    polled = poll_pending(
+                        ledger, stop,
+                        lambda: read_guard(settings.intelligence_database_path) is not None,
+                    )
+                if (
+                    polled.state == "blocked" or stop.is_set()
+                    or read_guard(settings.intelligence_database_path) is not None
+                ):
+                    if read_guard(settings.intelligence_database_path) is not None:
+                        heartbeat.write(
+                            state="maintenance",
+                            sqlite_synchronous=_actual_synchronous(storage, settings),
+                        )
+                    break
+                if polled.state == "backoff":
+                    log.warning(
+                        "Lark worker poll busy", stage="worker.pending_events",
+                        last_result="poll_busy",
+                    )
+                    heartbeat.write(
+                        state="backoff", last_result="poll_busy",
+                        sqlite_synchronous=_actual_synchronous(storage, settings),
+                    )
+                    if (stop.is_set()
+                            or read_guard(settings.intelligence_database_path) is not None):
+                        continue
+                    stop.wait(30)
+                    continue
+                pending = polled.events
+                if stop.is_set():
+                    break
+                if read_guard(settings.intelligence_database_path) is not None:
+                    heartbeat.write(
+                        state="maintenance",
+                        sqlite_synchronous=_actual_synchronous(storage, settings),
+                    )
+                    break
                 if pending:
-                    result = handler.process(*pending[0])
+                    with _worker_operation(storage, "worker.handler"):
+                        result = handler.process(*pending[0])
                     heartbeat.write(
                         state="running",
                         last_result=result,
@@ -426,6 +504,8 @@ def main(argv=None) -> int:
         log.error(
             "Lark runner unavailable; no legacy pipeline was changed",
             error_type=type(exc).__name__,
+            role=role,
+            **error_fields(exc),
         )
         return 1
     return 0

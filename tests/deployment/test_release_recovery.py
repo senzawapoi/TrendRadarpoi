@@ -485,3 +485,31 @@ def test_recovery_clears_installer_root_owned_guard_through_authorized_admin_api
         assert journal.active.exists()  # The deployment fence still protects the recovery.
     finally:
         journal.stop_lease()
+def test_refresh_sources_dispatches_security_ai_and_general_separately(scene, monkeypatch):
+    config, failed = scene
+    config = replace(config, refresh=True)
+    journal = recovery.Journal(config, failed)
+    journal.begin()
+    host = recovery.Host(config, journal)
+    started = []
+    monkeypatch.setattr(
+        host,
+        "ops",
+        lambda *args, **kwargs: {
+            "status": "unhealthy",
+            "warnings": [
+                "stale_source:ai_frontier:arxiv",
+                "stale_source:security:cisa_kev",
+                "stale_source:rss:hn",
+            ],
+            "errors": [],
+        },
+    )
+    monkeypatch.setattr(host, "evidence", lambda *args: None)
+    monkeypatch.setattr(host, "start_once", lambda unit, timeout: started.append(unit))
+    host.refresh_sources()
+    assert started == [
+        "trendradar-collect-ai.service",
+        "trendradar-collect-security.service",
+        "trendradar-collect-main.service",
+    ]

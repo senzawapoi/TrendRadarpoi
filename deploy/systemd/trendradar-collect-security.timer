@@ -1,0 +1,10 @@
+[Unit]
+Description=Run TrendRadar security intelligence collection every four hours
+
+[Timer]
+OnCalendar=*-*-* 01/4:45:00
+Persistent=false
+Unit=trendradar-collect-security.service
+
+[Install]
+WantedBy=timers.target

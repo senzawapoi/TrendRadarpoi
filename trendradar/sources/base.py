@@ -77,6 +77,11 @@ class SourceAdapter(Generic[RawT], ABC):
         """Failures isolated inside a successful partial fetch, without refetching."""
         return ()
 
+    @property
+    def upstream_fetched_count(self) -> int | None:
+        """Total raw items parsed before local freshness filtering, when applicable."""
+        return None
+
     def _set_health(self, health: SourceHealth) -> None:
         self._health = health
 

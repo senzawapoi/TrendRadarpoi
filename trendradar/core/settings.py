@@ -557,6 +557,16 @@ class RuntimeSettings:
             minimum=1,
             maximum=168,
         )
+        config["security_source_max_age_hours"] = _bounded_int(
+            self.get_int(
+                "INTELLIGENCE_HEALTH_SECURITY_SOURCE_MAX_AGE_HOURS",
+                "intelligence.health.security_source_max_age_hours",
+                config["source_max_age_hours"],
+            ),
+            config["source_max_age_hours"],
+            minimum=1,
+            maximum=168,
+        )
         config["heartbeat_max_age_seconds"] = _bounded_int(
             self.get_int(
                 "INTELLIGENCE_HEALTH_HEARTBEAT_MAX_AGE_SECONDS",

@@ -531,20 +531,38 @@ def collect_health(
             report.setdefault("errors", []).append("source_runs_unverified")
             report["status"] = "unhealthy"
         source_age = int(health_config["source_max_age_hours"]) * 3600
+        security_source_age = (
+            int(
+                health_config.get(
+                    "security_source_max_age_hours", health_config["source_max_age_hours"]
+                )
+            )
+            * 3600
+        )
         report["source_health"] = source_runs
         for source in expected_sources:
             run = source_runs.get(source)
             if run is None:
                 message = f"missing_source_run:{source}"
-                (report.setdefault("errors", []) if health_config["require_source_runs"] else warnings).append(message)
+                target = (
+                    report.setdefault("errors", [])
+                    if health_config["require_source_runs"]
+                    else warnings
+                )
+                target.append(message)
                 if health_config["require_source_runs"]:
                     report["status"] = "unhealthy"
                 continue
             finished = _parse_time(run.get("last_success_at"))
-            if (str(run.get("status")) not in {"healthy", "degraded"}
-                    or run.get("error_count", 0) > 0):
+            if (
+                str(run.get("status")) not in {"healthy", "degraded"}
+                or run.get("error_count", 0) > 0
+            ):
                 warnings.append(f"source_unhealthy:{source}")
-            if finished is None or (now - finished).total_seconds() > source_age:
+            allowed_age = (
+                security_source_age if str(source).startswith("security:") else source_age
+            )
+            if finished is None or (now - finished).total_seconds() > allowed_age:
                 warnings.append(f"stale_source:{source}")
 
     backup_dir = Path(str(health_config["backup_dir"])).expanduser()

@@ -14,7 +14,13 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from trendradar.core.locking import LockUnavailable, runtime_locks  # noqa: E402
+from trendradar.core.locking import (  # noqa: E402
+    CollectionBlocked,
+    CollectionTimeout,
+    LockUnavailable,
+    collector_slot,
+    collector_wait_seconds,
+)
 from trendradar.core.settings import load_settings  # noqa: E402
 from trendradar.ops.maintenance import read_guard  # noqa: E402
 from trendradar.utils.logging import get_run_id, log  # noqa: E402
@@ -156,8 +162,35 @@ def _apply_translations_to_hot_results(results, hot_news_items):
     return new_results
 
 
-def _run_main():
+VALID_SCOPES = ("all", "general", "hotboard", "rss", "security")
+
+
+def _parse_cli_args(argv: list[str] | None = None):
+    import argparse
+    import os
+
+    env_default = os.environ.get("TRENDRADAR_MAIN_SCOPE", "").strip().lower() or "all"
+    if env_default not in VALID_SCOPES:
+        env_default = "all"
+    parser = argparse.ArgumentParser(description="TrendRadar collection pipeline")
+    parser.add_argument(
+        "--scope",
+        choices=VALID_SCOPES,
+        default=env_default,
+        help="Collection scope to execute (default: all or TRENDRADAR_MAIN_SCOPE)",
+    )
+    return parser.parse_args([] if argv is None else list(argv))
+
+
+def _run_main(scope: str = "all"):
     """主函数"""
+    if scope not in VALID_SCOPES:
+        raise ValueError(f"Unsupported scope: {scope}")
+    run_hotboard = scope in {"all", "general", "hotboard"}
+    run_rss = scope in {"all", "general", "rss"}
+    run_security = scope in {"all", "security"}
+    run_general_report = scope in {"all", "general", "hotboard", "rss"}
+    pending_general_story_ids: set[str] = set()
     intelligence_storage = None
     try:
         from trendradar.ai import build_gemini_client
@@ -287,8 +320,8 @@ def _run_main():
         hot_stats = []
         new_titles = None
 
-        platforms = ctx.platforms
-        if platforms:
+        platforms = ctx.platforms if run_hotboard else []
+        if run_hotboard and platforms:
             log.info("开始热榜数据抓取", platforms=len(platforms), platform_names=[p.get('name', p['id']) for p in platforms])
 
             ids = []
@@ -314,6 +347,9 @@ def _run_main():
                     story_wording_client=story_wording_client,
                     digest_analyzer=digest_analyzer,
                     title_translator=title_translator,
+                    process_stories=False,
+                    save_story_report=False,
+                    pending_story_ids=pending_general_story_ids,
                 )
                 results, id_to_name, _title_info = convert_news_data_to_results(hot_news_data)
                 failed_ids = hot_news_data.failed_ids
@@ -373,7 +409,7 @@ def _run_main():
                 )
             except (FileNotFoundError, ImportError) as e:
                 log.warning("热榜词频统计跳过", error=str(e))
-        else:
+        elif run_hotboard:
             log.warning("未配置热榜平台，跳过热榜抓取")
 
         # ================================================================
@@ -385,7 +421,7 @@ def _run_main():
         total_rss_items = 0
         rss_data = None
 
-        if ctx.rss_enabled:
+        if run_rss and ctx.rss_enabled:
             log.info("开始 RSS 数据抓取")
 
             rss_feeds = ctx.rss_feeds
@@ -445,6 +481,9 @@ def _run_main():
                         story_wording_client=story_wording_client,
                         digest_analyzer=digest_analyzer,
                         title_translator=title_translator,
+                        process_stories=False,
+                        save_story_report=False,
+                        pending_story_ids=pending_general_story_ids,
                         request_interval=rss_config.get("REQUEST_INTERVAL", 2000),
                         timeout=rss_config.get("TIMEOUT", 15),
                         use_proxy=rss_config.get("USE_PROXY", False),
@@ -563,66 +602,89 @@ def _run_main():
                 log.warning("RSS 未启用，跳过 RSS 抓取")
 
         # ================================================================
+        # B.2 单次合流 General Story 聚类与报告生成
+        # ================================================================
+        if (
+            (run_hotboard or run_rss)
+            and intelligence_enabled
+            and intelligence_storage is not None
+            and pending_general_story_ids
+        ):
+            from trendradar.intelligence.pipeline import finalize_stories_best_effort
+
+            finalize_stories_best_effort(
+                pending_general_story_ids,
+                intelligence_storage,
+                save_report=True,
+                story_domain="general",
+                wording_client=story_wording_client,
+                digest_analyzer=digest_analyzer,
+            )
+
+        # ================================================================
         # C. 安全情报（独立、增量、失败隔离）
         # ================================================================
-        _run_security_best_effort(
-            intelligence_enabled=intelligence_enabled,
-            intelligence_storage=intelligence_storage,
-            security_config=intelligence_config.get("SECURITY", {}),
-            collected_at=ctx.get_time(),
-            nvd_api_key=settings.nvd_api_key,
-            wording_client=story_wording_client,
-            narrative_analyzer=security_narrative_analyzer,
-        )
+        if run_security:
+            _run_security_best_effort(
+                intelligence_enabled=intelligence_enabled,
+                intelligence_storage=intelligence_storage,
+                security_config=intelligence_config.get("SECURITY", {}),
+                collected_at=ctx.get_time(),
+                nvd_api_key=settings.nvd_api_key,
+                wording_client=story_wording_client,
+                narrative_analyzer=security_narrative_analyzer,
+            )
 
         # ================================================================
         # D. 生成 HTML 报告 + 发送通知
         # ================================================================
-        # incremental 模式优化：按源分组 + RSS 只显示新增
-        if report_mode == "incremental" and not storage_manager.is_first_crawl_today():
-            # 热榜按平台分组（复用已有函数）
-            if hot_stats:
-                from trendradar.core.analyzer import convert_keyword_stats_to_platform_stats
-                hot_stats = convert_keyword_stats_to_platform_stats(
-                    hot_stats, ctx.weight_config, ctx.rank_threshold
-                )
+        html_file = None
+        if run_general_report:
+            # incremental 模式优化：按源分组 + RSS 只显示新增
+            if report_mode == "incremental" and not storage_manager.is_first_crawl_today():
+                # 热榜按平台分组（复用已有函数）
+                if hot_stats:
+                    from trendradar.core.analyzer import convert_keyword_stats_to_platform_stats
+                    hot_stats = convert_keyword_stats_to_platform_stats(
+                        hot_stats, ctx.weight_config, ctx.rank_threshold
+                    )
 
-            # RSS 只显示新增，按订阅源分组
-            if rss_new_stats:
-                source_map = {}
-                for stat in rss_new_stats:
-                    for t in stat.get("titles", []):
-                        src = t.get("source_name", "未知")
-                        source_map.setdefault(src, []).append(t)
-                rss_stats = [
-                    {"word": src, "count": len(titles), "position": i, "titles": titles, "percentage": 0}
-                    for i, (src, titles) in enumerate(source_map.items())
-                ]
-            else:
-                rss_stats = None
-            rss_new_stats = None  # 去掉"RSS 本次新增"区块
+                # RSS 只显示新增，按订阅源分组
+                if rss_new_stats:
+                    source_map = {}
+                    for stat in rss_new_stats:
+                        for t in stat.get("titles", []):
+                            src = t.get("source_name", "未知")
+                            source_map.setdefault(src, []).append(t)
+                    rss_stats = [
+                        {"word": src, "count": len(titles), "position": i, "titles": titles, "percentage": 0}
+                        for i, (src, titles) in enumerate(source_map.items())
+                    ]
+                else:
+                    rss_stats = None
+                rss_new_stats = None  # 去掉"RSS 本次新增"区块
 
-        total_all = total_hot_titles + len(rss_items_list)
-        all_failed = failed_ids + (rss_data.failed_ids if rss_data else [])
-        all_id_to_name = {**id_to_name}
-        if rss_data:
-            all_id_to_name.update(rss_data.id_to_name)
+            total_all = total_hot_titles + len(rss_items_list)
+            all_failed = failed_ids + (rss_data.failed_ids if rss_data else [])
+            all_id_to_name = {**id_to_name}
+            if rss_data:
+                all_id_to_name.update(rss_data.id_to_name)
 
-        # 生成 HTML 报告 → output/index.html
-        log.info("生成 HTML 报告")
-        html_file = ctx.generate_html(
-            stats=hot_stats,
-            total_titles=total_all,
-            failed_ids=all_failed,
-            new_titles=new_titles,
-            id_to_name=all_id_to_name,
-            mode=report_mode,
-            is_daily_summary=True,
-            rss_items=rss_stats,
-            rss_new_items=rss_new_stats,
-        )
-        if html_file:
-            log.success("HTML 报告已生成", file=html_file)
+            # 生成 HTML 报告 → output/index.html
+            log.info("生成 HTML 报告")
+            html_file = ctx.generate_html(
+                stats=hot_stats,
+                total_titles=total_all,
+                failed_ids=all_failed,
+                new_titles=new_titles,
+                id_to_name=all_id_to_name,
+                mode=report_mode,
+                is_daily_summary=True,
+                rss_items=rss_stats,
+                rss_new_items=rss_new_stats,
+            )
+            if html_file:
+                log.success("HTML 报告已生成", file=html_file)
 
 
         # 清理资源
@@ -644,23 +706,36 @@ def _run_main():
         return False
 
 
-def main():
+def main(argv: list[str] | None = None):
     """Run one main collection while holding the shared collector lock."""
+    args = _parse_cli_args(argv)
+    try:
+        wait = collector_wait_seconds()
+    except ValueError:
+        log.error("invalid collector wait; expected finite seconds in 0..1800")
+        return False
     settings = load_settings(fallback_to_empty=True)
-    if read_guard(settings.intelligence_database_path) is not None:
+    try:
+        with collector_slot(
+            settings.intelligence_database_path, wait_seconds=wait,
+            blocked=lambda: read_guard(settings.intelligence_database_path) is not None,
+            collector="main", emit=lambda **fields: log.info("collector_attempt", **fields),
+        ) as attempt:
+            result = _run_main() if args.scope == "all" else _run_main(scope=args.scope)
+            attempt.record("completed" if result else "failed")
+            return result
+    except CollectionBlocked:
         log.warning("TrendRadar collection blocked by persistent maintenance guard")
         return False
-    try:
-        with runtime_locks(settings.intelligence_database_path, "collector"):
-            return _run_main()
-    except LockUnavailable as exc:
-        log.warning(
-            "TrendRadar collection skipped because another collector is active",
-            error=str(exc),
-        )
+    except CollectionTimeout:
+        log.warning("TrendRadar collector wait timed out")
+        return False
+    except LockUnavailable:
+        # Preserve the old bool result, but the attempt is a body/acquisition failure.
+        log.warning("TrendRadar collection failed with a lock error")
         return False
 
 
 if __name__ == "__main__":
-    success = main()
+    success = main(sys.argv[1:])
     sys.exit(0 if success else 1)

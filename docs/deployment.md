@@ -10,7 +10,7 @@ It supersedes the older model, notification, resource and offsite requirements.
 Use Python 3.12 on the VPS. This release uses instant Lark delivery and local
 backups only; offsite recovery and 48-hour observation remain separate open gates.
 
-The [current handoff](phase7-release-20261023/HANDOFF.md) records the latest
+The [2026-10-23 handoff](phase7-release-20261023/HANDOFF.md) records the historical
 deployment `p7-20261023-28e7283` and distinguishes it from the owner-approved,
 undeployed handoff commits/stacked PR. The [actual-gap handoff](phase7-actual-gap-evidence/HANDOFF.md)
 preserves earlier installer/restore evidence; its pre-deployment status is historical.
@@ -397,3 +397,23 @@ regression; target resource limits remain unmeasured. Phase 5 live gaps,
 RG-04 clean candidate and
 VPS/provider acceptance remain recorded in
 `docs/phase7-acceptance.md`.
+
+## 本地候选：采集锁等待与资源门槛
+
+`TRENDRADAR_COLLECTOR_WAIT_SECONDS` 默认 `0`（关闭等待），仅接受有限数值 `0..1800`。
+主采集与 AI Frontier 仍共享 `collector.lock`；只对已确认的操作系统锁竞争等待，获取锁后不重放采集体。
+正值等待耗尽以非零退出；默认 AI 遇忙仍可退出 0，这表示跳过，不能计为采集完成。
+等待/获取/超时/维护等元数据使用单次调用 attempt ID，不是定时周期完成凭证。
+
+此有界 helper 不是 FIFO、持久队列或容量修复。D5 仍为 BLOCKED，默认保持关闭；
+[持久待办补充方案](evidence/resource-remediation-20261111/collector-pending-plan.md) 尚未实现，
+不得据此激活正值生产等待或宣布采集公平性/新鲜度达标。停止、维护与失败不得记作完成。
+
+内存策略评估仍为 `may_trial=false`：真实 AI 并发负载、历史 Worker 原因与其他 SLI 未闭环；
+共享 `MemoryHigh=512M`、`MemoryMax=768M`、`CPUQuota=50%` 均未调整。
+[本地验证](evidence/resource-remediation-20261111/verification.md) 只绑定当前未提交候选；
+不代表新 CI、VPS 部署、真实投递或 48 小时验收。
+
+## 独立安全采集定时器与分域受管拓扑
+
+`python -m trendradar` 支持 `--scope {all,general,hotboard,rss,security}`（或环境变量 `TRENDRADAR_MAIN_SCOPE`）。`deploy/systemd/trendradar-collect-main.service` 默认以 `TRENDRADAR_MAIN_SCOPE=general` 运行高频热榜+RSS 单次合流聚类，而 `deploy/systemd/trendradar-collect-security.{service,timer}`（每 4 小时 `01/4:45:00`）作为受管单元独立运行 `--scope security`，并由 `install_release.sh` 与 `recover_release.py` 统一执行静默停机（quiesce）、快照与源刷新校验。从旧版首次升级前，须先将新增单元文件与更新后的受控安装器同步至宿主机 `/etc/systemd/system/` 与 `/usr/local/libexec/trendradar/`。

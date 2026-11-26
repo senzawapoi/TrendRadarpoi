@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github/workflows/phase7-ci.yml"
 OPT_IN_MODULES = {"test_pre_fix_linux.py", "test_release_install_linux.py"}
 PLAN_MODULES = {
+    "tests/deployment/test_collector_wait.py",
     "tests/deployment/test_health.py",
     "tests/deployment/test_backup.py",
     "tests/deployment/test_offsite_backup.py",
