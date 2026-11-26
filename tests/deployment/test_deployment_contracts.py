@@ -98,6 +98,7 @@ def test_systemd_roles_share_resource_slice_and_production_defaults_are_strict()
     common = (ROOT / "deploy/config/common.env.example").read_text(encoding="utf-8")
     assert "INTELLIGENCE_REQUIRE_EXISTING=true" in common
     assert "INTELLIGENCE_SQLITE_SYNCHRONOUS=FULL" in common
+    assert "INTELLIGENCE_HEALTH_SECURITY_SOURCE_MAX_AGE_HOURS=8" in common
 
 
 def test_interactive_roles_are_protected_without_starving_collectors():
@@ -180,6 +181,8 @@ def test_installer_records_stages_and_uses_schema_aware_failure_boundary():
         "trendradar-scheduler.service",
         "trendradar-collect-main.service",
         "trendradar-collect-ai.service",
+        "trendradar-collect-security.service",
+        "trendradar-collect-security.timer",
         "trendradar-health.service",
         "trendradar-backup.service",
     ):

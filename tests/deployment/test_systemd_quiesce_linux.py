@@ -30,7 +30,10 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SELF = Path(__file__).resolve()
-ROLES = ("bot", "worker", "scheduler", "collect-main", "collect-ai", "health", "backup")
+ROLES = (
+    "bot", "worker", "scheduler", "collect-main",
+    "collect-ai", "collect-security", "health", "backup",
+)
 TIMED_ROLES = ROLES[2:]
 SYSTEMCTL = "/usr/bin/systemctl"
 SAFE_ENV = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8"}

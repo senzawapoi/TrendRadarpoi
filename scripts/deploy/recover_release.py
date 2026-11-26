@@ -32,10 +32,10 @@ from typing import Any
 
 ROLES = ("bot", "worker", "scheduler")
 TIMERS = tuple(f"trendradar-{name}.timer" for name in (
-    "scheduler", "collect-main", "collect-ai", "health", "backup",
+    "scheduler", "collect-main", "collect-ai", "collect-security", "health", "backup",
 ))
 SERVICES = tuple(f"trendradar-{name}.service" for name in (
-    *ROLES, "collect-main", "collect-ai", "health", "backup",
+    *ROLES, "collect-main", "collect-ai", "collect-security", "health", "backup",
 ))
 
 
@@ -421,7 +421,9 @@ class Host:
         units = []
         if any(source.startswith("ai_frontier:") for source in source_errors):
             units.append("trendradar-collect-ai.service")
-        if any(not source.startswith("ai_frontier:") for source in source_errors):
+        if any(source.startswith("security:") for source in source_errors):
+            units.append("trendradar-collect-security.service")
+        if any(not source.startswith(("ai_frontier:", "security:")) for source in source_errors):
             units.append("trendradar-collect-main.service")
         for unit in units:
             self.journal.update("verify", recovery_stage=unit)

@@ -99,6 +99,7 @@ jobs:
         run: |
           sudo env PYTHONDONTWRITEBYTECODE=1 \
             /var/lib/trendradar-p7-ci/venv/bin/python -B -m pytest \
+            tests/deployment/test_acquisition_units.py \
             tests/deployment/test_actual_gap_health.py \
             tests/deployment/test_backup.py \
             tests/deployment/test_backup_retention.py \
@@ -119,6 +120,9 @@ jobs:
             tests/deployment/test_release_inputs.py \
             tests/deployment/test_release_recovery.py \
             tests/deployment/test_remaining_gap_assertions.py \
+            tests/deployment/test_resource_analysis.py \
+            tests/deployment/test_memory_trial_policy.py \
+            tests/deployment/test_collector_wait.py \
             tests/deployment/test_runtime_guards.py \
             tests/deployment/test_restore_permissions_linux.py \
             tests/deployment/test_restore_crash_recovery.py \
