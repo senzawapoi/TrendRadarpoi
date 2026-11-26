@@ -222,41 +222,51 @@ class EventLedger:
     ) -> list[tuple[FeishuInbound, SessionBinding]]:
         """Load durable events that still need processing or reply delivery."""
         now = stamp(self.clock())
-        if limit is not None and (isinstance(limit, bool) or not 1 <= limit <= 1000):
+        if limit is not None and (type(limit) is not int or not 1 <= limit <= 1000):
             raise ValueError("invalid pending event limit")
-        with self.lock, self.storage.transaction() as connection:
-            if recover:
-                # Reclaim only expired work. A live retry lease is a deliberate
-                # backoff and must not be stolen by a startup scan.
-                connection.execute(
-                    """UPDATE feishu_events SET owner='', lease_until=?, updated_at=?
-                       WHERE status IN ('processing', 'failed')
-                         AND event_json IS NOT NULL AND lease_until <= ?""",
-                    (now, now, now),
-                )
-                # A processing lease that already consumed the final attempt is
-                # terminal; discard its recovery payload instead of polling it forever.
-                connection.execute(
-                    """UPDATE feishu_events SET status='failed', owner='',
-                       event_json=NULL, binding_json=NULL, updated_at=?
-                       WHERE status='processing' AND attempts >= 3
-                       AND event_json IS NOT NULL AND lease_until <= ?""",
-                    (now, now),
-                )
-            query = """SELECT event_id, event_json, binding_json FROM feishu_events
-                   WHERE event_json IS NOT NULL
-                     AND (
-                         (status='failed' AND reply_json IS NOT NULL
-                          AND delivery_attempts < 3 AND lease_until <= ?)
-                         OR ((status='processing' OR status='failed')
-                             AND reply_json IS NULL AND lease_until <= ? AND attempts < 3)
-                     )
-                   ORDER BY updated_at, event_id"""
-            params: list[object] = [now, now]
-            if limit is not None:
-                query += " LIMIT ?"
-                params.append(limit)
-            rows = connection.execute(query, params).fetchall()
+        with self.lock:
+            # This broad check includes terminal payload cleanup as well as delivery.
+            # The transaction below must reread state before recovering any work.
+            candidate = self.storage.connection.execute(
+                """SELECT 1 FROM feishu_events WHERE event_json IS NOT NULL
+                   AND status IN ('processing', 'failed') AND lease_until <= ? LIMIT 1""",
+                (now,),
+            ).fetchone()
+            if candidate is None and not self.storage.connection.in_transaction:
+                return []
+            with self.storage.transaction() as connection:
+                if recover:
+                    # Reclaim only expired work. A live retry lease is a deliberate
+                    # backoff and must not be stolen by a startup scan.
+                    connection.execute(
+                        """UPDATE feishu_events SET owner='', lease_until=?, updated_at=?
+                           WHERE status IN ('processing', 'failed')
+                             AND event_json IS NOT NULL AND lease_until <= ?""",
+                        (now, now, now),
+                    )
+                    # A processing lease that already consumed the final attempt is
+                    # terminal; discard its recovery payload instead of polling it forever.
+                    connection.execute(
+                        """UPDATE feishu_events SET status='failed', owner='',
+                           event_json=NULL, binding_json=NULL, updated_at=?
+                           WHERE status='processing' AND attempts >= 3
+                           AND event_json IS NOT NULL AND lease_until <= ?""",
+                        (now, now),
+                    )
+                query = """SELECT event_id, event_json, binding_json FROM feishu_events
+                       WHERE event_json IS NOT NULL
+                         AND (
+                             (status='failed' AND reply_json IS NOT NULL
+                              AND delivery_attempts < 3 AND lease_until <= ?)
+                             OR ((status='processing' OR status='failed')
+                                 AND reply_json IS NULL AND lease_until <= ? AND attempts < 3)
+                         )
+                       ORDER BY updated_at, event_id"""
+                params: list[object] = [now, now]
+                if limit is not None:
+                    query += " LIMIT ?"
+                    params.append(limit)
+                rows = connection.execute(query, params).fetchall()
         pending = []
         for row in rows:
             try:
