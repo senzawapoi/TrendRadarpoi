@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 
 import aiohttp
+import feedparser
 from bs4 import BeautifulSoup
 
 from trendradar.ai_frontier._http import make_session, request_with_retry
@@ -30,7 +31,8 @@ class OfficialBlogSource(AISource):
 
     async def _fetch_site(self, session: aiohttp.ClientSession, site: dict) -> list[AIItem]:
         name = (site.get("name") or "Official Blog").strip()
-        url = (site.get("url") or "").strip()
+        feed_url = (site.get("feed_url") or "").strip()
+        url = (feed_url or site.get("url") or "").strip()
         if not url:
             raise SourceFetchError("missing_url")
 
@@ -49,11 +51,65 @@ class OfficialBlogSource(AISource):
             resp.release()
             raise SourceFetchError(f"http_{resp.status}")
         try:
-            html_text = await resp.text()
-            resolved_site = site | {"url": str(resp.url)}
+            body_text = await resp.text()
+            resolved_site = site if feed_url else (site | {"url": str(resp.url)})
         finally:
             resp.release()
-        return await asyncio.to_thread(self._safe_parse_listing, resolved_site, html_text)
+        if feed_url or self._looks_like_xml_feed(body_text):
+            return await asyncio.to_thread(self._parse_feed, resolved_site, body_text)
+        return await asyncio.to_thread(self._safe_parse_listing, resolved_site, body_text)
+
+    @staticmethod
+    def _looks_like_xml_feed(text: str) -> bool:
+        head = (text or "").lstrip()[:256].lower()
+        return head.startswith("<?xml") or head.startswith("<rss") or head.startswith("<feed")
+
+    def _parse_feed(self, site: dict, xml_text: str) -> list[AIItem]:
+        name = (site.get("name") or "Official Blog").strip()
+        base_url = (site.get("url") or site.get("feed_url") or "").strip()
+        include_patterns = site.get("include_patterns") or []
+        parsed = feedparser.parse(xml_text)
+        if not parsed.version and parsed.bozo and not parsed.entries:
+            raise SourceFetchError("invalid_feed")
+        items: list[AIItem] = []
+        seen: set[str] = set()
+        for entry in parsed.entries or []:
+            title = (entry.get("title") or "").strip()
+            raw_link = (entry.get("link") or "").strip()
+            if not title or not raw_link:
+                continue
+            full_url = urljoin(base_url, raw_link)
+            parsed_link = urlparse(full_url)
+            if parsed_link.scheme not in {"http", "https"}:
+                continue
+            clean_url = parsed_link._replace(query="", fragment="").geturl().rstrip("/")
+            if clean_url in seen:
+                continue
+            if include_patterns and not any(pat in clean_url for pat in include_patterns):
+                continue
+            pub_dt: datetime | None = None
+            if getattr(entry, "published_parsed", None):
+                pub_dt = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+            elif getattr(entry, "updated_parsed", None):
+                pub_dt = datetime(*entry.updated_parsed[:6], tzinfo=timezone.utc)
+            summary = BeautifulSoup(entry.get("summary") or "", "html.parser").get_text(" ", strip=True)
+            if len(summary) > 400:
+                summary = summary[:397] + "..."
+            seen.add(clean_url)
+            items.append(
+                AIItem(
+                    source="blog",
+                    source_name=name,
+                    title=title,
+                    url=clean_url,
+                    published_at=pub_dt,
+                    author=name,
+                    summary=summary,
+                )
+            )
+            if len(items) >= self.max_items_per_site:
+                break
+        return items
 
     def _safe_parse_listing(self, site: dict, html_text: str) -> list[AIItem]:
         """包裹 _parse_listing，单站 HTML 异常不影响整体抓取。"""

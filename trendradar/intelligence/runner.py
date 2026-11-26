@@ -79,10 +79,17 @@ class AdapterRunner:
 
         finished_at = datetime.now(tz=timezone.utc)
         duration_ms = max(0, round((monotonic() - timer) * 1000))
+        upstream_count = adapter.upstream_fetched_count
         if fetch_error or ((raw_items or partial_errors) and not items):
             status = HealthStatus.UNHEALTHY
-        elif not raw_items or normalize_errors or partial_errors:
+        elif normalize_errors or partial_errors:
             status = HealthStatus.DEGRADED
+        elif not raw_items:
+            status = (
+                HealthStatus.HEALTHY
+                if upstream_count is not None and upstream_count > 0
+                else HealthStatus.DEGRADED
+            )
         else:
             status = HealthStatus.HEALTHY
         errors = [*partial_errors, *normalize_errors]

@@ -34,7 +34,13 @@ from trendradar.ai_frontier.fetcher import fetch_and_process
 from trendradar.ai_frontier.renderer import save_html_report
 from trendradar.ai_frontier.storage import AIFrontierStorage
 from trendradar.ai_frontier.translator import translate_items
-from trendradar.core.locking import LockUnavailable, runtime_locks
+from trendradar.core.locking import (
+    CollectionBlocked,
+    CollectionTimeout,
+    LockUnavailable,
+    collector_slot,
+    collector_wait_seconds,
+)
 from trendradar.core.settings import load_settings, load_yaml_config
 from trendradar.intelligence.gemini_wording import build_story_wording_client
 from trendradar.intelligence.integration import open_intelligence_storage
@@ -88,16 +94,29 @@ def _default_config() -> dict:
             "youtube_podcast": {
                 "enabled": True,
                 "feeds": [
-                    {"name": "Latent Space", "url": "https://www.youtube.com/@LatentSpacePod"},
+                    {
+                        "name": "Latent Space",
+                        "url": "https://www.youtube.com/@LatentSpacePod",
+                        "channel_id": "UCxBcwypKK-W3GHd_RZ9FZrQ",
+                    },
                     {
                         "name": "Training Data",
                         "url": "https://www.youtube.com/playlist?list=PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8",
                     },
-                    {"name": "No Priors", "url": "https://www.youtube.com/@NoPriorsPodcast"},
-                    {"name": "Unsupervised Learning", "url": "https://www.youtube.com/@RedpointAI"},
+                    {
+                        "name": "No Priors",
+                        "url": "https://www.youtube.com/@NoPriorsPodcast",
+                        "channel_id": "UCSI7h9hydQ40K5MJHnCrQvw",
+                    },
+                    {
+                        "name": "Unsupervised Learning",
+                        "url": "https://www.youtube.com/@RedpointAI",
+                        "channel_id": "UCUl-s_Vp-Kkk_XVyDylNwLA",
+                    },
                     {
                         "name": "The MAD Podcast with Matt Turck",
                         "url": "https://www.youtube.com/@DataDrivenNYC",
+                        "channel_id": "UCQID78IY6EOojr5RUdD47MQ",
                     },
                     {
                         "name": "AI & I by Every",
@@ -112,12 +131,12 @@ def _default_config() -> dict:
                     {
                         "name": "Anthropic Engineering",
                         "url": "https://www.anthropic.com/engineering",
-                        "include_patterns": ["anthropic.com/engineering"],
+                        "include_patterns": ["anthropic.com/engineering/", "anthropic.com/research/"],
                     },
                     {
                         "name": "Claude Blog",
-                        "url": "https://claude.com/blog",
-                        "include_patterns": ["claude.com/blog"],
+                        "url": "https://claude.com/resources/articles",
+                        "include_patterns": ["claude.com/resources/articles/", "claude.com/blog"],
                     },
                 ],
                 "max_items_per_site": 10,
@@ -268,18 +287,25 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
+        wait = collector_wait_seconds()
         settings = load_settings(args.config, fallback_to_empty=True)
-        if read_guard(settings.intelligence_database_path) is not None:
-            log.warning("AI Frontier collection blocked by persistent maintenance guard")
-            return 0
-        with runtime_locks(settings.intelligence_database_path, "collector"):
-            return asyncio.run(_run(args.config))
-    except LockUnavailable as exc:
-        log.warning(
-            "AI Frontier collection skipped because another collector is active",
-            error=str(exc),
-        )
+        with collector_slot(
+            settings.intelligence_database_path, wait_seconds=wait,
+            blocked=lambda: read_guard(settings.intelligence_database_path) is not None,
+            collector="ai", emit=lambda **fields: log.info("collector_attempt", **fields),
+        ) as attempt:
+            result = asyncio.run(_run(args.config))
+            attempt.record("completed" if result == 0 else "failed")
+            return result
+    except CollectionBlocked:
+        log.warning("AI Frontier collection blocked by persistent maintenance guard")
         return 0
+    except CollectionTimeout:
+        log.warning("AI Frontier collector wait timed out")
+        return 0 if wait == 0 else 1
+    except LockUnavailable:
+        log.warning("AI Frontier collection failed with a lock error")
+        return 0 if wait == 0 else 1
     except KeyboardInterrupt:
         log.warning("用户中断")
         return 130

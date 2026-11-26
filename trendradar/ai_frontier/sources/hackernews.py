@@ -1,12 +1,13 @@
 """HackerNews 数据源
 
-使用 Algolia HN Search API（无需 API Key）搜索 AI 相关热帖。
-接口：https://hn.algolia.com/api/v1/search?query=...&tags=story&numericFilters=points>50
+使用 Algolia HN Search-by-Date API（无需 API Key）按时间窗口搜索 AI 相关热帖。
+接口：https://hn.algolia.com/api/v1/search_by_date?query=...&tags=story&numericFilters=points>50,created_at_i>...
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 
 import aiohttp
 
@@ -14,7 +15,7 @@ from trendradar.ai_frontier._http import make_session, request_with_retry
 from trendradar.ai_frontier.sources.base import AIItem, AISource, SourceFetchError
 from trendradar.utils.logging import log
 
-HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
+HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search_by_date"
 
 
 class HackerNewsSource(AISource):
@@ -22,7 +23,12 @@ class HackerNewsSource(AISource):
 
     source_type = "hackernews"
 
-    def __init__(self, config: dict) -> None:
+    def __init__(
+        self,
+        config: dict,
+        *,
+        now_fn: Callable[[], datetime] | None = None,
+    ) -> None:
         super().__init__(config)
         self.keywords: list[str] = config.get(
             "keywords", ["AI", "LLM", "GPT", "Claude", "Gemini", "Anthropic", "OpenAI"]
@@ -30,15 +36,28 @@ class HackerNewsSource(AISource):
         self.min_score: int = config.get("min_score", 50)
         self.hits_per_keyword: int = config.get("hits_per_keyword", 20)
         self.timeout: int = config.get("timeout", 15)
+        raw_lookback = config.get("lookback_hours", 48)
+        self.lookback_hours: int = int(48 if raw_lookback is None else raw_lookback)
+        self._now_fn = now_fn or (lambda: datetime.now(tz=timezone.utc))
+
+    def _numeric_filters(self) -> str:
+        filters = [f"points>{self.min_score}"]
+        if self.lookback_hours > 0:
+            now = self._now_fn()
+            if now.tzinfo is None or now.utcoffset() is None:
+                now = now.replace(tzinfo=timezone.utc)
+            cutoff = int((now.astimezone(timezone.utc) - timedelta(hours=self.lookback_hours)).timestamp())
+            filters.append(f"created_at_i>{cutoff}")
+        return ",".join(filters)
 
     async def _fetch_keyword(
-        self, session: aiohttp.ClientSession, keyword: str
+        self, session: aiohttp.ClientSession, keyword: str, numeric_filters: str
     ) -> list[AIItem]:
         params = {
             "query": keyword,
             "tags": "story",
             "hitsPerPage": self.hits_per_keyword,
-            "numericFilters": f"points>{self.min_score}",
+            "numericFilters": numeric_filters,
         }
         resp = await request_with_retry(
             session, "GET", HN_SEARCH_URL, params=params,
@@ -81,7 +100,6 @@ class HackerNewsSource(AISource):
             points = int(hit.get("points") or 0)
             author = hit.get("author") or ""
 
-            # 时间
             created_at = hit.get("created_at_i")
             pub_dt: datetime | None = None
             if created_at:
@@ -110,10 +128,11 @@ class HackerNewsSource(AISource):
             return []
 
         log.info(f"抓取 HackerNews ({len(self.keywords)} keywords)")
+        numeric_filters = self._numeric_filters()
         async with make_session(
             total_timeout=self.timeout, max_per_host=4,
         ) as session:
-            coros = [self._fetch_keyword(session, kw) for kw in self.keywords]
+            coros = [self._fetch_keyword(session, kw, numeric_filters) for kw in self.keywords]
             results = await self._gather(coros, self.keywords, limit=5)
 
         seen: set[str] = set()
@@ -126,6 +145,5 @@ class HackerNewsSource(AISource):
                     continue
                 seen.add(item.url)
                 merged.append(item)
-
         log.info(f"HackerNews 共 {len(merged)} 条（去重后）")
         return merged

@@ -252,14 +252,15 @@ class YouTubePodcastSource(AISource):
 
     async def fetch(self) -> list[AIItem]:
         self._fetch_errors.clear()
-        if not self.enabled or not self.feeds:
+        active_feeds = [f for f in self.feeds if isinstance(f, dict) and f.get("enabled", True)]
+        if not self.enabled or not active_feeds:
             return []
 
-        log.info(f"抓取 YouTube Podcasts ({len(self.feeds)} feeds)")
+        log.info(f"抓取 YouTube Podcasts ({len(active_feeds)} feeds)")
         async with make_session(total_timeout=self.timeout, max_per_host=4) as session:
-            coros = [self._fetch_one(session, feed) for feed in self.feeds]
+            coros = [self._fetch_one(session, feed) for feed in active_feeds]
             results = await self._gather(
-                coros, [feed.get("name", "podcast") for feed in self.feeds], limit=4,
+                coros, [feed.get("name", "podcast") for feed in active_feeds], limit=4,
             )
 
         merged: list[AIItem] = []

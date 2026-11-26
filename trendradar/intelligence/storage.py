@@ -1008,18 +1008,21 @@ class IntelligenceStorage:
             cluster_count = sum(
                 self._upsert_cluster(connection, cluster) for cluster in cluster_list
             )
-            story_count = sum(self._upsert_story(connection, story) for story in story_list)
-            member_count = sum(
-                self._upsert_story_members(connection, story) for story in story_list
-            )
+            story_count = 0
+            member_count = 0
+            for story in story_list:
+                created, changed = self._upsert_story_with_change(connection, story)
+                story_count += created
+                if created or changed or not self._story_members_match(connection, story):
+                    member_count += self._upsert_story_members(connection, story)
         return cluster_count, story_count, member_count
 
     @staticmethod
     def _upsert_cluster(connection: sqlite3.Connection, cluster: Cluster) -> int:
-        now = datetime.now(tz=timezone.utc).isoformat()
         existing = connection.execute(
             """
-            SELECT member_ids_json, tags_json, entities_json
+            SELECT signature, domain, event_time, last_activity_at,
+                   member_ids_json, tags_json, entities_json, metadata_json
             FROM clusters
             WHERE id = ?
             """,
@@ -1041,6 +1044,27 @@ class IntelligenceStorage:
                 prior_entities = []
             cluster.tags = sorted(set(cluster.tags) | set(prior_tags), key=str.casefold)
             cluster.entities = sorted(set(cluster.entities) | set(prior_entities), key=str.casefold)
+        event_iso = cluster.event_time.isoformat()
+        activity_iso = cluster.last_activity_at.isoformat()
+        members_json = json.dumps(cluster.member_ids, ensure_ascii=False)
+        tags_json = json.dumps(cluster.tags, ensure_ascii=False)
+        entities_json = json.dumps(cluster.entities, ensure_ascii=False)
+        metadata_json = json.dumps(cluster.metadata, ensure_ascii=False, sort_keys=True)
+        if existing is not None:
+            effective_event = min(str(existing["event_time"]), event_iso)
+            effective_activity = max(str(existing["last_activity_at"]), activity_iso)
+            if (
+                existing["signature"] == cluster.signature
+                and existing["domain"] == cluster.domain
+                and existing["event_time"] == effective_event
+                and existing["last_activity_at"] == effective_activity
+                and existing["member_ids_json"] == members_json
+                and existing["tags_json"] == tags_json
+                and existing["entities_json"] == entities_json
+                and existing["metadata_json"] == metadata_json
+            ):
+                return 0
+        now = datetime.now(tz=timezone.utc).isoformat()
         connection.execute(
             """
             INSERT INTO clusters (
@@ -1061,25 +1085,66 @@ class IntelligenceStorage:
                 cluster.id,
                 cluster.signature,
                 cluster.domain,
-                cluster.event_time.isoformat(),
-                cluster.last_activity_at.isoformat(),
-                json.dumps(cluster.member_ids, ensure_ascii=False),
-                json.dumps(cluster.tags, ensure_ascii=False),
-                json.dumps(cluster.entities, ensure_ascii=False),
-                json.dumps(cluster.metadata, ensure_ascii=False, sort_keys=True),
+                event_iso,
+                activity_iso,
+                members_json,
+                tags_json,
+                entities_json,
+                metadata_json,
                 now,
                 now,
             ),
         )
         return int(existing is None)
 
+    @classmethod
+    def _upsert_story(cls, connection: sqlite3.Connection, story: Story) -> int:
+        created, _ = cls._upsert_story_with_change(connection, story)
+        return created
+
     @staticmethod
-    def _upsert_story(connection: sqlite3.Connection, story: Story) -> int:
-        now = datetime.now(tz=timezone.utc).isoformat()
+    def _upsert_story_with_change(
+        connection: sqlite3.Connection, story: Story
+    ) -> tuple[int, bool]:
         existing = connection.execute(
-            "SELECT 1 FROM stories WHERE id = ?", (story.id,)
+            """
+            SELECT cluster_id, title, summary, domain, event_time, last_activity_at,
+                   member_ids_json, tags_json, entities_json, importance_score,
+                   importance_json, generator_version, metadata_json
+            FROM stories
+            WHERE id = ?
+            """,
+            (story.id,),
         ).fetchone()
         cluster_id = str(story.metadata.get("cluster_id") or "") or None
+        event_iso = story.event_time.isoformat()
+        activity_iso = story.last_activity_at.isoformat()
+        members_json = json.dumps(story.member_ids, ensure_ascii=False)
+        tags_json = json.dumps(story.tags, ensure_ascii=False)
+        entities_json = json.dumps(story.entities, ensure_ascii=False)
+        importance_json = json.dumps(
+            story.importance.to_dict(), ensure_ascii=False, sort_keys=True
+        )
+        metadata_json = json.dumps(story.metadata, ensure_ascii=False, sort_keys=True)
+        if existing is not None:
+            effective_event = min(str(existing["event_time"]), event_iso)
+            effective_activity = max(str(existing["last_activity_at"]), activity_iso)
+            if (
+                existing["cluster_id"] == cluster_id
+                and existing["title"] == story.title
+                and existing["summary"] == story.summary
+                and existing["domain"] == story.domain
+                and existing["event_time"] == effective_event
+                and existing["last_activity_at"] == effective_activity
+                and existing["member_ids_json"] == members_json
+                and existing["tags_json"] == tags_json
+                and existing["entities_json"] == entities_json
+                and existing["importance_json"] == importance_json
+                and existing["generator_version"] == story.generator_version
+                and existing["metadata_json"] == metadata_json
+            ):
+                return 0, False
+        now = datetime.now(tz=timezone.utc).isoformat()
         connection.execute(
             """
             INSERT INTO stories (
@@ -1110,20 +1175,33 @@ class IntelligenceStorage:
                 story.title,
                 story.summary,
                 story.domain,
-                story.event_time.isoformat(),
-                story.last_activity_at.isoformat(),
-                json.dumps(story.member_ids, ensure_ascii=False),
-                json.dumps(story.tags, ensure_ascii=False),
-                json.dumps(story.entities, ensure_ascii=False),
+                event_iso,
+                activity_iso,
+                members_json,
+                tags_json,
+                entities_json,
                 story.importance.score,
-                json.dumps(story.importance.to_dict(), ensure_ascii=False, sort_keys=True),
+                importance_json,
                 story.generator_version,
-                json.dumps(story.metadata, ensure_ascii=False, sort_keys=True),
+                metadata_json,
                 now,
                 now,
             ),
         )
-        return int(existing is None)
+        return int(existing is None), True
+
+    @staticmethod
+    def _story_members_match(connection: sqlite3.Connection, story: Story) -> bool:
+        rows = connection.execute(
+            "SELECT content_item_id, ordinal FROM story_members WHERE story_id = ? ORDER BY ordinal",
+            (story.id,),
+        ).fetchall()
+        if len(rows) != len(story.member_ids):
+            return False
+        return all(
+            str(row["content_item_id"]) == member_id and int(row["ordinal"]) == idx
+            for idx, (row, member_id) in enumerate(zip(rows, story.member_ids, strict=False))
+        )
 
     @staticmethod
     def _upsert_story_members(connection: sqlite3.Connection, story: Story) -> int:
@@ -1275,6 +1353,28 @@ class IntelligenceStorage:
         ).fetchall()
         return [self._row_to_item(row) for row in rows]
 
+    def has_story_membership(
+        self,
+        content_item_id: str,
+        *,
+        domain: str | None = None,
+    ) -> bool:
+        if not content_item_id:
+            return False
+        if domain:
+            row = self._connection.execute(
+                "SELECT 1 FROM story_members "
+                "JOIN stories ON stories.id = story_members.story_id "
+                "WHERE story_members.content_item_id = ? AND stories.domain = ? LIMIT 1",
+                (content_item_id, domain),
+            ).fetchone()
+        else:
+            row = self._connection.execute(
+                "SELECT 1 FROM story_members WHERE content_item_id = ? LIMIT 1",
+                (content_item_id,),
+            ).fetchone()
+        return row is not None
+
     def story_ids_for_members(
         self,
         member_ids: Iterable[str],
@@ -1403,8 +1503,8 @@ class IntelligenceStorage:
 
 
 __all__ = [
-    "BASE_SCHEMA",
     "ASSISTANT_SCHEMA",
+    "BASE_SCHEMA",
     "SCHEMA_VERSION",
     "STORY_SCHEMA",
     "ContentObservation",

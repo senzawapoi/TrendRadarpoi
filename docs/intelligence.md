@@ -424,3 +424,28 @@ database. Missing databases are ignored; corrupt legacy databases are logged and
 runtime data before any future schema migration. When Story intelligence is enabled, backfill also
 derives Stories from each chronological canonical batch without fetching upstream data; reruns add
 no duplicate Story or membership rows.
+
+## 本地候选：SQLite 轮询与诊断契约
+
+独立 Worker 的 `worker.pending_events` 与 `worker.handler` 分别记录耗时；失败仅记录
+`error_type`、`sqlite_code`、`sqlite_primary`、`transaction_open` 和固定阶段，慢操作阈值为 5 秒。
+日志不得包含异常正文、SQL、数据库路径、消息正文或身份。Python 3.10 缺少原生错误码时为
+`UNKNOWN`，按失败关闭，不根据异常文本推断 BUSY；历史 Worker 退出的具体原因仍未知。
+
+`pending_events` 先在进程锁内只读预查到期候选。没有候选且连接不在事务中才直接返回；
+已有事务必须保留原有事务所有权和失败行为。有候选时进入原事务重新读取，保留租约、终态清理、
+已保存回复和最多三次处理/投递尝试规则；预查本身不认领工作。
+
+仅独立 Worker 的轮询可重试：原生 SQLite 主码为 `SQLITE_BUSY` 且连接的
+`in_transaction is False`，最多调用 4 次，间隔 1/2/4 秒；耗尽进入 30 秒冷却。
+30 秒预算是在调用之间检查的协作预算，并非 SQL 的硬截止时间；保留 5 秒 SQLite busy timeout，
+剩余不足 5 秒不启动下一次调用。每次调用和等待之前检查停止/维护状态。
+`SQLITE_LOCKED`、未知错误码、事务状态未知或为真，以及 handler/model/send 均不在重试边界内。
+
+本地验证与生产门槛见[资源修复验证](evidence/resource-remediation-20261111/verification.md)。
+
+## 数据采集增量沉淀与单轮合流契约
+
+- `StoryService._context_items` 保持传入批次事件时间窗不截断；已入 `story_members` 且早于 `time_window_hours` 的非 `security` 旧规范条目通过轻量刷新更新 `last_activity_at` 与 Importance，不重复触发全历史窗口聚类。
+- 无 `published_time` 的 RSS 条目按首次入库时间（`canonical.collected_at`）执行 `max_age_days` 淘汰；上游解析非空但窗口内无新文章的 RSS 源记为 `healthy`。
+- 主采集热榜与 RSS 通过 `finalize_stories_best_effort` 合流为单次 `general` 聚类与单次 Story 报告生成；`ai_frontier` 使用 Algolia `search_by_date` 窗口检索、落库前新鲜度过滤并固定 `story_domain="ai"`。

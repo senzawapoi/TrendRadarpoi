@@ -126,20 +126,38 @@ async def fetch_and_process(
         freshness_hours = _safe_freshness_hours(config)
         fresh = filter_by_freshness(deduped, freshness_hours, now=now)
         fresh_raw_ids = {id(item) for item in fresh}
-        fresh_content_ids = {
-            content.id
-            for result in results
-            for raw_item, content in zip(
-                result.normalized_raw_items,
-                result.items,
-                strict=False,
-            )
-            if id(raw_item) in fresh_raw_ids
-        }
+        fresh_content_ids: set[str] = set()
+        if freshness_hours > 0:
+            for result in results:
+                kept_raw = []
+                kept_items = []
+                for raw_item, content in zip(
+                    result.normalized_raw_items,
+                    result.items,
+                    strict=False,
+                ):
+                    if id(raw_item) in fresh_raw_ids:
+                        kept_raw.append(raw_item)
+                        kept_items.append(content)
+                        fresh_content_ids.add(content.id)
+                result.normalized_raw_items = kept_raw
+                result.items = kept_items
+        else:
+            fresh_content_ids = {
+                content.id
+                for result in results
+                for raw_item, content in zip(
+                    result.normalized_raw_items,
+                    result.items,
+                    strict=False,
+                )
+                if id(raw_item) in fresh_raw_ids
+            }
         persist_adapter_results_best_effort(
             results,
             intelligence_storage,
             story_content_ids=fresh_content_ids,
+            story_domain="ai",
             wording_client=story_wording_client,
             digest_analyzer=digest_analyzer,
             title_translator=title_translator,
